@@ -153,11 +153,11 @@ function makeTowerButton(centerX,centerY,type) {
 
 }
 
-// Export to global in Node.js environment
+// Export to global environment (works in both browser and Node.js)
 if (typeof module !== 'undefined' && module.exports) {
-  global.makeContainer = makeContainer;
-  global.makePanel = makePanel;
-  global.makeButton = makeButton;
-  global.towerInfo = towerInfo;
-  global.makeTowerButton = makeTowerButton;
+  globalThis.makeContainer = makeContainer;
+  globalThis.makePanel = makePanel;
+  globalThis.makeButton = makeButton;
+  globalThis.towerInfo = towerInfo;
+  globalThis.makeTowerButton = makeTowerButton;
 }

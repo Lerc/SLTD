@@ -4,8 +4,8 @@
 // Node.js headless entry point for SLTD tower defense game
 
 // Minimal browser API stubs
-global.window = global;
-global.document = {
+globalThis.window = global;
+globalThis.document = {
   fullscreenElement: null,
   querySelector: () => null,
   createElement: () => null,
@@ -21,7 +21,7 @@ require('./gadgets.js');
 require('./showRunner.js');
 
 // Stub out browser-only globals
-global.Assets = {
+globalThis.Assets = {
   TowerIcons: null,
   Creep1: null,
   Creep2: null,
@@ -38,26 +38,26 @@ global.Assets = {
   Gun5: null
 };
 
-global.assetsPending = [];
+globalThis.assetsPending = [];
 
 // Stub out Input system
-global.Input = {
+globalThis.Input = {
   isKeyDown: () => false,
   keyWentDown: () => false,
   flushKeysDown: () => {}
 };
 
 // Stub out UI functions
-global.initUI = () => {};
-global.updateUI = () => {};
-global.drawUI = () => {};
-global.pressStartUI = () => {};
-global.pressMoveUI = () => {};
-global.pressEndUI = () => {};
-global.showTowerMenu = () => {};
+globalThis.initUI = () => {};
+globalThis.updateUI = () => {};
+globalThis.drawUI = () => {};
+globalThis.pressStartUI = () => {};
+globalThis.pressMoveUI = () => {};
+globalThis.pressEndUI = () => {};
+globalThis.showTowerMenu = () => {};
 
 // No-op canvas context (won't be used since we don't call draw)
-global.ctx = null;
+globalThis.ctx = null;
 
 // Timing
 let lastTime = Date.now();

@@ -97,32 +97,32 @@ function easeOutElastic(t) {
   return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
 }
 
-// Export to global in Node.js environment
+// Export to global environment (works in both browser and Node.js)
 if (typeof module !== 'undefined' && module.exports) {
-  global.min = min;
-  global.max = max;
-  global.median = median;
-  global.TWOPI = TWOPI;
-  global.randInt = randInt;
-  global.randFloat = randFloat;
-  global.probability = probability;
-  global.intRange = intRange;
-  global.intHash = intHash;
-  global.makeRandom = makeRandom;
-  global.identityFn = identityFn;
-  global.randomPoint = randomPoint;
-  global.v2 = v2;
-  global.vdiff = vdiff;
-  global.vadd = vadd;
-  global.vdot = vdot;
-  global.vlength = vlength;
-  global.vscale = vscale;
-  global.vnormalize = vnormalize;
-  global.vdistance = vdistance;
-  global.vangle = vangle;
-  global.vFromAngle = vFromAngle;
-  global.vrandom = vrandom;
-  global.vsame = vsame;
-  global.pTime = pTime;
-  global.easeOutElastic = easeOutElastic;
+  globalThis.min = min;
+  globalThis.max = max;
+  globalThis.median = median;
+  globalThis.TWOPI = TWOPI;
+  globalThis.randInt = randInt;
+  globalThis.randFloat = randFloat;
+  globalThis.probability = probability;
+  globalThis.intRange = intRange;
+  globalThis.intHash = intHash;
+  globalThis.makeRandom = makeRandom;
+  globalThis.identityFn = identityFn;
+  globalThis.randomPoint = randomPoint;
+  globalThis.v2 = v2;
+  globalThis.vdiff = vdiff;
+  globalThis.vadd = vadd;
+  globalThis.vdot = vdot;
+  globalThis.vlength = vlength;
+  globalThis.vscale = vscale;
+  globalThis.vnormalize = vnormalize;
+  globalThis.vdistance = vdistance;
+  globalThis.vangle = vangle;
+  globalThis.vFromAngle = vFromAngle;
+  globalThis.vrandom = vrandom;
+  globalThis.vsame = vsame;
+  globalThis.pTime = pTime;
+  globalThis.easeOutElastic = easeOutElastic;
 }

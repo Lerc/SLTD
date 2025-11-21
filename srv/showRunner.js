@@ -201,11 +201,7 @@ function startGame() {
   console.log("starting game")
 
   // Create levelMap - will be available globally
-  if (typeof window !== 'undefined') {
-    window.levelMap = createWorld(map1);
-  } else if (typeof global !== 'undefined') {
-    global.levelMap = createWorld(map1);
-  }
+  globalThis.levelMap = createWorld(map1);
 
   generateWave(waveCounter);
 }
@@ -484,70 +480,70 @@ gameOver.draw = _=>{
   ctx.fillText("Tap "+(3-taps)+" Times to Play Again",540,1050);
 }
 
-// Export to global in Node.js environment
+// Export to global environment (works in both browser and Node.js)
 if (typeof module !== 'undefined' && module.exports) {
   // State variables
-  global.versionString = versionString;
-  global.globalScaleFactor = globalScaleFactor;
-  global.showNote = showNote;
-  global.note = note;
-  global.ticker = ticker;
-  global.viewPosition = viewPosition;
-  global.gameMode = gameMode;
-  global.waveCounter = waveCounter;
-  global.difficulty = difficulty;
-  global.gameAcceleration = gameAcceleration;
-  global.gameAccelerated = gameAccelerated;
-  global.OutputWidth = OutputWidth;
-  global.OutputHeight = OutputHeight;
-  global.cellSize = cellSize;
-  global.lives = lives;
-  global.money = money;
-  global.canvasMouseX = canvasMouseX;
-  global.canvasMouseY = canvasMouseY;
-  global.viewMouseX = viewMouseX;
-  global.viewMouseY = viewMouseY;
-  global.mouseCell = mouseCell;
-  global.canvasMouse = canvasMouse;
-  global.selectedTower = selectedTower;
-  global.x = x;
-  global.y = y;
-  global.dx = dx;
-  global.dy = dy;
-  global.running = running;
-  global.map1 = map1;
-  global.startPos = startPos;
-  global.endPos = endPos;
-  global.dragPos = dragPos;
-  global.draggingTower = draggingTower;
-  global.mapTop = mapTop;
-  global.angle = angle;
-  global.creeps = creeps;
-  global.towers = towers;
-  global.bullets = bullets;
-  global.particleSystems = particleSystems;
-  global.backlog = backlog;
-  global.hopper = hopper;
-  global.waveAge = waveAge;
-  global.releaseRate = releaseRate;
-  global.wave = wave;
-  global.taps = taps;
+  globalThis.versionString = versionString;
+  globalThis.globalScaleFactor = globalScaleFactor;
+  globalThis.showNote = showNote;
+  globalThis.note = note;
+  globalThis.ticker = ticker;
+  globalThis.viewPosition = viewPosition;
+  globalThis.gameMode = gameMode;
+  globalThis.waveCounter = waveCounter;
+  globalThis.difficulty = difficulty;
+  globalThis.gameAcceleration = gameAcceleration;
+  globalThis.gameAccelerated = gameAccelerated;
+  globalThis.OutputWidth = OutputWidth;
+  globalThis.OutputHeight = OutputHeight;
+  globalThis.cellSize = cellSize;
+  globalThis.lives = lives;
+  globalThis.money = money;
+  globalThis.canvasMouseX = canvasMouseX;
+  globalThis.canvasMouseY = canvasMouseY;
+  globalThis.viewMouseX = viewMouseX;
+  globalThis.viewMouseY = viewMouseY;
+  globalThis.mouseCell = mouseCell;
+  globalThis.canvasMouse = canvasMouse;
+  globalThis.selectedTower = selectedTower;
+  globalThis.x = x;
+  globalThis.y = y;
+  globalThis.dx = dx;
+  globalThis.dy = dy;
+  globalThis.running = running;
+  globalThis.map1 = map1;
+  globalThis.startPos = startPos;
+  globalThis.endPos = endPos;
+  globalThis.dragPos = dragPos;
+  globalThis.draggingTower = draggingTower;
+  globalThis.mapTop = mapTop;
+  globalThis.angle = angle;
+  globalThis.creeps = creeps;
+  globalThis.towers = towers;
+  globalThis.bullets = bullets;
+  globalThis.particleSystems = particleSystems;
+  globalThis.backlog = backlog;
+  globalThis.hopper = hopper;
+  globalThis.waveAge = waveAge;
+  globalThis.releaseRate = releaseRate;
+  globalThis.wave = wave;
+  globalThis.taps = taps;
 
   // Functions
-  global.pressStart = pressStart;
-  global.pressEnd = pressEnd;
-  global.pressMove = pressMove;
-  global.setMousePos = setMousePos;
-  global.indexOfMax = indexOfMax;
-  global.creepCount = creepCount;
-  global.generateWave = generateWave;
-  global.startGame = startGame;
-  global.nextWave = nextWave;
-  global.waitForContent = waitForContent;
-  global.waitForFullScreen = waitForFullScreen;
-  global.titleScreen = titleScreen;
-  global.mainGame = mainGame;
-  global.mainGame_core = mainGame_core;
-  global.drawWorld = drawWorld;
-  global.gameOver = gameOver;
+  globalThis.pressStart = pressStart;
+  globalThis.pressEnd = pressEnd;
+  globalThis.pressMove = pressMove;
+  globalThis.setMousePos = setMousePos;
+  globalThis.indexOfMax = indexOfMax;
+  globalThis.creepCount = creepCount;
+  globalThis.generateWave = generateWave;
+  globalThis.startGame = startGame;
+  globalThis.nextWave = nextWave;
+  globalThis.waitForContent = waitForContent;
+  globalThis.waitForFullScreen = waitForFullScreen;
+  globalThis.titleScreen = titleScreen;
+  globalThis.mainGame = mainGame;
+  globalThis.mainGame_core = mainGame_core;
+  globalThis.drawWorld = drawWorld;
+  globalThis.gameOver = gameOver;
 }
