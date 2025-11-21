@@ -136,7 +136,7 @@ function workingImage(from, paddingLeft = 0, paddingTop = paddingLeft, paddingRi
   var result = document.createElement("canvas");
 
   result.width = from.width + paddingLeft + paddingRight;
-  result.height = from.width + paddingTop + paddingBottom;
+  result.height = from.height + paddingTop + paddingBottom;
 
 
   let ctx = result.getContext("2d");
