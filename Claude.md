@@ -223,9 +223,104 @@ const towers = game.getTowers();
 ## Next Steps
 
 1. ✅ Complete this analysis
-2. ⬜ Decide on approach (quick prototype vs. full refactor)
-3. ⬜ Create `nodemain.js` skeleton
-4. ⬜ Implement browser API stubs
+2. ✅ Decide on approach (quick prototype vs. full refactor)
+3. ✅ Create `nodemain.js` skeleton
+4. ✅ Implement browser API stubs
 5. ⬜ Test basic game loop in Node.js
-6. ⬜ Implement game state API
+6. ✅ Implement game state API
 7. ⬜ Add unit tests for core logic
+
+---
+
+## Implementation (Completed)
+
+### Files Created/Modified
+
+**✅ srv/showRunner.js** (NEW)
+- Contains all game logic extracted from main.js
+- Pure game state and logic functions
+- Game mode functions (mainGame, titleScreen, gameOver, etc.)
+- Draw functions (attached as properties, won't be called in headless mode)
+- Works in both browser and Node.js environments
+- Uses feature detection for browser-only APIs (typeof checks)
+
+**✅ srv/main.js** (REFACTORED)
+- Now contains ONLY browser-specific code
+- window.onload initialization
+- Canvas/WebGL setup
+- Event handlers (mouse/touch)
+- requestAnimationFrame loop
+- Calls game logic from showRunner.js
+- Calls draw functions when available
+
+**✅ srv/nodemain.js** (NEW)
+- Node.js entry point for headless mode
+- Minimal browser API stubs (window, document, Assets, Input, UI)
+- Date.now() instead of performance.now()
+- No rendering - gameMode.draw() is NOT called
+- Exports clean API for external control
+- Built-in demo mode when run directly
+
+**✅ srv/index.html** (UPDATED)
+- Added `<script src="showRunner.js"></script>` before main.js
+- Loads game logic before browser initialization
+
+### Architecture
+
+```
+Browser Mode:
+index.html → Extras.js → entities.js → world.js → input.js → ui.js →
+             showRunner.js (game logic) → main.js (browser init + rendering)
+
+Headless Mode:
+nodemain.js → Extras.js → entities.js → world.js →
+              showRunner.js (game logic only, no rendering)
+```
+
+### Key Design Decision
+
+**No ctx stub needed!** The update() function in nodemain.js simply doesn't call `gameMode.draw()`, so all Canvas 2D rendering code is never executed. This is cleaner than creating elaborate no-op stubs.
+
+### Headless API
+
+```javascript
+const game = require('./srv/nodemain.js');
+
+// Run simulation
+game.tick(100);  // Run 100 game ticks
+
+// Place towers
+game.placeTower('Tower', 5, 5);
+game.placeTower('Stubby', 6, 5);
+
+// Get game state
+const state = game.getState();
+// Returns: { lives, money, wave, creeps: [...], towers: [...] }
+
+// Run automated simulation
+const result = game.run(1000, 100); // 1000 ticks, log every 100
+
+// Reset game
+game.reset();
+```
+
+### Testing
+
+To test headless mode:
+```bash
+cd srv
+node nodemain.js
+```
+
+To use as a module:
+```javascript
+const game = require('./srv/nodemain.js');
+console.log(game.getState());
+```
+
+### Compatibility Notes
+
+- **showRunner.js** uses feature detection for browser-only APIs
+- Falls back gracefully when APIs are undefined
+- No hard dependencies on DOM/Canvas in logic functions
+- Draw functions are optional and only called when ctx exists
