@@ -35,11 +35,11 @@ function createWorld(textRepresentation) {
       if (!isSolid(v2(tx,0))) return v2(tx,-1);
     }
 
-    for (let ty=0; y<height;ty++) {
-      if (!isSolid(v2(0,ty))) return v2(-1,ty);      
+    for (let ty=0; ty<height;ty++) {
+      if (!isSolid(v2(0,ty))) return v2(-1,ty);
     }
     throw new Error("could not find start of map");
-  
+
   }
   
   function generatePath() {

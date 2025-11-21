@@ -34,7 +34,7 @@ function initUI() {
     ctx.strokeRect(left,top,width,height);
     ctx.font="bold 40px sans-serif";
     ctx.textAlign="center";
-    ctx.FillStyle="#0af";
+    ctx.fillStyle="#0af";
     ctx.fillText(gameAcceleration+"x",left+width/2,top+42);
     ctx.restore();
   }
