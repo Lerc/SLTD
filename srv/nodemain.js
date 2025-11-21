@@ -17,6 +17,7 @@ require('./Extras.js');
 require('./littleAStar.js');
 require('./entities.js');
 require('./world.js');
+require('./gadgets.js');
 require('./showRunner.js');
 
 // Stub out browser-only globals

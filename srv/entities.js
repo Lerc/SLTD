@@ -583,3 +583,29 @@ class Rock extends Pea {
     ctx.fill();
   }
 }
+
+// Export to global in Node.js environment
+if (typeof module !== 'undefined' && module.exports) {
+  global.scaleHitPoints = scaleHitPoints;
+  global.scaleIncome = scaleIncome;
+  global.buyTower = buyTower;
+  global.Entity = Entity;
+  global.Creep = Creep;
+  global.Basic = Basic;
+  global.Zipper = Zipper;
+  global.Flyer = Flyer;
+  global.Ball = Ball;
+  global.BigBall = BigBall;
+  global.Spikey = Spikey;
+  global.Tower = Tower;
+  global.Star = Star;
+  global.Thumper = Thumper;
+  global.Stubby = Stubby;
+  global.Zappy = Zappy;
+  global.Woosh = Woosh;
+  global.Bullet = Bullet;
+  global.Spiral = Spiral;
+  global.Pea = Pea;
+  global.Laser = Laser;
+  global.Rock = Rock;
+}

@@ -96,3 +96,33 @@ function easeOutElastic(t) {
   var p = 0.3;
   return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
 }
+
+// Export to global in Node.js environment
+if (typeof module !== 'undefined' && module.exports) {
+  global.min = min;
+  global.max = max;
+  global.median = median;
+  global.TWOPI = TWOPI;
+  global.randInt = randInt;
+  global.randFloat = randFloat;
+  global.probability = probability;
+  global.intRange = intRange;
+  global.intHash = intHash;
+  global.makeRandom = makeRandom;
+  global.identityFn = identityFn;
+  global.randomPoint = randomPoint;
+  global.v2 = v2;
+  global.vdiff = vdiff;
+  global.vadd = vadd;
+  global.vdot = vdot;
+  global.vlength = vlength;
+  global.vscale = vscale;
+  global.vnormalize = vnormalize;
+  global.vdistance = vdistance;
+  global.vangle = vangle;
+  global.vFromAngle = vFromAngle;
+  global.vrandom = vrandom;
+  global.vsame = vsame;
+  global.pTime = pTime;
+  global.easeOutElastic = easeOutElastic;
+}

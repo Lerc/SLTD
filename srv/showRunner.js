@@ -483,3 +483,71 @@ gameOver.draw = _=>{
   ctx.font="50px sans-serif";
   ctx.fillText("Tap "+(3-taps)+" Times to Play Again",540,1050);
 }
+
+// Export to global in Node.js environment
+if (typeof module !== 'undefined' && module.exports) {
+  // State variables
+  global.versionString = versionString;
+  global.globalScaleFactor = globalScaleFactor;
+  global.showNote = showNote;
+  global.note = note;
+  global.ticker = ticker;
+  global.viewPosition = viewPosition;
+  global.gameMode = gameMode;
+  global.waveCounter = waveCounter;
+  global.difficulty = difficulty;
+  global.gameAcceleration = gameAcceleration;
+  global.gameAccelerated = gameAccelerated;
+  global.OutputWidth = OutputWidth;
+  global.OutputHeight = OutputHeight;
+  global.cellSize = cellSize;
+  global.lives = lives;
+  global.money = money;
+  global.canvasMouseX = canvasMouseX;
+  global.canvasMouseY = canvasMouseY;
+  global.viewMouseX = viewMouseX;
+  global.viewMouseY = viewMouseY;
+  global.mouseCell = mouseCell;
+  global.canvasMouse = canvasMouse;
+  global.selectedTower = selectedTower;
+  global.x = x;
+  global.y = y;
+  global.dx = dx;
+  global.dy = dy;
+  global.running = running;
+  global.map1 = map1;
+  global.startPos = startPos;
+  global.endPos = endPos;
+  global.dragPos = dragPos;
+  global.draggingTower = draggingTower;
+  global.mapTop = mapTop;
+  global.angle = angle;
+  global.creeps = creeps;
+  global.towers = towers;
+  global.bullets = bullets;
+  global.particleSystems = particleSystems;
+  global.backlog = backlog;
+  global.hopper = hopper;
+  global.waveAge = waveAge;
+  global.releaseRate = releaseRate;
+  global.wave = wave;
+  global.taps = taps;
+
+  // Functions
+  global.pressStart = pressStart;
+  global.pressEnd = pressEnd;
+  global.pressMove = pressMove;
+  global.setMousePos = setMousePos;
+  global.indexOfMax = indexOfMax;
+  global.creepCount = creepCount;
+  global.generateWave = generateWave;
+  global.startGame = startGame;
+  global.nextWave = nextWave;
+  global.waitForContent = waitForContent;
+  global.waitForFullScreen = waitForFullScreen;
+  global.titleScreen = titleScreen;
+  global.mainGame = mainGame;
+  global.mainGame_core = mainGame_core;
+  global.drawWorld = drawWorld;
+  global.gameOver = gameOver;
+}
