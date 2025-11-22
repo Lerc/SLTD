@@ -12,8 +12,9 @@ function scaleIncome(amount) {
 
 function buyTower(info,cellX,cellY) {
   if (money >= info.cost) {
-    money-= info.cost;
-    towers.push(new info.type(cellX,cellY))
+    money = globalThis.money = money - info.cost;
+    globalThis.towers.push(new info.type(cellX,cellY));
+    towers = globalThis.towers;
   }
 
 }
@@ -100,7 +101,7 @@ class Creep extends Entity {
       this.destination = vadd(mapToWorld(levelMap.path[this.pathIndex]),vrandom(16));
     } else {
       this.dead=true;
-      lives-=1;
+      lives = globalThis.lives = lives - 1;
     }
   }
 
@@ -131,7 +132,7 @@ class Creep extends Entity {
     this.damage += amount;
     if (!this.dead && this.damage > this.hitPoints) {
       this.die();
-      money+=scaleIncome(this.value)
+      money = globalThis.money = money + scaleIncome(this.value);
     }
   }
 
@@ -292,7 +293,8 @@ class Tower extends Entity {
     }
 
     fire () {
-      bullets.push(new this.bulletKind(this,this.target));
+      globalThis.bullets.push(new this.bulletKind(this,this.target));
+      bullets = globalThis.bullets;
       this.cooldown=1000/this.rate;
     }
 
@@ -482,7 +484,8 @@ class Bullet extends Entity {
     this.target.takeDamage(this.damage);
     this.dead=true;
     let pos= this.position;
-    particleSystems.push(particleSystem(this.damage,{pos}))
+    globalThis.particleSystems.push(particleSystem(this.damage,{pos}));
+    particleSystems = globalThis.particleSystems;
   }
 }
 
@@ -582,4 +585,30 @@ class Rock extends Pea {
     ctx.circle(0,0,5);
     ctx.fill();
   }
+}
+
+// Export to global environment (works in both browser and Node.js)
+if (typeof module !== 'undefined' && module.exports) {
+  globalThis.scaleHitPoints = scaleHitPoints;
+  globalThis.scaleIncome = scaleIncome;
+  globalThis.buyTower = buyTower;
+  globalThis.Entity = Entity;
+  globalThis.Creep = Creep;
+  globalThis.Basic = Basic;
+  globalThis.Zipper = Zipper;
+  globalThis.Flyer = Flyer;
+  globalThis.Ball = Ball;
+  globalThis.BigBall = BigBall;
+  globalThis.Spikey = Spikey;
+  globalThis.Tower = Tower;
+  globalThis.Star = Star;
+  globalThis.Thumper = Thumper;
+  globalThis.Stubby = Stubby;
+  globalThis.Zappy = Zappy;
+  globalThis.Woosh = Woosh;
+  globalThis.Bullet = Bullet;
+  globalThis.Spiral = Spiral;
+  globalThis.Pea = Pea;
+  globalThis.Laser = Laser;
+  globalThis.Rock = Rock;
 }

@@ -1,0 +1,23 @@
+# Test state files
+srv/*.json
+srv/*_state*.json
+
+# Evaluation generated files
+evaluations/**/evaluation.log
+evaluations/**/*_state.json
+evaluations/**/final_state.json
+evaluations/**/initial_state.json
+
+# Node modules
+node_modules/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

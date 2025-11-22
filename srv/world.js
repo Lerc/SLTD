@@ -91,3 +91,10 @@ function createWorld(textRepresentation) {
   return {mapData,startPoint,at,isSolid,canBuildHere,generatePath,path,draw}
 }
 
+// Export to global environment (works in both browser and Node.js)
+if (typeof module !== 'undefined' && module.exports) {
+  globalThis.mapToWorld = mapToWorld;
+  globalThis.worldToMap = worldToMap;
+  globalThis.createWorld = createWorld;
+}
+
