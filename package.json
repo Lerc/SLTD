@@ -1,0 +1,17 @@
+{
+  "name": "sltd-tower-defense",
+  "version": "1.0.0",
+  "description": "A Tower Defense game",
+  "scripts": {
+    "serve": "npx http-server srv -p 8000 -o",
+    "lint": "npx eslint srv/**/*.js",
+    "format": "npx prettier --write 'srv/**/*.{js,html,css}'"
+  },
+  "keywords": [
+    "game",
+    "tower-defense",
+    "webgl"
+  ],
+  "author": "",
+  "license": "MIT"
+}

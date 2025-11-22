@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": ["Skill"]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/scripts/session-setup.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
