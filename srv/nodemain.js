@@ -430,6 +430,179 @@ function reset() {
 // Don't initialize immediately - allow control from command line
 // init();
 
+// REPL Command Execution
+function executeCommand(commandLine) {
+  const parts = commandLine.trim().split(/\s+/);
+  const cmd = parts[0];
+  const args = parts.slice(1);
+
+  try {
+    switch (cmd) {
+      case 'advance': {
+        const ticks = parseInt(args[0]) || 1;
+        tick(ticks);
+        console.log(`Advanced ${ticks} tick(s)`);
+        console.log(`  Lives: ${globalThis.lives}, Money: ${globalThis.money}, Wave: ${globalThis.waveCounter}`);
+        console.log(`  Creeps: ${globalThis.creeps.length}, Towers: ${globalThis.towers.length}, Bullets: ${globalThis.bullets.length}`);
+        console.log(`  Ticker: ${globalThis.ticker}, WaveAge: ${globalThis.waveAge}`);
+        return true;
+      }
+
+      case 'show_creep': {
+        const index = parseInt(args[0]) || 0;
+        if (index < 0 || index >= globalThis.creeps.length) {
+          console.log(`Error: Creep index ${index} out of range (0-${globalThis.creeps.length - 1})`);
+          return false;
+        }
+        const creep = globalThis.creeps[index];
+        console.log(`Creep #${index} (${creep.constructor.name}):`);
+        console.log(`  Position: (${creep.x.toFixed(2)}, ${creep.y.toFixed(2)})`);
+        console.log(`  Health: ${(creep.hitPoints - creep.damage).toFixed(1)}/${creep.hitPoints.toFixed(1)}`);
+        console.log(`  Speed: ${creep.speed}, Angle: ${creep.angle.toFixed(2)}`);
+        console.log(`  Path Index: ${creep.pathIndex}/${globalThis.levelMap.path.length - 1}`);
+        console.log(`  Value: $${creep.value}`);
+        return true;
+      }
+
+      case 'show_tower': {
+        const index = parseInt(args[0]) || 0;
+        if (index < 0 || index >= globalThis.towers.length) {
+          console.log(`Error: Tower index ${index} out of range (0-${globalThis.towers.length - 1})`);
+          return false;
+        }
+        const tower = globalThis.towers[index];
+        console.log(`Tower #${index} (${tower.constructor.name}):`);
+        console.log(`  Cell Position: (${tower.cellPosition.x}, ${tower.cellPosition.y})`);
+        console.log(`  World Position: (${tower.x.toFixed(2)}, ${tower.y.toFixed(2)})`);
+        console.log(`  Range: ${tower.range}, Min Range: ${tower.minimumRange}`);
+        console.log(`  Rate: ${tower.rate}, Cooldown: ${tower.cooldown}`);
+        console.log(`  Target: ${tower.target ? tower.target.constructor.name : 'none'}`);
+        console.log(`  Angle: ${tower.angle.toFixed(2)}`);
+        return true;
+      }
+
+      case 'save_json': {
+        if (!args[0]) {
+          console.log('Error: save_json requires a filename');
+          return false;
+        }
+        const fs = require('fs');
+        const state = saveState();
+        fs.writeFileSync(args[0], JSON.stringify(state, null, 2));
+        console.log(`State saved to ${args[0]}`);
+        return true;
+      }
+
+      case 'load_json': {
+        if (!args[0]) {
+          console.log('Error: load_json requires a filename');
+          return false;
+        }
+        const fs = require('fs');
+        if (!fs.existsSync(args[0])) {
+          console.log(`Error: File not found: ${args[0]}`);
+          return false;
+        }
+        const stateData = JSON.parse(fs.readFileSync(args[0], 'utf8'));
+        loadState(stateData);
+        console.log(`State loaded from ${args[0]}`);
+        return true;
+      }
+
+      case 'buy_tower': {
+        if (args.length < 3) {
+          console.log('Error: buy_tower requires <type> <cellX> <cellY>');
+          return false;
+        }
+        const towerType = args[0];
+        const cellX = parseInt(args[1]);
+        const cellY = parseInt(args[2]);
+
+        const result = placeTower(towerType, cellX, cellY);
+        if (result.success) {
+          console.log(`Tower placed: ${towerType} at (${cellX}, ${cellY})`);
+          console.log(`  Cost: $${result.tower.cost}, Money remaining: $${result.moneyRemaining}`);
+        } else {
+          console.log(`Failed to place tower: ${result.reason}`);
+        }
+        return result.success;
+      }
+
+      case 'list_counts': {
+        console.log('Game State Summary:');
+        console.log(`  Lives: ${globalThis.lives}`);
+        console.log(`  Money: $${globalThis.money}`);
+        console.log(`  Wave: ${globalThis.waveCounter} (difficulty: ${globalThis.difficulty.toFixed(2)})`);
+        console.log(`  Ticker: ${globalThis.ticker}, WaveAge: ${globalThis.waveAge}`);
+        console.log(`  Creeps: ${globalThis.creeps.length}`);
+        console.log(`  Towers: ${globalThis.towers.length}`);
+        console.log(`  Bullets: ${globalThis.bullets.length}`);
+        console.log(`  Hopper: ${globalThis.hopper.length}`);
+        console.log(`  Backlog: ${globalThis.backlog.length}`);
+        return true;
+      }
+
+      case 'help':
+      case '?': {
+        console.log('Available commands:');
+        console.log('  advance [ticks=1]                - Advance simulation by N ticks');
+        console.log('  show_creep [index=0]             - Show details of a creep');
+        console.log('  show_tower [index=0]             - Show details of a tower');
+        console.log('  save_json <filename>             - Save game state to JSON file');
+        console.log('  load_json <filename>             - Load game state from JSON file');
+        console.log('  buy_tower <type> <cellX> <cellY> - Purchase and place a tower');
+        console.log('  list_counts                      - Show game state summary');
+        console.log('  help, ?                          - Show this help');
+        console.log('  exit, quit                       - Exit REPL');
+        console.log('\nTower types: Tower, Stubby, Star, Boom, BigBoom');
+        return true;
+      }
+
+      case 'exit':
+      case 'quit':
+        return 'exit';
+
+      case '':
+        return true;
+
+      default:
+        console.log(`Unknown command: ${cmd}. Type 'help' for available commands.`);
+        return false;
+    }
+  } catch (error) {
+    console.log(`Error executing command: ${error.message}`);
+    return false;
+  }
+}
+
+function startREPL() {
+  const readline = require('readline');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: 'sltd> '
+  });
+
+  console.log('\n=== SLTD Headless REPL ===');
+  console.log("Type 'help' for available commands, 'exit' to quit\n");
+
+  rl.prompt();
+
+  rl.on('line', (line) => {
+    const result = executeCommand(line);
+    if (result === 'exit') {
+      console.log('Goodbye!');
+      rl.close();
+      return;
+    }
+    rl.prompt();
+  });
+
+  rl.on('close', () => {
+    process.exit(0);
+  });
+}
+
 // Export API
 module.exports = {
   init,
@@ -441,6 +614,8 @@ module.exports = {
   loadState,
   placeTower,
   reset,
+  executeCommand,
+  startREPL,
 
   // Direct access to game state (read-only recommended)
   get lives() { return globalThis.lives; },
@@ -460,13 +635,28 @@ if (require.main === module) {
     console.log(`
 Usage:
   node nodemain.js                              Run interactive demo
+  node nodemain.js repl                         Start interactive REPL
+  node nodemain.js -e "<commands>"              Execute command sequence (semicolon-separated)
   node nodemain.js <ticks>                      Start game, run N ticks, output state
   node nodemain.js <input.json> <ticks>         Load state, run N ticks, output state
   node nodemain.js <input.json> <ticks> <output.json>
                                                 Load state, run N ticks, save to file
 
+REPL Commands:
+  advance [ticks=1]                - Advance simulation by N ticks
+  show_creep [index=0]             - Show details of a creep
+  show_tower [index=0]             - Show details of a tower
+  save_json <filename>             - Save game state to JSON file
+  load_json <filename>             - Load game state from JSON file
+  buy_tower <type> <cellX> <cellY> - Purchase and place a tower
+  list_counts                      - Show game state summary
+  help                             - Show help in REPL
+  exit, quit                       - Exit REPL
+
 Examples:
   node nodemain.js                              # Run demo
+  node nodemain.js repl                         # Interactive mode
+  node nodemain.js -e "list_counts; advance 100; list_counts"
   node nodemain.js 1000                         # Run 1000 ticks, print state
   node nodemain.js state.json 500               # Load state, run 500 ticks
   node nodemain.js state.json 500 next.json     # Load, run, save to file
@@ -494,6 +684,31 @@ Examples:
 
   } else if (args[0] === '--help' || args[0] === '-h') {
     showUsage();
+
+  } else if (args[0] === 'repl') {
+    // Start REPL mode
+    init();
+    console.log('Game initialized.');
+    startREPL();
+
+  } else if (args[0] === '-e') {
+    // Execute command sequence
+    if (args.length < 2) {
+      console.error('Error: -e requires a command string');
+      process.exit(1);
+    }
+
+    init();
+    const commandString = args.slice(1).join(' ');
+    const commands = commandString.split(';').map(c => c.trim()).filter(c => c.length > 0);
+
+    for (const cmd of commands) {
+      console.log(`\n> ${cmd}`);
+      const result = executeCommand(cmd);
+      if (result === 'exit') {
+        break;
+      }
+    }
 
   } else if (args.length === 1) {
     // node nodemain.js <ticks>
