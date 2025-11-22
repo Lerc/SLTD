@@ -13,7 +13,8 @@ function scaleIncome(amount) {
 function buyTower(info,cellX,cellY) {
   if (money >= info.cost) {
     money = globalThis.money = money - info.cost;
-    towers.push(new info.type(cellX,cellY))
+    globalThis.towers.push(new info.type(cellX,cellY));
+    towers = globalThis.towers;
   }
 
 }
@@ -292,7 +293,8 @@ class Tower extends Entity {
     }
 
     fire () {
-      bullets.push(new this.bulletKind(this,this.target));
+      globalThis.bullets.push(new this.bulletKind(this,this.target));
+      bullets = globalThis.bullets;
       this.cooldown=1000/this.rate;
     }
 
@@ -482,7 +484,8 @@ class Bullet extends Entity {
     this.target.takeDamage(this.damage);
     this.dead=true;
     let pos= this.position;
-    particleSystems.push(particleSystem(this.damage,{pos}))
+    globalThis.particleSystems.push(particleSystem(this.damage,{pos}));
+    particleSystems = globalThis.particleSystems;
   }
 }
 

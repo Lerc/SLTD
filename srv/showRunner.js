@@ -319,15 +319,17 @@ function mainGame_core() {
   if ((globalThis.waveAge % 15) == 0) {
     //every 5 ticks fill from any backlog
     if (globalThis.backlog.length>0) {
-      creeps.push(globalThis.backlog.shift());
+      globalThis.creeps.push(globalThis.backlog.shift());
       backlog = globalThis.backlog;
+      creeps = globalThis.creeps;
     }
   }
-  if ((creeps.length==0) || (globalThis.waveAge % releaseRate  == 0)) {
+  if ((globalThis.creeps.length==0) || (globalThis.waveAge % releaseRate  == 0)) {
     if (globalThis.hopper.length>0) {
       let e = globalThis.hopper.shift();
       hopper = globalThis.hopper;
-      creeps.push(e);
+      globalThis.creeps.push(e);
+      creeps = globalThis.creeps;
     }
   }
 
@@ -335,26 +337,27 @@ function mainGame_core() {
     if (lives > 0 ) nextWave();
   }
 
-  for (let e of creeps) {
+  for (let e of globalThis.creeps) {
     e.move();
   }
-  creeps.sort( (a,b)=>(b.distanceTraveled()-a.distanceTraveled()) );
+  globalThis.creeps.sort( (a,b)=>(b.distanceTraveled()-a.distanceTraveled()) );
+  creeps = globalThis.creeps;
 
-  for (let e of towers) {
+  for (let e of globalThis.towers) {
     e.move();
   }
-  for (let e of bullets) {
+  for (let e of globalThis.bullets) {
     e.move();
   }
-  for (let p of particleSystems) {
+  for (let p of globalThis.particleSystems) {
     p.move();
   }
 
-  creeps = globalThis.creeps = creeps.filter(e=>!e.dead);
-  towers = globalThis.towers = towers.filter(e=>!e.dead);
-  bullets = globalThis.bullets = bullets.filter(e=>!e.dead);
+  creeps = globalThis.creeps = globalThis.creeps.filter(e=>!e.dead);
+  towers = globalThis.towers = globalThis.towers.filter(e=>!e.dead);
+  bullets = globalThis.bullets = globalThis.bullets.filter(e=>!e.dead);
 
-  particleSystems = globalThis.particleSystems = particleSystems.filter(p=>p.isActive());
+  particleSystems = globalThis.particleSystems = globalThis.particleSystems.filter(p=>p.isActive());
 
   if (gameMode != mainGame) return;
 
