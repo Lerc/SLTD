@@ -554,16 +554,7 @@ function executeCommand(commandLine) {
       case 'help':
       case '?': {
         console.log('Available commands:');
-        console.log('  advance [ticks=1]                - Advance simulation by N ticks');
-        console.log('  show_creep [index=0]             - Show details of a creep');
-        console.log('  show_tower [index=0]             - Show details of a tower');
-        console.log('  save_json <filename>             - Save game state to JSON file');
-        console.log('  load_json <filename>             - Load game state from JSON file');
-        console.log('  buy_tower <type> <cellX> <cellY> - Purchase and place a tower');
-        console.log('  list_counts                      - Show game state summary');
-        console.log('  help, ?                          - Show this help');
-        console.log('  exit, quit                       - Exit REPL');
-        console.log('\nTower types: Tower, Stubby, Star, Boom, BigBoom');
+        showCommands();
         return true;
       }
 
@@ -612,6 +603,19 @@ function startREPL() {
   });
 }
 
+function showCommands() {
+  console.log('advance [ticks=1]                - Advance simulation by N ticks');
+  console.log('show_creep [index=0]             - Show details of a creep');
+  console.log('show_tower [index=0]             - Show details of a tower');
+  console.log('save_json <filename>             - Save game state to JSON file');
+  console.log('load_json <filename>             - Load game state from JSON file');
+  console.log('buy_tower <type> <cellX> <cellY> - Purchase and place a tower');
+  console.log('list_counts                      - Show game state summary');
+  console.log('help, ?                          - Show this help');
+  console.log('exit, quit                       - Exit REPL');
+  console.log('\nTower types: Tower, Stubby, Star, Boom, BigBoom');
+}
+
 // Export API
 module.exports = {
   init,
@@ -645,26 +649,17 @@ if (require.main === module) {
 Usage:
   node nodemain.js                              Run interactive demo
   node nodemain.js repl                         Start interactive REPL
+  node nodemain.js --commands                   Show available REPL commands
   node nodemain.js -e "<commands>"              Execute command sequence (semicolon-separated)
   node nodemain.js <ticks>                      Start game, run N ticks, output state
   node nodemain.js <input.json> <ticks>         Load state, run N ticks, output state
   node nodemain.js <input.json> <ticks> <output.json>
                                                 Load state, run N ticks, save to file
 
-REPL Commands:
-  advance [ticks=1]                - Advance simulation by N ticks
-  show_creep [index=0]             - Show details of a creep
-  show_tower [index=0]             - Show details of a tower
-  save_json <filename>             - Save game state to JSON file
-  load_json <filename>             - Load game state from JSON file
-  buy_tower <type> <cellX> <cellY> - Purchase and place a tower
-  list_counts                      - Show game state summary
-  help                             - Show help in REPL
-  exit, quit                       - Exit REPL
-
 Examples:
   node nodemain.js                              # Run demo
   node nodemain.js repl                         # Interactive mode
+  node nodemain.js --commands                   # List REPL commands
   node nodemain.js -e "list_counts; advance 100; list_counts"
   node nodemain.js 1000                         # Run 1000 ticks, print state
   node nodemain.js state.json 500               # Load state, run 500 ticks
@@ -693,6 +688,9 @@ Examples:
 
   } else if (args[0] === '--help' || args[0] === '-h') {
     showUsage();
+
+  } else if (args[0] === '--commands') {
+    showCommands();
 
   } else if (args[0] === 'repl') {
     // Start REPL mode

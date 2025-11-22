@@ -324,3 +324,161 @@ console.log(game.getState());
 - Falls back gracefully when APIs are undefined
 - No hard dependencies on DOM/Canvas in logic functions
 - Draw functions are optional and only called when ctx exists
+
+## REPL Mode and Command Interface
+
+### Interactive REPL
+
+Start an interactive session to control the game:
+```bash
+node srv/nodemain.js repl
+```
+
+This provides a command-line interface with prompt `sltd>` where you can type commands interactively.
+
+### Available Commands
+
+To quickly see all available REPL commands:
+```bash
+node srv/nodemain.js --commands
+```
+
+This outputs:
+```
+advance [ticks=1]                - Advance simulation by N ticks
+show_creep [index=0]             - Show details of a creep
+show_tower [index=0]             - Show details of a tower
+save_json <filename>             - Save game state to JSON file
+load_json <filename>             - Load game state from JSON file
+buy_tower <type> <cellX> <cellY> - Purchase and place a tower
+list_counts                      - Show game state summary
+help, ?                          - Show this help
+exit, quit                       - Exit REPL
+
+Tower types: Tower, Stubby, Star, Boom, BigBoom
+```
+
+### Command Sequence Execution
+
+Execute multiple commands in sequence using the `-e` flag (similar to `node -e`):
+```bash
+node srv/nodemain.js -e "list_counts; advance 100; list_counts"
+```
+
+Commands are separated by semicolons. This is useful for scripted scenarios.
+
+### State Persistence
+
+Save and load game state to/from JSON files:
+```bash
+# Save state after 500 ticks
+node srv/nodemain.js 500 > state1.json
+
+# Load state and continue for 300 more ticks
+node srv/nodemain.js state1.json 300 > state2.json
+
+# Or save to a named file
+node srv/nodemain.js state1.json 300 state2.json
+```
+
+## Running Evaluations
+
+You can run evaluations of gameplay sections by organizing tests in directories with state files and command sequences.
+
+### Evaluation Workflow
+
+1. **Create evaluation directory**:
+   ```bash
+   mkdir -p evaluations/test1
+   cd evaluations/test1
+   ```
+
+2. **Create initial state** (or use a saved state):
+   ```bash
+   # Generate a starting state
+   node ../../srv/nodemain.js 200 > start_state.json
+   ```
+
+3. **Run evaluation with command sequence**:
+   ```bash
+   node ../../srv/nodemain.js -e "
+     load_json start_state.json;
+     buy_tower Tower 5 5;
+     buy_tower Stubby 6 5;
+     advance 500;
+     list_counts;
+     save_json end_state.json
+   " > evaluation.log 2>&1
+   ```
+
+4. **Analyze results**:
+   - Review `evaluation.log` for detailed execution trace
+   - Compare `start_state.json` vs `end_state.json`
+   - Check end state metrics (lives, money, towers, etc.)
+
+### Example Evaluation Structure
+
+```
+evaluations/
+├── scenario1_early_game/
+│   ├── initial_state.json       # Starting conditions
+│   ├── commands.txt             # Command sequence
+│   ├── run.sh                   # Evaluation script
+│   ├── evaluation.log           # Execution log
+│   └── final_state.json         # End result
+├── scenario2_wave5/
+│   ├── initial_state.json
+│   ├── commands.txt
+│   ├── run.sh
+│   ├── evaluation.log
+│   └── final_state.json
+└── README.md                    # Evaluation documentation
+```
+
+### Sample Evaluation Script
+
+**evaluations/scenario1/run.sh**:
+```bash
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GAME_DIR="$SCRIPT_DIR/../.."
+
+cd "$SCRIPT_DIR"
+
+# Run evaluation
+node "$GAME_DIR/srv/nodemain.js" -e "
+  load_json initial_state.json;
+  buy_tower Tower 5 5;
+  buy_tower Tower 6 5;
+  buy_tower Stubby 7 5;
+  advance 1000;
+  list_counts;
+  show_tower 0;
+  show_tower 1;
+  show_tower 2;
+  save_json final_state.json
+" > evaluation.log 2>&1
+
+# Check if evaluation succeeded
+if [ $? -eq 0 ]; then
+  echo "Evaluation completed successfully"
+  echo "Final state:"
+  cat final_state.json | jq '{lives, money, wave: .waveCounter, creeps: (.creeps | length), towers: (.towers | length)}'
+else
+  echo "Evaluation failed - check evaluation.log"
+  exit 1
+fi
+```
+
+### Automated Testing
+
+Combine with jq for automated assertions:
+```bash
+# Run evaluation and check that lives > 15
+LIVES=$(node srv/nodemain.js state.json 1000 final.json 2>/dev/null | jq -r '.lives')
+if [ "$LIVES" -gt 15 ]; then
+  echo "PASS: Lives = $LIVES"
+else
+  echo "FAIL: Lives = $LIVES (expected > 15)"
+fi
+```
