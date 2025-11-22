@@ -12,7 +12,7 @@ function scaleIncome(amount) {
 
 function buyTower(info,cellX,cellY) {
   if (money >= info.cost) {
-    money-= info.cost;
+    money = globalThis.money = money - info.cost;
     towers.push(new info.type(cellX,cellY))
   }
 
@@ -100,7 +100,7 @@ class Creep extends Entity {
       this.destination = vadd(mapToWorld(levelMap.path[this.pathIndex]),vrandom(16));
     } else {
       this.dead=true;
-      lives-=1;
+      lives = globalThis.lives = lives - 1;
     }
   }
 
@@ -131,7 +131,7 @@ class Creep extends Entity {
     this.damage += amount;
     if (!this.dead && this.damage > this.hitPoints) {
       this.die();
-      money+=scaleIncome(this.value)
+      money = globalThis.money = money + scaleIncome(this.value);
     }
   }
 

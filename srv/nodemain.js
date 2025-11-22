@@ -40,6 +40,15 @@ globalThis.Assets = {
 
 globalThis.assetsPending = [];
 
+// Stub out particle system (no-op in headless mode)
+globalThis.particleSystem = function(count, state, makeParticle) {
+  return {
+    move: () => {},
+    draw: () => {},
+    isActive: () => false
+  };
+};
+
 // Stub out Input system
 globalThis.Input = {
   isKeyDown: () => false,

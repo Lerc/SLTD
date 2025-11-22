@@ -186,19 +186,19 @@ function generateWave(num) {
 
 // Game lifecycle
 function startGame() {
-  money=250;
+  money = globalThis.money = 250;
   towers = globalThis.towers = [];
   creeps = globalThis.creeps = [];
   particleSystems = globalThis.particleSystems = [];
   bullets = globalThis.bullets = [];
   hopper = globalThis.hopper = [];
   backlog = globalThis.backlog = [];
-  gameAcceleration=2;
-  gameAccelerated=false;
+  gameAcceleration = globalThis.gameAcceleration = 2;
+  gameAccelerated = globalThis.gameAccelerated = false;
 
-  lives=20;
-  waveCounter=1;
-  difficulty=1;
+  lives = globalThis.lives = 20;
+  waveCounter = globalThis.waveCounter = 1;
+  difficulty = globalThis.difficulty = 1;
   if (typeof initUI !== 'undefined') initUI();
   gameMode = globalThis.gameMode = mainGame;
   console.log("starting game")
@@ -210,8 +210,8 @@ function startGame() {
 }
 
 function nextWave( ) {
-  waveCounter+=1;
-  difficulty*=1.08;
+  waveCounter = globalThis.waveCounter = waveCounter + 1;
+  difficulty = globalThis.difficulty = difficulty * 1.08;
   generateWave(waveCounter)
 }
 
