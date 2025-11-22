@@ -1,0 +1,4 @@
+# Local settings that shouldn't be committed
+local-settings.json
+*.local.json
+env-overrides.json
