@@ -65,32 +65,28 @@ let lastTime = Date.now();
 function init() {
   console.log("Initializing headless SLTD game...");
 
-  // Set initial game mode
-  global.gameMode = global.waitForContent;
-
   // Skip asset loading in headless mode
-  global.assetsPending = [];
+  globalThis.assetsPending = [];
 
-  // Skip to title screen, then auto-start
-  global.gameMode = global.titleScreen;
-  global.startGame();
+  // Start game directly (sets gameMode = mainGame)
+  globalThis.startGame();
 
   console.log("Game initialized. Ready to run.");
 }
 
 function update() {
-  if (!global.running) return;
+  if (!globalThis.running) return;
 
   let thisTime = Date.now();
   let diff = thisTime - lastTime;
   let ticks = Math.round(diff / 16);
   lastTime = thisTime;
   if (ticks > 10) ticks = 10;
-  global.ticker += ticks;
+  globalThis.ticker += ticks;
 
   for (let i = 0; i < ticks; i++) {
-    global.gameMode();
-    global.Input.flushKeysDown();
+    globalThis.gameMode();
+    globalThis.Input.flushKeysDown();
   }
 
   // Note: We do NOT call gameMode.draw()
@@ -111,7 +107,7 @@ function run(ticks = 1000, logInterval = 100) {
     tick();
 
     if ((i + 1) % logInterval === 0) {
-      console.log(`Tick ${i + 1}/${ticks} - Lives: ${global.lives}, Money: ${global.money}, Wave: ${global.waveCounter}, Creeps: ${global.creeps.length}, Towers: ${global.towers.length}`);
+      console.log(`Tick ${i + 1}/${ticks} - Lives: ${globalThis.lives}, Money: ${globalThis.money}, Wave: ${globalThis.waveCounter}, Creeps: ${globalThis.creeps.length}, Towers: ${globalThis.towers.length}`);
     }
   }
 
@@ -120,46 +116,46 @@ function run(ticks = 1000, logInterval = 100) {
 
 function getState() {
   return {
-    lives: global.lives,
-    money: global.money,
-    wave: global.waveCounter,
-    difficulty: global.difficulty,
-    creeps: global.creeps.map(c => ({
+    lives: globalThis.lives,
+    money: globalThis.money,
+    wave: globalThis.waveCounter,
+    difficulty: globalThis.difficulty,
+    creeps: globalThis.creeps.map(c => ({
       x: Math.round(c.x),
       y: Math.round(c.y),
       hp: Math.round(c.hitPoints - c.damage),
       maxHp: Math.round(c.hitPoints),
       type: c.constructor.name
     })),
-    towers: global.towers.map(t => ({
+    towers: globalThis.towers.map(t => ({
       cellX: t.cellPosition.x,
       cellY: t.cellPosition.y,
       type: t.constructor.name,
       target: t.target ? t.target.constructor.name : null
     })),
-    bullets: global.bullets.length,
-    hopper: global.hopper.length
+    bullets: globalThis.bullets.length,
+    hopper: globalThis.hopper.length
   };
 }
 
 function placeTower(towerType, cellX, cellY) {
-  // Get tower class from global scope
-  const TowerClass = global[towerType];
+  // Get tower class from globalThis
+  const TowerClass = globalThis[towerType];
 
   if (!TowerClass) {
     throw new Error(`Unknown tower type: ${towerType}`);
   }
 
-  const pos = global.v2(cellX, cellY);
+  const pos = globalThis.v2(cellX, cellY);
 
   // Check if we can build here
-  if (!global.levelMap.canBuildHere(pos)) {
+  if (!globalThis.levelMap.canBuildHere(pos)) {
     return { success: false, reason: 'Cannot build at this location' };
   }
 
   // Check if there's already a tower here
-  const towerHere = global.towers.find(({cellPosition}) =>
-    global.vsame(cellPosition, pos)
+  const towerHere = globalThis.towers.find(({cellPosition}) =>
+    globalThis.vsame(cellPosition, pos)
   );
 
   if (towerHere) {
@@ -167,28 +163,28 @@ function placeTower(towerType, cellX, cellY) {
   }
 
   // Get tower cost
-  const info = global.towerInfo.find(t => t.type === TowerClass);
+  const info = globalThis.towerInfo.find(t => t.type === TowerClass);
   if (!info) {
     return { success: false, reason: 'Tower type not found in towerInfo' };
   }
 
   // Check if we can afford it
-  if (global.money < info.cost) {
-    return { success: false, reason: `Not enough money (need ${info.cost}, have ${global.money})` };
+  if (globalThis.money < info.cost) {
+    return { success: false, reason: `Not enough money (need ${info.cost}, have ${globalThis.money})` };
   }
 
   // Buy the tower
-  global.buyTower(info, cellX, cellY);
+  globalThis.buyTower(info, cellX, cellY);
 
   return {
     success: true,
     tower: { cellX, cellY, type: towerType, cost: info.cost },
-    moneyRemaining: global.money
+    moneyRemaining: globalThis.money
   };
 }
 
 function reset() {
-  global.startGame();
+  globalThis.startGame();
 }
 
 // Initialize immediately
@@ -205,12 +201,12 @@ module.exports = {
   reset,
 
   // Direct access to game state (read-only recommended)
-  get lives() { return global.lives; },
-  get money() { return global.money; },
-  get wave() { return global.waveCounter; },
-  get creeps() { return global.creeps; },
-  get towers() { return global.towers; },
-  get bullets() { return global.bullets; }
+  get lives() { return globalThis.lives; },
+  get money() { return globalThis.money; },
+  get wave() { return globalThis.waveCounter; },
+  get creeps() { return globalThis.creeps; },
+  get towers() { return globalThis.towers; },
+  get bullets() { return globalThis.bullets; }
 };
 
 // If run directly, run a simple demo

@@ -219,6 +219,9 @@ function waitForContent() {
   }
 }
 
+// Set initial game mode for browser (will be overridden in headless)
+gameMode = waitForContent;
+
 function waitForFullScreen() {
   let fullscreenActive = false;
   if (typeof document !== 'undefined' && document.fullscreenElement) {
