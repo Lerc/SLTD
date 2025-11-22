@@ -179,17 +179,20 @@ function generateWave(num) {
   }
   batch.sort();
   for (let i of batch) {
-    hopper.push(new kinds[i]());
+    globalThis.hopper.push(new kinds[i]());
+    hopper = globalThis.hopper;
   }
 }
 
 // Game lifecycle
 function startGame() {
   money=250;
-  towers=[];
-  creeps=[];
-  particleSystems =[];
-  bullets=[];
+  towers = globalThis.towers = [];
+  creeps = globalThis.creeps = [];
+  particleSystems = globalThis.particleSystems = [];
+  bullets = globalThis.bullets = [];
+  hopper = globalThis.hopper = [];
+  backlog = globalThis.backlog = [];
   gameAcceleration=2;
   gameAccelerated=false;
 
@@ -197,7 +200,7 @@ function startGame() {
   waveCounter=1;
   difficulty=1;
   if (typeof initUI !== 'undefined') initUI();
-  gameMode = mainGame;
+  gameMode = globalThis.gameMode = mainGame;
   console.log("starting game")
 
   // Create levelMap - will be available globally
@@ -215,12 +218,12 @@ function nextWave( ) {
 // Game modes
 function waitForContent() {
   if (typeof assetsPending !== 'undefined' && assetsPending.length == 0) {
-    gameMode=waitForFullScreen;
+    gameMode = globalThis.gameMode = waitForFullScreen;
   }
 }
 
 // Set initial game mode for browser (will be overridden in headless)
-gameMode = waitForContent;
+gameMode = globalThis.gameMode = waitForContent;
 
 function waitForFullScreen() {
   let fullscreenActive = false;
@@ -229,7 +232,7 @@ function waitForFullScreen() {
   }
 
   if (fullscreenActive || taps > 2) {
-    gameMode=titleScreen;
+    gameMode = globalThis.gameMode = titleScreen;
   }
 
   if (typeof Input !== 'undefined' && Input.keyWentDown(133)) {
@@ -311,19 +314,24 @@ function mainGame() {
 
 function mainGame_core() {
   angle=(angle+0.1)%TWOPI;
-  waveAge+=1;
-  if ((waveAge % 15) == 0) {
+  globalThis.waveAge += 1;
+  waveAge = globalThis.waveAge;
+  if ((globalThis.waveAge % 15) == 0) {
     //every 5 ticks fill from any backlog
-    if (backlog.length>0) creeps.push(backlog.shift())
+    if (globalThis.backlog.length>0) {
+      creeps.push(globalThis.backlog.shift());
+      backlog = globalThis.backlog;
+    }
   }
-  if ((creeps.length==0) || (waveAge % releaseRate  == 0)) {
-    if (hopper.length>0) {
-      let e = hopper.shift();
-        creeps.push(e);
+  if ((creeps.length==0) || (globalThis.waveAge % releaseRate  == 0)) {
+    if (globalThis.hopper.length>0) {
+      let e = globalThis.hopper.shift();
+      hopper = globalThis.hopper;
+      creeps.push(e);
     }
   }
 
-  if (creeps.length+hopper.length+backlog.length  == 0 ) {
+  if (creeps.length+globalThis.hopper.length+backlog.length  == 0 ) {
     if (lives > 0 ) nextWave();
   }
 
@@ -342,18 +350,18 @@ function mainGame_core() {
     p.move();
   }
 
-  creeps=creeps.filter(e=>!e.dead);
-  towers=towers.filter(e=>!e.dead);
-  bullets=bullets.filter(e=>!e.dead);
+  creeps = globalThis.creeps = creeps.filter(e=>!e.dead);
+  towers = globalThis.towers = towers.filter(e=>!e.dead);
+  bullets = globalThis.bullets = bullets.filter(e=>!e.dead);
 
-  particleSystems=particleSystems.filter(p=>p.isActive());
+  particleSystems = globalThis.particleSystems = particleSystems.filter(p=>p.isActive());
 
   if (gameMode != mainGame) return;
 
   if (lives<=0) {
     taps=0;
     draggingTower=false;
-    gameMode = gameOver;
+    gameMode = globalThis.gameMode = gameOver;
   }
 
   if (typeof Input !== 'undefined' && Input.keyWentDown(133))  {

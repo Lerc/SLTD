@@ -95,8 +95,11 @@ function update() {
 
 // API for external control
 function tick(count = 1) {
+  // In headless mode, directly execute game ticks instead of relying on time-based update()
   for (let i = 0; i < count; i++) {
-    update();
+    globalThis.ticker += 1;
+    globalThis.gameMode();
+    globalThis.Input.flushKeysDown();
   }
 }
 
@@ -104,10 +107,10 @@ function run(ticks = 1000, logInterval = 100) {
   console.log(`Running simulation for ${ticks} ticks...`);
 
   for (let i = 0; i < ticks; i++) {
-    tick();
+    tick(1);
 
     if ((i + 1) % logInterval === 0) {
-      console.log(`Tick ${i + 1}/${ticks} - Lives: ${globalThis.lives}, Money: ${globalThis.money}, Wave: ${globalThis.waveCounter}, Creeps: ${globalThis.creeps.length}, Towers: ${globalThis.towers.length}`);
+      console.log(`Tick ${i + 1}/${ticks} - Lives: ${globalThis.lives}, Money: ${globalThis.money}, Wave: ${globalThis.waveCounter}, Creeps: ${globalThis.creeps.length}, Towers: ${globalThis.towers.length}, WaveAge: ${globalThis.waveAge}`);
     }
   }
 
@@ -136,6 +139,243 @@ function getState() {
     bullets: globalThis.bullets.length,
     hopper: globalThis.hopper.length
   };
+}
+
+function saveState() {
+  // Determine current game mode
+  let gameModeName = 'unknown';
+  if (globalThis.gameMode === globalThis.mainGame) gameModeName = 'mainGame';
+  else if (globalThis.gameMode === globalThis.titleScreen) gameModeName = 'titleScreen';
+  else if (globalThis.gameMode === globalThis.waitForContent) gameModeName = 'waitForContent';
+  else if (globalThis.gameMode === globalThis.waitForFullScreen) gameModeName = 'waitForFullScreen';
+  else if (globalThis.gameMode === globalThis.gameOver) gameModeName = 'gameOver';
+
+  return {
+    version: globalThis.versionString,
+    timestamp: new Date().toISOString(),
+
+    // Basic game state
+    lives: globalThis.lives,
+    money: globalThis.money,
+    waveCounter: globalThis.waveCounter,
+    difficulty: globalThis.difficulty,
+    ticker: globalThis.ticker,
+    waveAge: globalThis.waveAge,
+    releaseRate: globalThis.releaseRate,
+    gameAcceleration: globalThis.gameAcceleration,
+    gameAccelerated: globalThis.gameAccelerated,
+    gameMode: gameModeName,
+    taps: globalThis.taps,
+
+    // Creeps
+    creeps: globalThis.creeps.map(c => ({
+      type: c.constructor.name,
+      x: c.x,
+      y: c.y,
+      angle: c.angle,
+      damage: c.damage,
+      hitPoints: c.hitPoints,
+      pathIndex: c.pathIndex,
+      travel: c.travel,
+      timeout: c.timeout,
+      motion: { x: c.motion.x, y: c.motion.y },
+      speed: c.speed,
+      turn: c.turn,
+      scale: c.scale,
+      radius: c.radius,
+      value: c.value
+    })),
+
+    // Towers
+    towers: globalThis.towers.map((t, idx) => ({
+      type: t.constructor.name,
+      cellX: t.cellPosition.x,
+      cellY: t.cellPosition.y,
+      x: t.x,
+      y: t.y,
+      angle: t.angle,
+      cooldown: t.cooldown,
+      rate: t.rate,
+      range: t.range,
+      minimumRange: t.minimumRange,
+      targetIndex: globalThis.creeps.indexOf(t.target),
+      // Star-specific
+      outAngle: t.outAngle
+    })),
+
+    // Bullets
+    bullets: globalThis.bullets.map(b => ({
+      type: b.constructor.name,
+      x: b.x,
+      y: b.y,
+      age: b.age,
+      damage: b.damage,
+      sourceIndex: globalThis.towers.indexOf(b.source),
+      targetIndex: globalThis.creeps.indexOf(b.target),
+      // Spiral-specific
+      angle: b.angle,
+      // Laser-specific
+      speed: b.speed
+    })),
+
+    // Hopper (pending creeps to spawn)
+    hopper: globalThis.hopper.map(c => ({
+      type: c.constructor.name
+    })),
+
+    // Backlog
+    backlog: globalThis.backlog.map(c => ({
+      type: c.constructor.name
+    })),
+
+    // Map
+    map: globalThis.map1,
+
+    // Selected tower
+    selectedTowerIndex: globalThis.towers.indexOf(globalThis.selectedTower)
+  };
+}
+
+function loadState(stateData) {
+  console.log(`Loading game state (version: ${stateData.version}, saved: ${stateData.timestamp})`);
+
+  // Restore basic game state
+  globalThis.lives = stateData.lives;
+  globalThis.money = stateData.money;
+  globalThis.waveCounter = stateData.waveCounter;
+  globalThis.difficulty = stateData.difficulty;
+  globalThis.ticker = stateData.ticker || 0;
+  globalThis.waveAge = stateData.waveAge || 0;
+  globalThis.releaseRate = stateData.releaseRate || 80;
+  globalThis.gameAcceleration = stateData.gameAcceleration || 1;
+  globalThis.gameAccelerated = stateData.gameAccelerated || false;
+  globalThis.taps = stateData.taps || 0;
+
+  // Initialize world
+  globalThis.levelMap = globalThis.createWorld(stateData.map || globalThis.map1);
+
+  // Clear arrays
+  globalThis.creeps = [];
+  globalThis.towers = [];
+  globalThis.bullets = [];
+  globalThis.particleSystems = [];
+  globalThis.hopper = [];
+  globalThis.backlog = [];
+
+  // Restore creeps
+  for (const creepData of stateData.creeps || []) {
+    const CreepClass = globalThis[creepData.type];
+    if (!CreepClass) {
+      console.warn(`Unknown creep type: ${creepData.type}`);
+      continue;
+    }
+
+    const creep = new CreepClass();
+    creep.x = creepData.x;
+    creep.y = creepData.y;
+    creep.angle = creepData.angle;
+    creep.damage = creepData.damage;
+    creep.hitPoints = creepData.hitPoints;
+    creep.pathIndex = creepData.pathIndex;
+    creep.travel = creepData.travel || 0;
+    creep.timeout = creepData.timeout || 0;
+    creep.motion = globalThis.v2(creepData.motion.x, creepData.motion.y);
+
+    // Update destination based on pathIndex
+    if (creep.pathIndex < globalThis.levelMap.path.length) {
+      creep.destination = globalThis.mapToWorld(globalThis.levelMap.path[creep.pathIndex]);
+    }
+    if (creep.pathIndex > 0) {
+      creep.source = globalThis.mapToWorld(globalThis.levelMap.path[creep.pathIndex - 1]);
+    }
+
+    globalThis.creeps.push(creep);
+  }
+
+  // Restore towers
+  for (const towerData of stateData.towers || []) {
+    const TowerClass = globalThis[towerData.type];
+    if (!TowerClass) {
+      console.warn(`Unknown tower type: ${towerData.type}`);
+      continue;
+    }
+
+    const tower = new TowerClass(towerData.cellX, towerData.cellY);
+    tower.angle = towerData.angle;
+    tower.cooldown = towerData.cooldown;
+    if (towerData.outAngle !== undefined) tower.outAngle = towerData.outAngle;
+
+    globalThis.towers.push(tower);
+  }
+
+  // Restore tower targets (after all creeps and towers are loaded)
+  for (let i = 0; i < globalThis.towers.length; i++) {
+    const towerData = stateData.towers[i];
+    if (towerData.targetIndex >= 0 && towerData.targetIndex < globalThis.creeps.length) {
+      globalThis.towers[i].target = globalThis.creeps[towerData.targetIndex];
+    }
+  }
+
+  // Restore bullets
+  for (const bulletData of stateData.bullets || []) {
+    const BulletClass = globalThis[bulletData.type];
+    if (!BulletClass) {
+      console.warn(`Unknown bullet type: ${bulletData.type}`);
+      continue;
+    }
+
+    const source = globalThis.towers[bulletData.sourceIndex];
+    const target = globalThis.creeps[bulletData.targetIndex];
+
+    if (!source || !target) {
+      console.warn(`Skipping bullet with invalid source/target`);
+      continue;
+    }
+
+    const bullet = new BulletClass(source, target);
+    bullet.x = bulletData.x;
+    bullet.y = bulletData.y;
+    bullet.age = bulletData.age;
+    if (bulletData.angle !== undefined) bullet.angle = bulletData.angle;
+    if (bulletData.speed !== undefined) bullet.speed = bulletData.speed;
+
+    globalThis.bullets.push(bullet);
+  }
+
+  // Restore hopper
+  for (const hopperData of stateData.hopper || []) {
+    const CreepClass = globalThis[hopperData.type];
+    if (CreepClass) {
+      globalThis.hopper.push(new CreepClass());
+    }
+  }
+
+  // Restore backlog
+  for (const backlogData of stateData.backlog || []) {
+    const CreepClass = globalThis[backlogData.type];
+    if (CreepClass) {
+      globalThis.backlog.push(new CreepClass());
+    }
+  }
+
+  // Restore selected tower
+  if (stateData.selectedTowerIndex >= 0 && stateData.selectedTowerIndex < globalThis.towers.length) {
+    globalThis.selectedTower = globalThis.towers[stateData.selectedTowerIndex];
+  } else {
+    globalThis.selectedTower = null;
+  }
+
+  // Restore game mode
+  const gameModeMap = {
+    'mainGame': globalThis.mainGame,
+    'titleScreen': globalThis.titleScreen,
+    'waitForContent': globalThis.waitForContent,
+    'waitForFullScreen': globalThis.waitForFullScreen,
+    'gameOver': globalThis.gameOver
+  };
+  globalThis.gameMode = gameModeMap[stateData.gameMode] || globalThis.mainGame;
+
+  console.log(`State loaded: ${globalThis.creeps.length} creeps, ${globalThis.towers.length} towers, ${globalThis.bullets.length} bullets`);
 }
 
 function placeTower(towerType, cellX, cellY) {
@@ -187,8 +427,8 @@ function reset() {
   globalThis.startGame();
 }
 
-// Initialize immediately
-init();
+// Don't initialize immediately - allow control from command line
+// init();
 
 // Export API
 module.exports = {
@@ -197,6 +437,8 @@ module.exports = {
   run,
   update,
   getState,
+  saveState,
+  loadState,
   placeTower,
   reset,
 
@@ -209,22 +451,129 @@ module.exports = {
   get bullets() { return globalThis.bullets; }
 };
 
-// If run directly, run a simple demo
+// If run directly, handle command line arguments
 if (require.main === module) {
-  console.log("\n=== SLTD Headless Demo ===\n");
+  const fs = require('fs');
+  const args = process.argv.slice(2);
 
-  console.log("Initial state:", getState());
+  function showUsage() {
+    console.log(`
+Usage:
+  node nodemain.js                              Run interactive demo
+  node nodemain.js <ticks>                      Start game, run N ticks, output state
+  node nodemain.js <input.json> <ticks>         Load state, run N ticks, output state
+  node nodemain.js <input.json> <ticks> <output.json>
+                                                Load state, run N ticks, save to file
 
-  console.log("\nPlacing towers...");
-  console.log(placeTower('Tower', 5, 5));
-  console.log(placeTower('Tower', 6, 5));
-  console.log(placeTower('Stubby', 7, 5));
+Examples:
+  node nodemain.js                              # Run demo
+  node nodemain.js 1000                         # Run 1000 ticks, print state
+  node nodemain.js state.json 500               # Load state, run 500 ticks
+  node nodemain.js state.json 500 next.json     # Load, run, save to file
+`);
+  }
 
-  console.log("\nRunning simulation for 500 ticks...\n");
-  const finalState = run(500, 100);
+  // Parse arguments
+  if (args.length === 0) {
+    // Run demo
+    init();
+    console.log("\n=== SLTD Headless Demo ===\n");
+    console.log("Initial state:", getState());
 
-  console.log("\n=== Final State ===");
-  console.log(JSON.stringify(finalState, null, 2));
+    console.log("\nPlacing towers...");
+    console.log(placeTower('Tower', 5, 5));
+    console.log(placeTower('Tower', 6, 5));
+    console.log(placeTower('Stubby', 7, 5));
 
-  console.log("\n=== Demo Complete ===");
+    console.log("\nRunning simulation for 500 ticks...\n");
+    const finalState = run(500, 100);
+
+    console.log("\n=== Final State ===");
+    console.log(JSON.stringify(finalState, null, 2));
+    console.log("\n=== Demo Complete ===");
+
+  } else if (args[0] === '--help' || args[0] === '-h') {
+    showUsage();
+
+  } else if (args.length === 1) {
+    // node nodemain.js <ticks>
+    const ticks = parseInt(args[0]);
+    if (isNaN(ticks)) {
+      console.error(`Error: Invalid number of ticks: ${args[0]}`);
+      process.exit(1);
+    }
+
+    // Temporarily suppress console.log for init/run
+    const originalLog = console.log;
+    console.log = () => {};
+
+    init();
+    run(ticks, Math.max(1, Math.floor(ticks / 10)));
+
+    console.log = originalLog;
+
+    const finalState = saveState();
+    console.log(JSON.stringify(finalState, null, 2));
+
+  } else if (args.length === 2) {
+    // node nodemain.js <input.json> <ticks>
+    const inputFile = args[0];
+    const ticks = parseInt(args[1]);
+
+    if (isNaN(ticks)) {
+      console.error(`Error: Invalid number of ticks: ${args[1]}`);
+      process.exit(1);
+    }
+
+    if (!fs.existsSync(inputFile)) {
+      console.error(`Error: Input file not found: ${inputFile}`);
+      process.exit(1);
+    }
+
+    const stateData = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+
+    // Temporarily suppress console.log for load/run
+    const originalLog = console.log;
+    console.log = () => {};
+
+    loadState(stateData);
+    run(ticks, Math.max(1, Math.floor(ticks / 10)));
+
+    console.log = originalLog;
+
+    const finalState = saveState();
+    console.log(JSON.stringify(finalState, null, 2));
+
+  } else if (args.length === 3) {
+    // node nodemain.js <input.json> <ticks> <output.json>
+    const inputFile = args[0];
+    const ticks = parseInt(args[1]);
+    const outputFile = args[2];
+
+    if (isNaN(ticks)) {
+      console.error(`Error: Invalid number of ticks: ${args[1]}`);
+      process.exit(1);
+    }
+
+    if (!fs.existsSync(inputFile)) {
+      console.error(`Error: Input file not found: ${inputFile}`);
+      process.exit(1);
+    }
+
+    const stateData = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+    loadState(stateData);
+
+    console.log(`Running for ${ticks} ticks...`);
+    run(ticks, Math.max(1, Math.floor(ticks / 10)));
+
+    const finalState = saveState();
+    fs.writeFileSync(outputFile, JSON.stringify(finalState, null, 2));
+    console.log(`State saved to ${outputFile}`);
+    console.log(`Lives: ${finalState.lives}, Money: ${finalState.money}, Wave: ${finalState.waveCounter}`);
+
+  } else {
+    console.error('Error: Invalid number of arguments');
+    showUsage();
+    process.exit(1);
+  }
 }

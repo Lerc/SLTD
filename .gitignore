@@ -1,0 +1,17 @@
+# Test state files
+srv/*.json
+srv/*_state*.json
+
+# Node modules
+node_modules/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
