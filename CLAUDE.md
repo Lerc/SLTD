@@ -38,9 +38,6 @@ nodemain.js → [Dependencies] → showRunner.js (game logic only)
 - State persistence (JSON save/load)
 - REPL interface for interactive testing
 
-### Key Architectural Decision
-**No rendering stubs needed!** The headless mode simply doesn't call `gameMode.draw()`, so all Canvas 2D rendering code is never executed. This is cleaner than creating elaborate no-op stubs.
-
 ---
 
 ## Browser API Dependencies Analysis
@@ -48,72 +45,44 @@ nodemain.js → [Dependencies] → showRunner.js (game logic only)
 Understanding which files use browser-specific APIs is crucial for maintaining dual-mode compatibility.
 
 ### Pure Logic Files (Node.js Compatible)
-These files contain no browser-specific APIs and can run in Node.js:
-
 - **littleAStar.js** - A* pathfinding algorithm using PriorityQueue (completely universal)
 - **Extras.js** - Math utilities (uses `globalThis.performance?.now()` with fallback to `Date.now()`)
 
 ### Browser-Dependent Files
 
 #### Heavy Browser Dependencies
-**main.js** - Browser initialization and rendering loop
-- `window.onload`, `document.querySelector`, `document.createElement`
-- `requestAnimationFrame` - Game loop
-- `performance.now()` - Timing
-- Canvas event listeners (mousemove, mousedown, mouseup)
-- CanvasRenderingContext2D
+- **main.js** - `window.onload`, `requestAnimationFrame`, Canvas event listeners, CanvasRenderingContext2D
+- **input.js** - `document.addEventListener`, mouse/touch/keyboard events
+- **Assets.js** - `Image`, `XMLHttpRequest`, `AudioContext`
+- **CanvasGlow.js**, **WebGLBoilerPlate.js**, **renderlist.js** - WebGL2 APIs
 
-**input.js** - Input handling system
-- `document.addEventListener` for keyboard/mouse/touch events
-- Mouse/touch event objects (pageX, pageY, clientX, clientY)
+#### Moderate Browser Dependencies
+- **gadgets.js**, **ui.js**, **world.js**, **entities.js** - Use `ctx` for drawing (optional, only called in browser mode)
 
-**Assets.js** - Asset loading
-- `Image` object, `XMLHttpRequest`, `AudioContext`
-- `document.createElement` for canvas creation
+### Key Design Decision
 
-**CanvasGlow.js** - WebGL2 post-processing effects
-**WebGLBoilerPlate.js** - WebGL utilities
-**renderlist.js** - WebGL rendering system
-
-#### Moderate Browser Dependencies (Rendering Layer)
-**gadgets.js**, **ui.js**, **world.js**, **entities.js** - Use `ctx` (CanvasRenderingContext2D) for drawing, but draw functions are optional and only called in browser mode
-
-### Critical Browser APIs Summary
-1. **Canvas 2D Context** - main.js, entities.js, world.js, gadgets.js, ui.js, Assets.js
-2. **WebGL Context** - CanvasGlow.js, WebGLBoilerPlate.js, renderlist.js
-3. **DOM Events** - main.js, input.js
-4. **RequestAnimationFrame** - main.js (game loop)
-5. **Image/Audio Loading** - Assets.js
-6. **Performance API** - main.js, Extras.js (with fallback)
-
-### Implementation Notes
-
-**Key Design Decision**: The headless mode uses minimal browser API stubs in `nodemain.js` and simply **doesn't call `gameMode.draw()`**. This means all Canvas 2D rendering code is never executed - much cleaner than creating elaborate no-op stubs for every Canvas API.
+**No rendering stubs needed!** The headless mode uses minimal browser API stubs in `nodemain.js` and simply **doesn't call `gameMode.draw()`**. All Canvas 2D rendering code is never executed - much cleaner than creating elaborate no-op stubs.
 
 **Compatibility Strategy**:
 - `showRunner.js` uses feature detection (`typeof` checks) for browser-only APIs
-- Draw functions are attached as properties and are optional
-- Falls back gracefully when APIs are undefined
+- Draw functions are optional properties
+- Graceful fallback when APIs are undefined
 - No hard dependencies on DOM/Canvas in logic functions
 
-### Headless Mode Implementation Approach
+### Implementation History
 
-The dual-mode architecture was achieved through refactoring, not rewriting:
-
-1. **Logic Extraction**: Game logic was extracted from `main.js` into `showRunner.js`
-2. **Minimal Stubs**: `nodemain.js` provides minimal browser API stubs (window, document, Assets)
-3. **No Rendering**: The headless update loop simply doesn't call `gameMode.draw()`
-4. **API Layer**: Clean programmatic API for controlling game state
-5. **REPL Interface**: Interactive command-line interface for testing
-6. **State Persistence**: JSON serialization for save/load functionality
+The dual-mode architecture was achieved through refactoring:
+1. **Logic Extraction**: Game logic extracted from `main.js` → `showRunner.js`
+2. **Minimal Stubs**: `nodemain.js` provides browser API stubs (window, document, Assets)
+3. **API Layer**: Clean programmatic API for controlling game state
+4. **REPL Interface**: Interactive command-line interface
+5. **State Persistence**: JSON serialization for save/load
 
 **Files Created/Modified**:
-- ✅ `srv/showRunner.js` (NEW) - Pure game logic extracted from main.js
-- ✅ `srv/main.js` (REFACTORED) - Browser-only rendering and initialization
-- ✅ `srv/nodemain.js` (NEW) - Node.js entry point with REPL and API
+- ✅ `srv/showRunner.js` (NEW) - Pure game logic
+- ✅ `srv/main.js` (REFACTORED) - Browser-only rendering
+- ✅ `srv/nodemain.js` (NEW) - Node.js entry point with REPL
 - ✅ `srv/index.html` (UPDATED) - Added showRunner.js script tag
-
-This approach avoided major refactoring while achieving full dual-mode support.
 
 ---
 
@@ -209,8 +178,7 @@ This approach avoided major refactoring while achieving full dual-mode support.
 
 ### Configuration & Documentation
 - **`package.json`** - NPM scripts and metadata
-- **`CLAUDE.md`** - This file - AI assistant instructions
-- **`Claude.md`** - Detailed headless mode documentation and architecture analysis
+- **`CLAUDE.md`** - This file - comprehensive AI assistant guide
 - **`README.md`** - Project overview
 - **`.claude/settings.json`** - Claude Code configuration
 - **`.claude/scripts/session-setup.sh`** - Session startup hook
@@ -390,23 +358,18 @@ echo "Money: $INITIAL_MONEY → $FINAL_MONEY"
 ## Code Style & Conventions
 
 ### JavaScript Style
-- **Naming**: Use camelCase for variables and functions
-- **Structure**: Modular files organized by functionality
-- **Globals**: Game state stored in global variables (accessible across files)
-- **No strict mode inconsistency**: Some files use `"use strict"`, others don't - be consistent within each file
+- **Naming**: camelCase for variables and functions
+- **Structure**: Modular files by functionality
+- **Globals**: Game state in global variables (accessible across files)
+- **Strict mode**: Be consistent within each file
 - **Feature detection**: Use `typeof window !== 'undefined'` for browser-only code
 
-### Global State Variables (in showRunner.js)
-Key globals you'll work with:
-- `lives` - Player lives remaining
-- `money` - Current money
-- `waveCounter` - Current wave number
-- `difficulty` - Game difficulty multiplier
-- `creeps` - Array of active enemies
-- `towers` - Array of placed towers
-- `bullets` - Array of active projectiles
-- `gameMode` - Current game mode function (mainGame, titleScreen, etc.)
-- `ctx` - Canvas 2D rendering context (browser only)
+### Key Global Variables
+Defined in `showRunner.js`:
+- `lives`, `money`, `waveCounter`, `difficulty`
+- `creeps`, `towers`, `bullets` - Entity arrays
+- `gameMode` - Current game mode function
+- `ctx` - Canvas 2D context (browser only)
 
 ### File Dependencies
 Files must be loaded in this order (see index.html):
@@ -486,11 +449,9 @@ Files must be loaded in this order (see index.html):
   - ❌ "Changes"
 
 **Before committing:**
-- Test game runs without errors in BOTH modes
+- Test in BOTH modes (browser + headless)
 - Verify no console errors
-- Don't commit secrets (.env files, credentials, API keys)
-
-**Current development branch:** `claude/claude-md-mibotq2cpuhvjhh9-01DXDtWCpoEqhK2PBxf3gX9R`
+- Don't commit secrets
 
 ---
 
@@ -570,20 +531,9 @@ Files must be loaded in this order (see index.html):
 
 ### Understanding the Code
 
-**Global variables are intentional**
-- This uses a procedural style, not OOP
-- State is shared across files via globals
-- showRunner.js is the source of truth for game state
-
-**Draw functions are optional**
-- All draw() functions check for ctx existence
-- Logic and rendering are decoupled
-- gameMode.draw() is only called in browser mode
-
-**WebGL is for effects only**
-- Game logic uses Canvas 2D
-- WebGL provides bloom/glow post-processing
-- Can be disabled without breaking gameplay
+- **Global variables are intentional** - Procedural style, not OOP; shared state via globals
+- **Draw functions are optional** - Logic and rendering decoupled; only called in browser mode
+- **WebGL is for effects only** - Bloom/glow post-processing; doesn't affect game logic
 
 ---
 
@@ -628,8 +578,7 @@ Files must be loaded in this order (see index.html):
 
 ## Documentation References
 
-- **CLAUDE.md** (this file) - AI assistant instructions and project overview
-- **Claude.md** - Detailed headless mode architecture and browser API analysis
+- **CLAUDE.md** (this file) - Comprehensive AI assistant guide
 - **README.md** - Project summary
 - **evaluations/README.md** - Evaluation framework documentation
 
@@ -670,32 +619,26 @@ cd evaluations/example_scenario && bash run.sh
 
 ---
 
-## Version Information
-
-- **Game Version**: 0.91
-- **License**: MIT
-- **Repository**: SLTD (Simple Little Tower Defense)
-
----
-
 ## Summary for AI Assistants
 
-This is a **dual-mode tower defense game** with:
-- Vanilla JavaScript (no frameworks)
-- Canvas 2D rendering + WebGL effects
-- Zero build process
-- Global state management
+**SLTD (Simple Little Tower Defense) - Version 0.91**
+
+Dual-mode tower defense game:
+- Vanilla JavaScript (no frameworks, zero dependencies)
+- Canvas 2D + WebGL effects
 - Browser AND headless execution
-- REPL interface for testing
-- Evaluation framework for automation
+- REPL interface + evaluation framework
 
-**Key principle**: Keep logic and presentation separate. showRunner.js contains pure game logic that works everywhere. main.js handles browser-specific rendering and input. nodemain.js provides headless execution and testing.
+**Key Principle**: Separation of concerns
+- `showRunner.js` - Pure game logic (universal)
+- `main.js` - Browser rendering and input
+- `nodemain.js` - Headless execution and testing
 
-When making changes:
-1. ✅ Test in browser (visual)
-2. ✅ Test in headless (logic)
-3. ✅ Check console for errors
-4. ✅ Create evaluation if needed
-5. ✅ Commit with clear message
+**Before Every Commit**:
+1. Test in browser (visual verification)
+2. Test in headless mode (logic verification)
+3. Check for console errors
+4. Create evaluation for significant changes
+5. Write clear commit message
 
-**Current branch**: `claude/claude-md-mibotq2cpuhvjhh9-01DXDtWCpoEqhK2PBxf3gX9R`
+**License**: MIT
