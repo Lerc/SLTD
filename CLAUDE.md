@@ -43,6 +43,80 @@ nodemain.js → [Dependencies] → showRunner.js (game logic only)
 
 ---
 
+## Browser API Dependencies Analysis
+
+Understanding which files use browser-specific APIs is crucial for maintaining dual-mode compatibility.
+
+### Pure Logic Files (Node.js Compatible)
+These files contain no browser-specific APIs and can run in Node.js:
+
+- **littleAStar.js** - A* pathfinding algorithm using PriorityQueue (completely universal)
+- **Extras.js** - Math utilities (uses `globalThis.performance?.now()` with fallback to `Date.now()`)
+
+### Browser-Dependent Files
+
+#### Heavy Browser Dependencies
+**main.js** - Browser initialization and rendering loop
+- `window.onload`, `document.querySelector`, `document.createElement`
+- `requestAnimationFrame` - Game loop
+- `performance.now()` - Timing
+- Canvas event listeners (mousemove, mousedown, mouseup)
+- CanvasRenderingContext2D
+
+**input.js** - Input handling system
+- `document.addEventListener` for keyboard/mouse/touch events
+- Mouse/touch event objects (pageX, pageY, clientX, clientY)
+
+**Assets.js** - Asset loading
+- `Image` object, `XMLHttpRequest`, `AudioContext`
+- `document.createElement` for canvas creation
+
+**CanvasGlow.js** - WebGL2 post-processing effects
+**WebGLBoilerPlate.js** - WebGL utilities
+**renderlist.js** - WebGL rendering system
+
+#### Moderate Browser Dependencies (Rendering Layer)
+**gadgets.js**, **ui.js**, **world.js**, **entities.js** - Use `ctx` (CanvasRenderingContext2D) for drawing, but draw functions are optional and only called in browser mode
+
+### Critical Browser APIs Summary
+1. **Canvas 2D Context** - main.js, entities.js, world.js, gadgets.js, ui.js, Assets.js
+2. **WebGL Context** - CanvasGlow.js, WebGLBoilerPlate.js, renderlist.js
+3. **DOM Events** - main.js, input.js
+4. **RequestAnimationFrame** - main.js (game loop)
+5. **Image/Audio Loading** - Assets.js
+6. **Performance API** - main.js, Extras.js (with fallback)
+
+### Implementation Notes
+
+**Key Design Decision**: The headless mode uses minimal browser API stubs in `nodemain.js` and simply **doesn't call `gameMode.draw()`**. This means all Canvas 2D rendering code is never executed - much cleaner than creating elaborate no-op stubs for every Canvas API.
+
+**Compatibility Strategy**:
+- `showRunner.js` uses feature detection (`typeof` checks) for browser-only APIs
+- Draw functions are attached as properties and are optional
+- Falls back gracefully when APIs are undefined
+- No hard dependencies on DOM/Canvas in logic functions
+
+### Headless Mode Implementation Approach
+
+The dual-mode architecture was achieved through refactoring, not rewriting:
+
+1. **Logic Extraction**: Game logic was extracted from `main.js` into `showRunner.js`
+2. **Minimal Stubs**: `nodemain.js` provides minimal browser API stubs (window, document, Assets)
+3. **No Rendering**: The headless update loop simply doesn't call `gameMode.draw()`
+4. **API Layer**: Clean programmatic API for controlling game state
+5. **REPL Interface**: Interactive command-line interface for testing
+6. **State Persistence**: JSON serialization for save/load functionality
+
+**Files Created/Modified**:
+- ✅ `srv/showRunner.js` (NEW) - Pure game logic extracted from main.js
+- ✅ `srv/main.js` (REFACTORED) - Browser-only rendering and initialization
+- ✅ `srv/nodemain.js` (NEW) - Node.js entry point with REPL and API
+- ✅ `srv/index.html` (UPDATED) - Added showRunner.js script tag
+
+This approach avoided major refactoring while achieving full dual-mode support.
+
+---
+
 ## Project Structure
 
 ### Core Game Files (in `/srv/`)
