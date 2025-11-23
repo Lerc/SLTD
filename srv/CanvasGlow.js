@@ -221,7 +221,7 @@ var horizontalBlurShader= `#version 300 es
   vblur.use();
   vblur.source=0;
   vblur.glow=1;
-  vblur.resolution = [frameCanvas.width, frameCanvas.height];
+  vblur.resolution = [frameCanvas.width/2, frameCanvas.height/2];  // Match bufferA_texture resolution
   vblur.blurRadius = 4.0;       // Matching blur radius
   vblur.glowIntensity = 1.0;    // Overall glow strength
   vblur.bloomStrength = 5.0625; // Bloom intensity (preserved from original)
