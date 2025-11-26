@@ -75,6 +75,8 @@ var hopper =[];
 var waveAge =0;
 var releaseRate =80;
 
+var gameViewTransform = null;
+
 var wave =[
   [5,Basic],
   [3,Zipper],
@@ -314,19 +316,19 @@ function mainGame() {
 
 function updatePersistenceCanvas() {
   if (typeof persistenceCtx === 'undefined') return;
+  if (!gameViewTransform) return; // Wait until transform is set by draw phase
 
   // Apply fade effect to persistence canvas
   persistenceCtx.fillStyle = "rgba(0,0,0,0.3)";
   persistenceCtx.fillRect(0, 0, persistenceCanvas.width, persistenceCanvas.height);
 
-  // Save current context and extract its transform
+  // Save current context and use stored game view transform
   let savedCtx = ctx;
-  let transform = ctx.getTransform();
 
-  // Switch to persistence canvas and apply the same transform
+  // Switch to persistence canvas and apply the stored transform
   ctx = persistenceCtx;
   ctx.save();
-  ctx.setTransform(transform);
+  ctx.setTransform(gameViewTransform);
   let region = new Path2D();
   region.rect(0, 0, 1080, 1536);
   ctx.clip(region);
@@ -447,6 +449,9 @@ function drawWorld() {
   let region = new Path2D();
   region.rect(0, 0, 1080,1536 );
   ctx.clip(region,);
+
+  // Store the game view transform for persistence canvas
+  gameViewTransform = ctx.getTransform();
 
   levelMap.draw();
 
@@ -591,6 +596,7 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.releaseRate = releaseRate;
   globalThis.wave = wave;
   globalThis.taps = taps;
+  globalThis.gameViewTransform = gameViewTransform;
 
   // Functions
   globalThis.pressStart = pressStart;
