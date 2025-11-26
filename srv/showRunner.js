@@ -430,11 +430,14 @@ function drawWorld() {
     persistenceCtx.fillStyle = "rgba(0,0,0,0.3)";
     persistenceCtx.fillRect(0, 0, persistenceCanvas.width, persistenceCanvas.height);
 
-    // Save current context and switch to persistence canvas
+    // Save current context and extract its transform
     let savedCtx = ctx;
+    let transform = ctx.getTransform();
+
+    // Switch to persistence canvas and apply the same transform
     ctx = persistenceCtx;
     ctx.save();
-    ctx.translate(12, mapTop);
+    ctx.setTransform(transform);
     let region = new Path2D();
     region.rect(0, 0, 1080, 1536);
     ctx.clip(region);
