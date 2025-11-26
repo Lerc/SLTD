@@ -425,12 +425,47 @@ function drawWorld() {
     selectedTower.drawRange();
   }
 
-  for (let e of bullets) {
-    e.drawMain();
-  }
+  // Apply fade effect to persistence canvas
+  if (typeof persistenceCtx !== 'undefined') {
+    persistenceCtx.fillStyle = "rgba(0,0,0,0.3)";
+    persistenceCtx.fillRect(0, 0, persistenceCanvas.width, persistenceCanvas.height);
 
-  for (let p of particleSystems) {
-    p.draw(ctx);
+    // Save current context and switch to persistence canvas
+    let savedCtx = ctx;
+    ctx = persistenceCtx;
+    ctx.save();
+    ctx.translate(12, mapTop);
+    let region = new Path2D();
+    region.rect(0, 0, 1080, 1536);
+    ctx.clip(region);
+
+    // Draw bullets and particles to persistence canvas
+    for (let e of bullets) {
+      e.drawMain();
+    }
+
+    for (let p of particleSystems) {
+      p.draw(ctx);
+    }
+
+    ctx.restore();
+
+    // Switch back to frame context
+    ctx = savedCtx;
+
+    // Draw persistence canvas onto frame canvas with additive composite mode
+    ctx.globalCompositeOperation = "lighter";
+    ctx.drawImage(persistenceCanvas, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+  } else {
+    // Fallback for headless mode
+    for (let e of bullets) {
+      e.drawMain();
+    }
+
+    for (let p of particleSystems) {
+      p.draw(ctx);
+    }
   }
 
   for (let e of creeps) {
