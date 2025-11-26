@@ -18,6 +18,13 @@ function init() {
   frameCanvas.ctx=frameCtx;
   window.ctx=frameCtx;
 
+  window.persistenceCanvas=document.createElement("canvas");
+  persistenceCanvas.width=OutputWidth;
+  persistenceCanvas.height=OutputHeight;
+  var persistenceCtx= persistenceCanvas.getContext("2d");
+  persistenceCanvas.ctx=persistenceCtx;
+  window.persistenceCtx=persistenceCtx;
+
   initGlow(outputCanvas,frameCanvas);
   updateGlowSettings({threshold:0,blurLevel:2,exposure:0.7,bloom:1})
 

@@ -75,6 +75,8 @@ var hopper =[];
 var waveAge =0;
 var releaseRate =80;
 
+var gameViewTransform = null;
+
 var wave =[
   [5,Basic],
   [3,Zipper],
@@ -312,6 +314,40 @@ function mainGame() {
   }
 }
 
+function updatePersistenceCanvas() {
+  if (typeof persistenceCtx === 'undefined') return;
+  if (!gameViewTransform) return; // Wait until transform is set by draw phase
+
+  // Apply fade effect to persistence canvas
+  persistenceCtx.fillStyle = "rgba(0,0,0,0.3)";
+  persistenceCtx.fillRect(0, 0, persistenceCanvas.width, persistenceCanvas.height);
+
+  // Save current context and use stored game view transform
+  let savedCtx = ctx;
+
+  // Switch to persistence canvas and apply the stored transform
+  ctx = persistenceCtx;
+  ctx.save();
+  ctx.setTransform(gameViewTransform);
+  let region = new Path2D();
+  region.rect(0, 0, 1080, 1536);
+  ctx.clip(region);
+
+  // Draw bullets and particles to persistence canvas
+  for (let e of bullets) {
+    e.drawMain();
+  }
+
+  for (let p of particleSystems) {
+    p.draw(ctx);
+  }
+
+  ctx.restore();
+
+  // Switch back to frame context
+  ctx = savedCtx;
+}
+
 function mainGame_core() {
   angle=(angle+0.1)%TWOPI;
   globalThis.waveAge += 1;
@@ -375,6 +411,9 @@ function mainGame_core() {
   }
 
   if (typeof updateUI !== 'undefined') updateUI();
+
+  // Update persistence canvas every tick for consistent visuals
+  updatePersistenceCanvas();
 }
 
 mainGame.draw = function() {
@@ -411,6 +450,9 @@ function drawWorld() {
   region.rect(0, 0, 1080,1536 );
   ctx.clip(region,);
 
+  // Store the game view transform for persistence canvas
+  gameViewTransform = ctx.getTransform();
+
   levelMap.draw();
 
   for (let e of creeps) {
@@ -425,12 +467,24 @@ function drawWorld() {
     selectedTower.drawRange();
   }
 
-  for (let e of bullets) {
-    e.drawMain();
-  }
+  // Composite persistence canvas onto frame canvas (updated per tick in mainGame_core)
+  if (typeof persistenceCtx !== 'undefined') {
+    // Temporarily reset transform to draw at correct position
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.drawImage(persistenceCanvas, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
+  } else {
+    // Fallback for headless mode - draw bullets and particles directly
+    for (let e of bullets) {
+      e.drawMain();
+    }
 
-  for (let p of particleSystems) {
-    p.draw(ctx);
+    for (let p of particleSystems) {
+      p.draw(ctx);
+    }
   }
 
   for (let e of creeps) {
@@ -542,6 +596,7 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.releaseRate = releaseRate;
   globalThis.wave = wave;
   globalThis.taps = taps;
+  globalThis.gameViewTransform = gameViewTransform;
 
   // Functions
   globalThis.pressStart = pressStart;
@@ -558,6 +613,7 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.titleScreen = titleScreen;
   globalThis.mainGame = mainGame;
   globalThis.mainGame_core = mainGame_core;
+  globalThis.updatePersistenceCanvas = updatePersistenceCanvas;
   globalThis.drawWorld = drawWorld;
   globalThis.gameOver = gameOver;
 }

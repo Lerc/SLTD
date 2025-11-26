@@ -567,7 +567,7 @@ class Laser extends Pea {
     ctx.moveTo(0,0);
     let {x,y} = vscale(motion,5);
     ctx.lineTo(x,y)
-    ctx.fillStyle="#aaF";
+    ctx.strokeStyle="#aaF";
     ctx.lineWidth=5;
     ctx.stroke();
   }
