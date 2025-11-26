@@ -1,303 +1,386 @@
+/**
+ * WebGL Glow/Bloom Shader with Dual-Filter (Downsample/Upsample) Approach
+ * 
+ * API:
+ *   initGlow(outputCanvas, canvas2d) - Initialize WebGL context and resources
+ *   glowCanvas(canvas2d) - Render the glow effect
+ *   updateGlowSettings({threshold, bloom, blurLevel, exposure}) - Update effect parameters
+ */
 
-function createTextureTarget ( targetTextureWidth = 256, targetTextureHeight = targetTextureWidth) {
-  const targetTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, targetTexture);     
-  {
-    // define size and format of level 0
-    const level = 0;
-    const internalFormat = gl.RGBA;
-    const border = 0;
-    const format = gl.RGBA;
-    const type = gl.UNSIGNED_BYTE;
-    const data = null;
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                  targetTextureWidth, targetTextureHeight, border,
-                  format, type, data);
+// Global gl variable (set by initWebGL)
+let gl;
+let width, height;
+let brightPassProgram, downsampleProgram, upsampleProgram, compositeProgram;
+let quadBuffer;
+let sourceTexture, brightTexture, brightFB, bloomTexture, bloomFB;
+let mipChain, upsampleChain;
+const MAX_MIP_LEVELS = 7;
+
+// Settings
+let settings = {
+    threshold: 0.0,
+    bloom: 2.0,
+    blurLevel: 5,
+    exposure: 1.0
+};
+
+// Vertex shader - simple fullscreen quad
+const vertexShaderSource = `
+attribute vec2 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+
+void main() {
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+    vTexCoord = aTexCoord;
+}
+`;
+
+// Fragment shader - extract bright areas
+const brightPassFragmentSource = `
+precision mediump float;
+varying vec2 vTexCoord;
+uniform sampler2D uTexture;
+uniform float uThreshold;
+
+void main() {
+    vec4 color = texture2D(uTexture, vTexCoord);
+    float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
     
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  }
-  return targetTexture;
+    // Soft threshold with smooth transition
+    float contribution = smoothstep(uThreshold, uThreshold + 0.2, brightness);
+    gl_FragColor = vec4(color.rgb * contribution, 1.0);
+}
+`;
+
+// Fragment shader - Downsample with 4-tap box filter
+const downsampleFragmentSource = `
+precision mediump float;
+varying vec2 vTexCoord;
+uniform sampler2D uTexture;
+uniform vec2 uTexelSize;
+
+void main() {
+    // Sample 4 points with half-texel offset for proper box filter
+    vec4 sum = vec4(0.0);
+    sum += texture2D(uTexture, vTexCoord + vec2(-0.5, -0.5) * uTexelSize);
+    sum += texture2D(uTexture, vTexCoord + vec2( 0.5, -0.5) * uTexelSize);
+    sum += texture2D(uTexture, vTexCoord + vec2(-0.5,  0.5) * uTexelSize);
+    sum += texture2D(uTexture, vTexCoord + vec2( 0.5,  0.5) * uTexelSize);
+    gl_FragColor = sum * 0.25;
+}
+`;
+
+// Fragment shader - Upsample with tent filter
+const upsampleFragmentSource = `
+precision mediump float;
+varying vec2 vTexCoord;
+uniform sampler2D uTexture;
+uniform sampler2D uAccumTexture;
+uniform vec2 uTexelSize;
+uniform float uUseAccum;
+
+void main() {
+    // 9-tap tent filter for smooth upsampling
+    vec4 sum = vec4(0.0);
+    
+    // Center (weight 4)
+    sum += texture2D(uTexture, vTexCoord) * 4.0;
+    
+    // Edges (weight 2 each)
+    sum += texture2D(uTexture, vTexCoord + vec2(-1.0,  0.0) * uTexelSize) * 2.0;
+    sum += texture2D(uTexture, vTexCoord + vec2( 1.0,  0.0) * uTexelSize) * 2.0;
+    sum += texture2D(uTexture, vTexCoord + vec2( 0.0, -1.0) * uTexelSize) * 2.0;
+    sum += texture2D(uTexture, vTexCoord + vec2( 0.0,  1.0) * uTexelSize) * 2.0;
+    
+    // Corners (weight 1 each)
+    sum += texture2D(uTexture, vTexCoord + vec2(-1.0, -1.0) * uTexelSize);
+    sum += texture2D(uTexture, vTexCoord + vec2( 1.0, -1.0) * uTexelSize);
+    sum += texture2D(uTexture, vTexCoord + vec2(-1.0,  1.0) * uTexelSize);
+    sum += texture2D(uTexture, vTexCoord + vec2( 1.0,  1.0) * uTexelSize);
+    
+    vec4 upsampled = sum / 16.0;
+    
+    // Add to accumulator if available
+    if (uUseAccum > 0.5) {
+        vec4 accum = texture2D(uAccumTexture, vTexCoord);
+        gl_FragColor = upsampled + accum;
+    } else {
+        gl_FragColor = upsampled;
+    }
+}
+`;
+
+// Fragment shader - final composite with HDR tone mapping
+const compositeFragmentSource = `
+precision mediump float;
+varying vec2 vTexCoord;
+uniform sampler2D uOriginal;
+uniform sampler2D uBloom;
+uniform float uIntensity;
+uniform float uExposure;
+
+// ACES filmic tone mapping
+vec3 acesFilm(vec3 x) {
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
+void main() {
+    vec3 original = texture2D(uOriginal, vTexCoord).rgb;
+    vec3 bloom = texture2D(uBloom, vTexCoord).rgb;
+    
+    // Combine original with bloom
+    vec3 hdrColor = original + bloom * uIntensity;
+    
+    // Apply exposure
+    hdrColor *= uExposure;
+    
+    // Tone mapping for HDR -> LDR
+    vec3 mapped = acesFilm(hdrColor);
+    
+    // Gamma correction
+    mapped = pow(mapped, vec3(1.0 / 2.2));
+    
+    gl_FragColor = vec4(mapped, 1.0);
+}
+`;
 
-// Optimized glow shader with bilinear sampling for 4x performance improvement
-// Uses hardware linear filtering to reduce samples from 41 to 11 per pass
-var horizontalBlurShader= `#version 300 es
+// Create texture
+function createTexture(gl, w, h) {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return texture;
+}
 
-  precision mediump float;
-  uniform sampler2D source;
-  uniform vec2 resolution;
-  uniform float glowThreshold;
-  uniform float glowSoftness;
-  uniform float blurRadius;
+// Create framebuffer
+function createFramebuffer(gl, texture) {
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    return fb;
+}
 
-  in vec2 here;
-  out vec4 FragColor;
-
-  #define kernelSize 6
-
-  // Optimized 6-tap kernel with bilinear sampling (covers 11 texels)
-  // Each sample reads between 2 pixels using hardware linear filtering
-  float[] weights = float[kernelSize](
-    0.1297, 0.1174, 0.0938, 0.0671, 0.0432, 0.0245
-  );
-
-  // Optimal offsets for bilinear sampling (samples between pixels)
-  float[] offsets = float[kernelSize](
-    0.0, 1.4584, 3.4039, 5.3528, 7.3055, 9.2603
-  );
-
-  void main() {
-    vec2 source_coord = (here + vec2(1.0, 1.0)) / 2.0;
-    vec2 step = vec2(blurRadius / resolution.x, 0.0);
-
-    // Extract bright areas with smooth threshold
-    vec4 center = texture(source, source_coord);
-    vec3 c = center.rgb * 2.0;
-    float brightness = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    float glowAmount = smoothstep(glowThreshold - glowSoftness, glowThreshold + glowSoftness, brightness);
-    c *= glowAmount * glowAmount;
-
-    vec4 accum = vec4(c, center.a) * weights[0];
-
-    // Bilinear sampling: each texture read samples 2 pixels via hardware filtering
-    for (int i = 1; i < kernelSize; i++) {
-      vec2 offset = step * offsets[i];
-
-      // Single texture read samples between pixels, effectively doing 2 samples
-      vec4 s1 = texture(source, source_coord + offset);
-      vec4 s2 = texture(source, source_coord - offset);
-
-      // Apply threshold to both samples
-      vec3 c1 = s1.rgb * 2.0;
-      float b1 = dot(c1, vec3(0.2126, 0.7152, 0.0722));
-      float g1 = smoothstep(glowThreshold - glowSoftness, glowThreshold + glowSoftness, b1);
-      c1 *= g1 * g1;
-
-      vec3 c2 = s2.rgb * 2.0;
-      float b2 = dot(c2, vec3(0.2126, 0.7152, 0.0722));
-      float g2 = smoothstep(glowThreshold - glowSoftness, glowThreshold + glowSoftness, b2);
-      c2 *= g2 * g2;
-
-      accum.rgb += (c1 + c2) * weights[i];
+/**
+ * Initialize the glow shader system
+ * @param {HTMLCanvasElement} outputCanvas - Canvas to render glow effect to
+ * @param {HTMLCanvasElement} canvas2d - Source 2D canvas (used to set dimensions)
+ */
+function initGlow(outputCanvas, canvas2d) {
+    // Initialize WebGL context using your boilerplate
+    gl = initWebGL(outputCanvas);
+    if (!gl) {
+        throw new Error('WebGL not supported');
     }
-
-    FragColor = accum * 0.5;
-  }
-  `;
-
-  var verticalBlurShader= `#version 300 es
-
-  precision mediump float;
-  uniform sampler2D glow;
-  uniform sampler2D source;
-  uniform vec2 resolution;
-  uniform float blurRadius;
-  uniform float glowIntensity;
-  uniform float bloomStrength;
-
-  in vec2 here;
-  out vec4 FragColor;
-  #define kernelSize 6
-
-  // Matching optimized kernel with bilinear sampling
-  float[] weights = float[kernelSize](
-    0.1297, 0.1174, 0.0938, 0.0671, 0.0432, 0.0245
-  );
-
-  float[] offsets = float[kernelSize](
-    0.0, 1.4584, 3.4039, 5.3528, 7.3055, 9.2603
-  );
-
-  // Improved ACES tone mapping
-  vec3 ACESFilm(vec3 x) {
-    const float a = 2.51;
-    const float b = 0.03;
-    const float c = 2.43;
-    const float d = 0.59;
-    const float e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
-  }
-
-  vec4 tone(vec4 color) {
-    color.rgb *= 2.5;
-    color.rgb = ACESFilm(color.rgb / 2.0);
-    return color;
-  }
-
-  void main() {
-    vec2 source_coord = (here + vec2(1.0, 1.0)) / 2.0;
-    source_coord.y = 1.0 - source_coord.y;
-
-    vec2 step = vec2(0.0, blurRadius / resolution.y);
-
-    // Bilinear optimized blur - no threshold needed, already filtered
-    vec4 accum = texture(glow, source_coord) * 2.0 * weights[0];
-
-    for (int i = 1; i < kernelSize; i++) {
-      vec2 offset = step * offsets[i];
-      accum += (texture(glow, source_coord + offset) +
-                texture(glow, source_coord - offset)) * 2.0 * weights[i];
+    
+    // Set dimensions from source canvas
+    width = canvas2d.width;
+    height = canvas2d.height;
+    outputCanvas.width = width;
+    outputCanvas.height = height;
+    
+    // Create shader programs using your boilerplate
+    const vShader = vertexShader(vertexShaderSource);
+    
+    brightPassProgram = generateShaderProgram(vShader, fragmentShader(brightPassFragmentSource));
+    downsampleProgram = generateShaderProgram(vShader, fragmentShader(downsampleFragmentSource));
+    upsampleProgram = generateShaderProgram(vShader, fragmentShader(upsampleFragmentSource));
+    compositeProgram = generateShaderProgram(vShader, fragmentShader(compositeFragmentSource));
+    
+    // Create fullscreen quad using your bufferFromArray
+    quadBuffer = bufferFromArray([
+        // position    texCoord
+        -1, -1,        0, 0,
+         1, -1,        1, 0,
+        -1,  1,        0, 1,
+         1,  1,        1, 1,
+    ]);
+    
+    // Create source texture (from 2D canvas)
+    sourceTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    
+    // Create bright pass texture
+    brightTexture = createTexture(gl, width, height);
+    brightFB = createFramebuffer(gl, brightTexture);
+    
+    // Create mip chain for downsample/upsample blur
+    mipChain = [];
+    let mipWidth = width;
+    let mipHeight = height;
+    for (let i = 0; i < MAX_MIP_LEVELS; i++) {
+        mipWidth = Math.max(1, Math.floor(mipWidth / 2));
+        mipHeight = Math.max(1, Math.floor(mipHeight / 2));
+        
+        const texture = createTexture(gl, mipWidth, mipHeight);
+        const fb = createFramebuffer(gl, texture);
+        
+        mipChain.push({
+            texture,
+            fb,
+            width: mipWidth,
+            height: mipHeight
+        });
     }
+    
+    // Create upsample accumulation buffers
+    upsampleChain = [];
+    mipWidth = width;
+    mipHeight = height;
+    for (let i = 0; i < MAX_MIP_LEVELS; i++) {
+        mipWidth = Math.max(1, Math.floor(mipWidth / 2));
+        mipHeight = Math.max(1, Math.floor(mipHeight / 2));
+        
+        const texture = createTexture(gl, mipWidth, mipHeight);
+        const fb = createFramebuffer(gl, texture);
+        
+        upsampleChain.push({
+            texture,
+            fb,
+            width: mipWidth,
+            height: mipHeight
+        });
+    }
+    
+    // Final bloom result at full resolution
+    bloomTexture = createTexture(gl, width, height);
+    bloomFB = createFramebuffer(gl, bloomTexture);
+}
 
-    vec4 c = texture(source, source_coord);
+/**
+ * Render the glow effect
+ * @param {HTMLCanvasElement} canvas2d - Source 2D canvas to apply glow to
+ */
+function glowFrame(canvas2d) {
+    if (!gl) {
+        throw new Error('Call initGlow() first');
+    }
+    
+    // Upload source canvas to texture (flip Y for canvas->WebGL coordinate conversion)
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas2d);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    
+    // Bind quad buffer for all passes
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+    
+    // ========== Pass 1: Extract bright areas ==========
+    gl.bindFramebuffer(gl.FRAMEBUFFER, brightFB);
+    gl.viewport(0, 0, width, height);
+    brightPassProgram.use();
+    brightPassProgram.setInterleaved();
+    
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
+    brightPassProgram.uTexture = 0;
+    brightPassProgram.uThreshold = settings.threshold;
+    
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    
+    // ========== Pass 2: Downsample chain ==========
+    downsampleProgram.use();
+    downsampleProgram.setInterleaved();
+    
+    const numLevels = Math.min(settings.blurLevel, MAX_MIP_LEVELS);
+    
+    for (let i = 0; i < numLevels; i++) {
+        const mip = mipChain[i];
+        const srcTexture = (i === 0) ? brightTexture : mipChain[i - 1].texture;
+        const srcWidth = (i === 0) ? width : mipChain[i - 1].width;
+        const srcHeight = (i === 0) ? height : mipChain[i - 1].height;
+        
+        gl.bindFramebuffer(gl.FRAMEBUFFER, mip.fb);
+        gl.viewport(0, 0, mip.width, mip.height);
+        
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, srcTexture);
+        downsampleProgram.uTexture = 0;
+        downsampleProgram.uTexelSize = [1.0 / srcWidth, 1.0 / srcHeight];
+        
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    
+    // ========== Pass 3: Upsample chain with accumulation ==========
+    upsampleProgram.use();
+    upsampleProgram.setInterleaved();
+    
+    for (let i = numLevels - 1; i >= 0; i--) {
+        const mip = mipChain[i];
+        const isFirst = (i === numLevels - 1);
+        const isLast = (i === 0);
+        
+        // Target: either upsample buffer or final bloom texture
+        const targetFB = isLast ? bloomFB : upsampleChain[i - 1].fb;
+        const targetWidth = isLast ? width : upsampleChain[i - 1].width;
+        const targetHeight = isLast ? height : upsampleChain[i - 1].height;
+        
+        gl.bindFramebuffer(gl.FRAMEBUFFER, targetFB);
+        gl.viewport(0, 0, targetWidth, targetHeight);
+        
+        // Source: current mip level
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, mip.texture);
+        upsampleProgram.uTexture = 0;
+        upsampleProgram.uTexelSize = [1.0 / mip.width, 1.0 / mip.height];
+        
+        // Accumulator: previous upsample result (if not first iteration)
+        if (!isFirst) {
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, upsampleChain[i].texture);
+            upsampleProgram.uAccumTexture = 1;
+            upsampleProgram.uUseAccum = 1.0;
+        } else {
+            upsampleProgram.uUseAccum = 0.0;
+        }
+        
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    
+    // ========== Pass 4: Composite ==========
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, width, height);
+    compositeProgram.use();
+    compositeProgram.setInterleaved();
+    
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
+    compositeProgram.uOriginal = 0;
+    
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, bloomTexture);
+    compositeProgram.uBloom = 1;
+    
+    compositeProgram.uIntensity = settings.bloom;
+    compositeProgram.uExposure = settings.exposure;
+    
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
 
-    // Enhanced bloom with configurable strength
-    vec3 bloom = pow(c.rgb * 1.5, vec3(4.0)) * bloomStrength;
-    c.rgb += bloom;
-
-    // Add the blurred glow with intensity control
-    c.rgb += accum.rgb * glowIntensity;
-
-    FragColor = tone(c);
-  }
-  `;
-
- var glsl3VertexShader =`#version 300 es
- in vec2 position;
- out vec2 here;
-
- void main() {
-   gl_Position = vec4(position,0.0,1.0);
-   here = position;   
-   
- }
- 
- `
-
-
- function initGlow(outputCanvas,frameCanvas) {
-  var gl = initWebGL2(outputCanvas);
-  window.gl=gl;
-
-  window.frameTexture =createTextureTarget(frameCanvas.width,frameCanvas.height);
-
-  window.bufferA_texture= createTextureTarget(frameCanvas.width/2,frameCanvas.height/2);
-
-  gl.activeTexture(gl.TEXTURE0+1);
-  gl.bindTexture(gl.TEXTURE_2D,bufferA_texture)
-
-  window.bufferA = gl.createFramebuffer();
-  gl.activeTexture(gl.TEXTURE0);
-
-  gl.activeTexture(gl.TEXTURE0);
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER,bufferA);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D,bufferA_texture,0);
-
-  gl.bindTexture(gl.TEXTURE_2D,frameTexture)
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER,null)
-  gl.viewport(0,0,outputCanvas.width,outputCanvas.height);
-  gl.clearColor(0,1,0,1);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
-  const quadVBO = bufferFromArray([
-    -1, -1,  1, 1,   -1, 1,
-    -1, -1,   1,1,   1, -1]);
-
-
-  let vs3= vertexShader(glsl3VertexShader);
-  let hblurShader = fragmentShader(horizontalBlurShader)
-  let vblurShader = fragmentShader(verticalBlurShader)
-
-  window.hblur= generateShaderProgram(vs3,hblurShader);
-  window.vblur= generateShaderProgram(vs3,vblurShader);
-
-  // Configure horizontal blur shader with improved defaults
-  hblur.use();
-  hblur.source=0;
-  hblur.resolution = [frameCanvas.width, frameCanvas.height];
-  hblur.glowThreshold = 0.8;  // Configurable brightness threshold
-  hblur.glowSoftness = 0.3;   // Smooth falloff around threshold
-  hblur.blurRadius = 4.0;     // Blur spread in pixels
-
-  // Configure vertical blur shader with improved defaults
-  vblur.use();
-  vblur.source=0;
-  vblur.glow=1;
-  vblur.resolution = [frameCanvas.width, frameCanvas.height];
-  vblur.blurRadius = 4.0;       // Matching blur radius
-  vblur.glowIntensity = 1.0;    // Overall glow strength
-  vblur.bloomStrength = 5.0625; // Bloom intensity (preserved from original)
-
-  // Store configuration for runtime adjustment
-  window.glowConfig = {
-    threshold: 0.8,
-    softness: 0.3,
-    radius: 4.0,
-    intensity: 1.0,
-    bloomStrength: 5.0625
-  };
-
-  window.drawQuad = () =>  {
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
-    gl.drawArrays(gl.TRIANGLES,0,6)
-  }
-
- }
-
- function glowFrame(canvas) {
-  gl.bindTexture(gl.TEXTURE_2D,frameTexture)
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,canvas);
-
-  hblur.use();
-  gl.viewport(0,0,outputCanvas.width/2,outputCanvas.height/2);
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER,bufferA);
-  drawQuad();
-
-  vblur.use();
-  gl.viewport(0,0,outputCanvas.width,outputCanvas.height);
-  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-  drawQuad();
- }
-
- // Helper function to adjust glow parameters at runtime
- // Usage: updateGlowSettings({ threshold: 0.9, intensity: 1.5 })
- function updateGlowSettings(settings) {
-  if (!window.hblur || !window.vblur) {
-    console.error("Glow shaders not initialized");
-    return;
-  }
-
-  if (settings.threshold !== undefined) {
-    window.glowConfig.threshold = settings.threshold;
-    hblur.use();
-    hblur.glowThreshold = settings.threshold;
-  }
-
-  if (settings.softness !== undefined) {
-    window.glowConfig.softness = settings.softness;
-    hblur.use();
-    hblur.glowSoftness = settings.softness;
-  }
-
-  if (settings.radius !== undefined) {
-    window.glowConfig.radius = settings.radius;
-    hblur.use();
-    hblur.blurRadius = settings.radius;
-    vblur.use();
-    vblur.blurRadius = settings.radius;
-  }
-
-  if (settings.intensity !== undefined) {
-    window.glowConfig.intensity = settings.intensity;
-    vblur.use();
-    vblur.glowIntensity = settings.intensity;
-  }
-
-  if (settings.bloomStrength !== undefined) {
-    window.glowConfig.bloomStrength = settings.bloomStrength;
-    vblur.use();
-    vblur.bloomStrength = settings.bloomStrength;
-  }
-
-  console.log("Glow settings updated:", window.glowConfig);
- }
-
+/**
+ * Update glow effect settings
+ * @param {Object} newSettings - Settings object with optional properties:
+ *   @param {number} newSettings.threshold - Brightness threshold (0-1, default 0)
+ *   @param {number} newSettings.bloom - Bloom intensity (0-5, default 2)
+ *   @param {number} newSettings.blurLevel - Blur mip levels (1-7, default 5)
+ *   @param {number} newSettings.exposure - HDR exposure (0.5-4, default 1)
+ */
+function updateGlowSettings(newSettings) {
+    if (newSettings.threshold !== undefined) settings.threshold = newSettings.threshold;
+    if (newSettings.bloom !== undefined) settings.bloom = newSettings.bloom;
+    if (newSettings.blurLevel !== undefined) settings.blurLevel = newSettings.blurLevel;
+    if (newSettings.exposure !== undefined) settings.exposure = newSettings.exposure;
+}
