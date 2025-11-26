@@ -454,9 +454,13 @@ function drawWorld() {
     ctx = savedCtx;
 
     // Draw persistence canvas onto frame canvas with additive composite mode
+    // Temporarily reset transform to draw at correct position
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalCompositeOperation = "lighter";
     ctx.drawImage(persistenceCanvas, 0, 0);
     ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
   } else {
     // Fallback for headless mode
     for (let e of bullets) {
