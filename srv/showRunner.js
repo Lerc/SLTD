@@ -408,6 +408,15 @@ function mainGame_core() {
 
     if (selectedTower === clickedTower && typeof showTowerMenu !== 'undefined') showTowerMenu(clickedTower);
     selectedTower = clickedTower;
+
+    // Show/hide tower selection panel based on whether a tower is selected
+    if (typeof showTowerSelectionPanel !== 'undefined' && typeof hideTowerSelectionPanel !== 'undefined') {
+      if (selectedTower) {
+        showTowerSelectionPanel();
+      } else {
+        hideTowerSelectionPanel();
+      }
+    }
   }
 
   if (typeof updateUI !== 'undefined') updateUI();

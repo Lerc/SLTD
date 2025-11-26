@@ -1,6 +1,11 @@
 "use strict"
 
 var widgets = [];
+var towerSelectionPanel = null;
+var towerSelectionPanelCurrentY = 1900;  // Start off-screen
+var towerSelectionPanelTargetY = 1900;   // Target position
+var towerSelectionPanelVisibleY = 1400;  // Where it appears (above purchase panel)
+var towerSelectionPanelHiddenY = 1900;   // Where it hides (off-screen)
 
 function initUI() {
   widgets = [];
@@ -54,10 +59,18 @@ function initUI() {
     //ctx.fillText("➤➤",left+width/2,top+42);
     ctx.restore();
   }
+
+  // Create tower selection panel (initially hidden off-screen)
+  towerSelectionPanel = createTowerSelectionPanel();
+  widgets.push(towerSelectionPanel);
 }
 
 
 function updateUI() {
+  // Animate tower selection panel sliding
+  let easingFactor = 0.3;
+  towerSelectionPanelCurrentY += (towerSelectionPanelTargetY - towerSelectionPanelCurrentY) * easingFactor;
+
   for (let w of widgets ) {
     w.update();
   }
@@ -90,10 +103,112 @@ function pressEndUI(pos) {
 
 }
 
+function createTowerSelectionPanel() {
+  // Create a panel that will slide up/down based on towerSelectionPanelCurrentY
+  let panel = {
+    contents: makeContainer(),
+    update: function() {
+      this.contents.update();
+    },
+    draw: function() {
+      ctx.save();
+      ctx.translate(0, towerSelectionPanelCurrentY);
+
+      // Draw panel background
+      ctx.fillStyle = "#2228";
+      ctx.fillRect(0, 0, 1080, 220);
+      ctx.strokeStyle = "#66f4";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(0, 0, 1080, 220);
+
+      this.contents.draw();
+      ctx.restore();
+    },
+    pressStart: function(p) {
+      this.contents.pressStart(vdiff(p, v2(0, towerSelectionPanelCurrentY)));
+    },
+    pressMove: function(p) {
+      this.contents.pressMove(vdiff(p, v2(0, towerSelectionPanelCurrentY)));
+    },
+    pressEnd: function(p) {
+      this.contents.pressEnd(vdiff(p, v2(0, towerSelectionPanelCurrentY)));
+    }
+  };
+
+  // Create Sell button
+  let sellButton = makeButton(150, 50, 250, 120);
+  sellButton.draw = function() {
+    ctx.fillStyle = "#d44";
+    ctx.fillRect(150, 50, 250, 120);
+    ctx.strokeStyle = "#f66";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(150, 50, 250, 120);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 48px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Sell", 275, 110);
+  };
+  sellButton.touched = function() {
+    console.log("Sell button clicked");
+    // TODO: Implement sell functionality
+  };
+
+  // Create Upgrade button
+  let upgradeButton = makeButton(450, 50, 250, 120);
+  upgradeButton.draw = function() {
+    ctx.fillStyle = "#4a4";
+    ctx.fillRect(450, 50, 250, 120);
+    ctx.strokeStyle = "#6f6";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(450, 50, 250, 120);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 48px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Upgrade", 575, 110);
+  };
+  upgradeButton.touched = function() {
+    console.log("Upgrade button clicked");
+    // TODO: Implement upgrade functionality
+  };
+
+  // Create Close (X) button
+  let closeButton = makeButton(950, 20, 100, 100);
+  closeButton.draw = function() {
+    ctx.strokeStyle = "#f66";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(970, 40);
+    ctx.lineTo(1030, 100);
+    ctx.moveTo(1030, 40);
+    ctx.lineTo(970, 100);
+    ctx.stroke();
+  };
+  closeButton.touched = function() {
+    console.log("Close button clicked");
+    hideTowerSelectionPanel();
+  };
+
+  panel.contents.push(sellButton);
+  panel.contents.push(upgradeButton);
+  panel.contents.push(closeButton);
+
+  return panel;
+}
+
+function showTowerSelectionPanel() {
+  towerSelectionPanelTargetY = towerSelectionPanelVisibleY;
+}
+
+function hideTowerSelectionPanel() {
+  towerSelectionPanelTargetY = towerSelectionPanelHiddenY;
+}
 
 function showTowerMenu() {
 
   let panel = makePanel(250,1650,580,900);
 
-  
+
 }
