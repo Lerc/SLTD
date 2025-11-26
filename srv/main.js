@@ -19,6 +19,7 @@ function init() {
   window.ctx=frameCtx;
 
   initGlow(outputCanvas,frameCanvas);
+  updateGlowSettings({threshold:0,blurLevel:2,exposure:0.7,bloom:1})
 
   requestAnimationFrame(update);
 

@@ -69,8 +69,8 @@ function createWorld(textRepresentation) {
   function draw() {
 
     ctx.strokeWidth=1;
-    ctx.strokeStyle="#060";
-    ctx.fillStyle="#001800";
+    ctx.strokeStyle="#4f4";
+    ctx.fillStyle="#000800";
   
     for (let ty=0; ty<height;ty++) {
       for (let tx=0;tx<width;tx++) {
