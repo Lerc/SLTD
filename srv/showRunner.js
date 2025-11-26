@@ -312,6 +312,40 @@ function mainGame() {
   }
 }
 
+function updatePersistenceCanvas() {
+  if (typeof persistenceCtx === 'undefined') return;
+
+  // Apply fade effect to persistence canvas
+  persistenceCtx.fillStyle = "rgba(0,0,0,0.3)";
+  persistenceCtx.fillRect(0, 0, persistenceCanvas.width, persistenceCanvas.height);
+
+  // Save current context and extract its transform
+  let savedCtx = ctx;
+  let transform = ctx.getTransform();
+
+  // Switch to persistence canvas and apply the same transform
+  ctx = persistenceCtx;
+  ctx.save();
+  ctx.setTransform(transform);
+  let region = new Path2D();
+  region.rect(0, 0, 1080, 1536);
+  ctx.clip(region);
+
+  // Draw bullets and particles to persistence canvas
+  for (let e of bullets) {
+    e.drawMain();
+  }
+
+  for (let p of particleSystems) {
+    p.draw(ctx);
+  }
+
+  ctx.restore();
+
+  // Switch back to frame context
+  ctx = savedCtx;
+}
+
 function mainGame_core() {
   angle=(angle+0.1)%TWOPI;
   globalThis.waveAge += 1;
@@ -375,6 +409,9 @@ function mainGame_core() {
   }
 
   if (typeof updateUI !== 'undefined') updateUI();
+
+  // Update persistence canvas every tick for consistent visuals
+  updatePersistenceCanvas();
 }
 
 mainGame.draw = function() {
@@ -425,38 +462,8 @@ function drawWorld() {
     selectedTower.drawRange();
   }
 
-  // Apply fade effect to persistence canvas
+  // Composite persistence canvas onto frame canvas (updated per tick in mainGame_core)
   if (typeof persistenceCtx !== 'undefined') {
-    persistenceCtx.fillStyle = "rgba(0,0,0,0.3)";
-    persistenceCtx.fillRect(0, 0, persistenceCanvas.width, persistenceCanvas.height);
-
-    // Save current context and extract its transform
-    let savedCtx = ctx;
-    let transform = ctx.getTransform();
-
-    // Switch to persistence canvas and apply the same transform
-    ctx = persistenceCtx;
-    ctx.save();
-    ctx.setTransform(transform);
-    let region = new Path2D();
-    region.rect(0, 0, 1080, 1536);
-    ctx.clip(region);
-
-    // Draw bullets and particles to persistence canvas
-    for (let e of bullets) {
-      e.drawMain();
-    }
-
-    for (let p of particleSystems) {
-      p.draw(ctx);
-    }
-
-    ctx.restore();
-
-    // Switch back to frame context
-    ctx = savedCtx;
-
-    // Draw persistence canvas onto frame canvas with additive composite mode
     // Temporarily reset transform to draw at correct position
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -465,7 +472,7 @@ function drawWorld() {
     ctx.globalCompositeOperation = "source-over";
     ctx.restore();
   } else {
-    // Fallback for headless mode
+    // Fallback for headless mode - draw bullets and particles directly
     for (let e of bullets) {
       e.drawMain();
     }
@@ -600,6 +607,7 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.titleScreen = titleScreen;
   globalThis.mainGame = mainGame;
   globalThis.mainGame_core = mainGame_core;
+  globalThis.updatePersistenceCanvas = updatePersistenceCanvas;
   globalThis.drawWorld = drawWorld;
   globalThis.gameOver = gameOver;
 }
