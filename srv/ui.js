@@ -4,7 +4,7 @@ var widgets = [];
 var towerSelectionPanel = null;
 var towerSelectionPanelCurrentY = 1900;  // Start off-screen
 var towerSelectionPanelTargetY = 1900;   // Target position
-var towerSelectionPanelVisibleY = 1400;  // Where it appears (above purchase panel)
+var towerSelectionPanelVisibleY = 1650;  // Where it appears (same as purchase panel)
 var towerSelectionPanelHiddenY = 1900;   // Where it hides (off-screen)
 
 function initUI() {
@@ -114,12 +114,12 @@ function createTowerSelectionPanel() {
       ctx.save();
       ctx.translate(0, towerSelectionPanelCurrentY);
 
-      // Draw panel background
-      ctx.fillStyle = "#2228";
-      ctx.fillRect(0, 0, 1080, 220);
+      // Draw panel background (mostly opaque)
+      ctx.fillStyle = "#222e";
+      ctx.fillRect(0, 0, 1080, 250);
       ctx.strokeStyle = "#66f4";
       ctx.lineWidth = 3;
-      ctx.strokeRect(0, 0, 1080, 220);
+      ctx.strokeRect(0, 0, 1080, 250);
 
       this.contents.draw();
       ctx.restore();
@@ -136,18 +136,18 @@ function createTowerSelectionPanel() {
   };
 
   // Create Sell button
-  let sellButton = makeButton(150, 50, 250, 120);
+  let sellButton = makeButton(150, 65, 250, 120);
   sellButton.draw = function() {
     ctx.fillStyle = "#d44";
-    ctx.fillRect(150, 50, 250, 120);
+    ctx.fillRect(150, 65, 250, 120);
     ctx.strokeStyle = "#f66";
     ctx.lineWidth = 3;
-    ctx.strokeRect(150, 50, 250, 120);
+    ctx.strokeRect(150, 65, 250, 120);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("Sell", 275, 110);
+    ctx.fillText("Sell", 275, 125);
   };
   sellButton.touched = function() {
     console.log("Sell button clicked");
@@ -155,18 +155,18 @@ function createTowerSelectionPanel() {
   };
 
   // Create Upgrade button
-  let upgradeButton = makeButton(450, 50, 250, 120);
+  let upgradeButton = makeButton(450, 65, 250, 120);
   upgradeButton.draw = function() {
     ctx.fillStyle = "#4a4";
-    ctx.fillRect(450, 50, 250, 120);
+    ctx.fillRect(450, 65, 250, 120);
     ctx.strokeStyle = "#6f6";
     ctx.lineWidth = 3;
-    ctx.strokeRect(450, 50, 250, 120);
+    ctx.strokeRect(450, 65, 250, 120);
     ctx.fillStyle = "#fff";
     ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("Upgrade", 575, 110);
+    ctx.fillText("Upgrade", 575, 125);
   };
   upgradeButton.touched = function() {
     console.log("Upgrade button clicked");
@@ -174,16 +174,16 @@ function createTowerSelectionPanel() {
   };
 
   // Create Close (X) button
-  let closeButton = makeButton(950, 20, 100, 100);
+  let closeButton = makeButton(950, 30, 100, 100);
   closeButton.draw = function() {
     ctx.strokeStyle = "#f66";
     ctx.lineWidth = 6;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(970, 40);
-    ctx.lineTo(1030, 100);
-    ctx.moveTo(1030, 40);
-    ctx.lineTo(970, 100);
+    ctx.moveTo(970, 50);
+    ctx.lineTo(1030, 110);
+    ctx.moveTo(1030, 50);
+    ctx.lineTo(970, 110);
     ctx.stroke();
   };
   closeButton.touched = function() {
