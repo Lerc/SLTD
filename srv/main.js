@@ -83,4 +83,31 @@ function update() {
   }
 
   glowFrame(frameCanvas);
+
+  // Must run in the same frame as glowFrame: the WebGL context has no
+  // preserveDrawingBuffer, so the drawing buffer is cleared once the browser
+  // composites. Reading it any later yields a blank image.
+  if (pendingScreenshot) {
+    let request = pendingScreenshot;
+    pendingScreenshot = null;
+    try {
+      request.resolve(outputCanvas.toDataURL("image/png"));
+    } catch (e) {
+      request.reject(e);
+    }
+  }
+}
+
+let pendingScreenshot = null;
+
+// Capture the next completed frame (post-glow) as a PNG data URL.
+function captureScreenshot() {
+  return new Promise((resolve, reject) => {
+    if (!running) {
+      reject(new Error("game loop is not running; nothing to capture"));
+      return;
+    }
+    if (pendingScreenshot) pendingScreenshot.reject(new Error("superseded by a newer capture request"));
+    pendingScreenshot = {resolve, reject};
+  });
 }
