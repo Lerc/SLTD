@@ -1,0 +1,1356 @@
+{
+  "chart": "lines",
+  "arg": "orange",
+  "settings": {
+    "threshold": 0,
+    "bloom": 1,
+    "blurLevel": 2,
+    "exposure": 0.7
+  },
+  "samples": [
+    {
+      "label": "w1 13%",
+      "x": 70,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 1,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "w1 25%",
+      "x": 128,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 1,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        18,
+        14,
+        0
+      ]
+    },
+    {
+      "label": "w1 38%",
+      "x": 186,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 1,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        51,
+        28,
+        0
+      ]
+    },
+    {
+      "label": "w1 50%",
+      "x": 244,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 1,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        75,
+        46,
+        0
+      ]
+    },
+    {
+      "label": "w1 63%",
+      "x": 302,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 1,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        104,
+        64,
+        0
+      ]
+    },
+    {
+      "label": "w1 75%",
+      "x": 360,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 1,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        115,
+        73,
+        0
+      ]
+    },
+    {
+      "label": "w1 88%",
+      "x": 418,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 1,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        130,
+        86,
+        0
+      ]
+    },
+    {
+      "label": "w1 100%",
+      "x": 476,
+      "y": 60,
+      "w": 1,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 1,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        137,
+        89,
+        0
+      ]
+    },
+    {
+      "label": "w2 13%",
+      "x": 70,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 2,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        21,
+        14,
+        0
+      ]
+    },
+    {
+      "label": "w2 25%",
+      "x": 128,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 2,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        75,
+        46,
+        0
+      ]
+    },
+    {
+      "label": "w2 38%",
+      "x": 186,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 2,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        119,
+        75,
+        0
+      ]
+    },
+    {
+      "label": "w2 50%",
+      "x": 244,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 2,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        137,
+        89,
+        0
+      ]
+    },
+    {
+      "label": "w2 63%",
+      "x": 302,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 2,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        156,
+        107,
+        0
+      ]
+    },
+    {
+      "label": "w2 75%",
+      "x": 360,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 2,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        165,
+        116,
+        0
+      ]
+    },
+    {
+      "label": "w2 88%",
+      "x": 418,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 2,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        179,
+        130,
+        0
+      ]
+    },
+    {
+      "label": "w2 100%",
+      "x": 476,
+      "y": 168,
+      "w": 2,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 2,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        184,
+        137,
+        0
+      ]
+    },
+    {
+      "label": "w3 13%",
+      "x": 70,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 3,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        21,
+        14,
+        0
+      ]
+    },
+    {
+      "label": "w3 25%",
+      "x": 128,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 3,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        68,
+        40,
+        0
+      ]
+    },
+    {
+      "label": "w3 38%",
+      "x": 186,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 3,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        112,
+        68,
+        0
+      ]
+    },
+    {
+      "label": "w3 50%",
+      "x": 244,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 3,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        136,
+        89,
+        0
+      ]
+    },
+    {
+      "label": "w3 63%",
+      "x": 302,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 3,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        157,
+        109,
+        0
+      ]
+    },
+    {
+      "label": "w3 75%",
+      "x": 360,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 3,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        169,
+        121,
+        0
+      ]
+    },
+    {
+      "label": "w3 88%",
+      "x": 418,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 3,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        181,
+        134,
+        0
+      ]
+    },
+    {
+      "label": "w3 100%",
+      "x": 476,
+      "y": 276,
+      "w": 3,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 3,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        188,
+        141,
+        0
+      ]
+    },
+    {
+      "label": "w4 13%",
+      "x": 70,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 4,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        31,
+        21,
+        0
+      ]
+    },
+    {
+      "label": "w4 25%",
+      "x": 128,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 4,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        99,
+        61,
+        0
+      ]
+    },
+    {
+      "label": "w4 38%",
+      "x": 186,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 4,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        144,
+        95,
+        0
+      ]
+    },
+    {
+      "label": "w4 50%",
+      "x": 244,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 4,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        162,
+        113,
+        0
+      ]
+    },
+    {
+      "label": "w4 63%",
+      "x": 302,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 4,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        179,
+        130,
+        0
+      ]
+    },
+    {
+      "label": "w4 75%",
+      "x": 360,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 4,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        188,
+        141,
+        0
+      ]
+    },
+    {
+      "label": "w4 88%",
+      "x": 418,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 4,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        198,
+        154,
+        0
+      ]
+    },
+    {
+      "label": "w4 100%",
+      "x": 476,
+      "y": 384,
+      "w": 4,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 4,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        204,
+        162,
+        0
+      ]
+    },
+    {
+      "label": "w6 13%",
+      "x": 70,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 6,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        31,
+        21,
+        0
+      ]
+    },
+    {
+      "label": "w6 25%",
+      "x": 128,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 6,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        109,
+        68,
+        0
+      ]
+    },
+    {
+      "label": "w6 38%",
+      "x": 186,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 6,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        151,
+        104,
+        0
+      ]
+    },
+    {
+      "label": "w6 50%",
+      "x": 244,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 6,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        173,
+        125,
+        0
+      ]
+    },
+    {
+      "label": "w6 63%",
+      "x": 302,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 6,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        185,
+        139,
+        0
+      ]
+    },
+    {
+      "label": "w6 75%",
+      "x": 360,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 6,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        197,
+        153,
+        0
+      ]
+    },
+    {
+      "label": "w6 88%",
+      "x": 418,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 6,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        204,
+        162,
+        0
+      ]
+    },
+    {
+      "label": "w6 100%",
+      "x": 476,
+      "y": 492,
+      "w": 6,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 6,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        211,
+        173,
+        0
+      ]
+    },
+    {
+      "label": "w8 13%",
+      "x": 70,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 8,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        31,
+        21,
+        0
+      ]
+    },
+    {
+      "label": "w8 25%",
+      "x": 128,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 8,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        107,
+        68,
+        0
+      ]
+    },
+    {
+      "label": "w8 38%",
+      "x": 186,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 8,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        153,
+        104,
+        0
+      ]
+    },
+    {
+      "label": "w8 50%",
+      "x": 244,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 8,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        172,
+        123,
+        0
+      ]
+    },
+    {
+      "label": "w8 63%",
+      "x": 302,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 8,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        186,
+        139,
+        0
+      ]
+    },
+    {
+      "label": "w8 75%",
+      "x": 360,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 8,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        196,
+        152,
+        0
+      ]
+    },
+    {
+      "label": "w8 88%",
+      "x": 418,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 8,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        205,
+        163,
+        0
+      ]
+    },
+    {
+      "label": "w8 100%",
+      "x": 476,
+      "y": 600,
+      "w": 8,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 8,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        211,
+        172,
+        0
+      ]
+    },
+    {
+      "label": "w12 13%",
+      "x": 70,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 12,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        31,
+        21,
+        0
+      ]
+    },
+    {
+      "label": "w12 25%",
+      "x": 128,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 12,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        109,
+        71,
+        0
+      ]
+    },
+    {
+      "label": "w12 38%",
+      "x": 186,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 12,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        152,
+        104,
+        0
+      ]
+    },
+    {
+      "label": "w12 50%",
+      "x": 244,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 12,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        173,
+        125,
+        0
+      ]
+    },
+    {
+      "label": "w12 63%",
+      "x": 302,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 12,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        186,
+        139,
+        0
+      ]
+    },
+    {
+      "label": "w12 75%",
+      "x": 360,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 12,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        197,
+        153,
+        0
+      ]
+    },
+    {
+      "label": "w12 88%",
+      "x": 418,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 12,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        204,
+        163,
+        0
+      ]
+    },
+    {
+      "label": "w12 100%",
+      "x": 476,
+      "y": 708,
+      "w": 12,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 12,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        212,
+        173,
+        0
+      ]
+    },
+    {
+      "label": "w16 13%",
+      "x": 70,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.125,
+      "width": 16,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        31,
+        21,
+        0
+      ]
+    },
+    {
+      "label": "w16 25%",
+      "x": 128,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.25,
+      "width": 16,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        107,
+        68,
+        0
+      ]
+    },
+    {
+      "label": "w16 38%",
+      "x": 186,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.375,
+      "width": 16,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        153,
+        104,
+        0
+      ]
+    },
+    {
+      "label": "w16 50%",
+      "x": 244,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.5,
+      "width": 16,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        172,
+        123,
+        0
+      ]
+    },
+    {
+      "label": "w16 63%",
+      "x": 302,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.625,
+      "width": 16,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        187,
+        140,
+        0
+      ]
+    },
+    {
+      "label": "w16 75%",
+      "x": 360,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.75,
+      "width": 16,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        196,
+        152,
+        0
+      ]
+    },
+    {
+      "label": "w16 88%",
+      "x": 418,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 0.875,
+      "width": 16,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        205,
+        164,
+        0
+      ]
+    },
+    {
+      "label": "w16 100%",
+      "x": 476,
+      "y": 816,
+      "w": 16,
+      "h": 74,
+      "hue": "orange",
+      "level": 1,
+      "width": 16,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "line",
+      "output": [
+        211,
+        172,
+        0
+      ]
+    }
+  ]
+}

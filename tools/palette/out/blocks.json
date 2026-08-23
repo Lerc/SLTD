@@ -1,0 +1,1292 @@
+{
+  "chart": "blocks",
+  "arg": "",
+  "settings": {
+    "threshold": 0,
+    "bloom": 1,
+    "blurLevel": 2,
+    "exposure": 0.7
+  },
+  "samples": [
+    {
+      "label": "white 13%",
+      "x": 60,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 0.125,
+      "input": [
+        32,
+        32,
+        32
+      ],
+      "kind": "block",
+      "output": [
+        150,
+        150,
+        150
+      ]
+    },
+    {
+      "label": "white 25%",
+      "x": 116,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 0.25,
+      "input": [
+        64,
+        64,
+        64
+      ],
+      "kind": "block",
+      "output": [
+        207,
+        207,
+        207
+      ]
+    },
+    {
+      "label": "white 38%",
+      "x": 172,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 0.375,
+      "input": [
+        96,
+        96,
+        96
+      ],
+      "kind": "block",
+      "output": [
+        224,
+        224,
+        224
+      ]
+    },
+    {
+      "label": "white 50%",
+      "x": 228,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 0.5,
+      "input": [
+        128,
+        128,
+        128
+      ],
+      "kind": "block",
+      "output": [
+        232,
+        232,
+        232
+      ]
+    },
+    {
+      "label": "white 63%",
+      "x": 284,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 0.625,
+      "input": [
+        159,
+        159,
+        159
+      ],
+      "kind": "block",
+      "output": [
+        234,
+        234,
+        234
+      ]
+    },
+    {
+      "label": "white 75%",
+      "x": 340,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 0.75,
+      "input": [
+        191,
+        191,
+        191
+      ],
+      "kind": "block",
+      "output": [
+        236,
+        236,
+        236
+      ]
+    },
+    {
+      "label": "white 88%",
+      "x": 396,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 0.875,
+      "input": [
+        223,
+        223,
+        223
+      ],
+      "kind": "block",
+      "output": [
+        238,
+        238,
+        238
+      ]
+    },
+    {
+      "label": "white 100%",
+      "x": 452,
+      "y": 70,
+      "w": 48,
+      "h": 72,
+      "hue": "white",
+      "level": 1,
+      "input": [
+        255,
+        255,
+        255
+      ],
+      "kind": "block",
+      "output": [
+        239,
+        239,
+        239
+      ]
+    },
+    {
+      "label": "red 13%",
+      "x": 60,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 0.125,
+      "input": [
+        32,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        99,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "red 25%",
+      "x": 116,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 0.25,
+      "input": [
+        64,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        159,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "red 38%",
+      "x": 172,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 0.375,
+      "input": [
+        96,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        199,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "red 50%",
+      "x": 228,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 0.5,
+      "input": [
+        128,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        221,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "red 63%",
+      "x": 284,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 0.625,
+      "input": [
+        159,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        233,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "red 75%",
+      "x": 340,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 0.75,
+      "input": [
+        191,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        236,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "red 88%",
+      "x": 396,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 0.875,
+      "input": [
+        223,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        238,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "red 100%",
+      "x": 452,
+      "y": 154,
+      "w": 48,
+      "h": 72,
+      "hue": "red",
+      "level": 1,
+      "input": [
+        255,
+        0,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        239,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "green 13%",
+      "x": 60,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 0.125,
+      "input": [
+        0,
+        32,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        134,
+        0
+      ]
+    },
+    {
+      "label": "green 25%",
+      "x": 116,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 0.25,
+      "input": [
+        0,
+        64,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        206,
+        0
+      ]
+    },
+    {
+      "label": "green 38%",
+      "x": 172,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 0.375,
+      "input": [
+        0,
+        96,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        224,
+        0
+      ]
+    },
+    {
+      "label": "green 50%",
+      "x": 228,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 0.5,
+      "input": [
+        0,
+        128,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        232,
+        0
+      ]
+    },
+    {
+      "label": "green 63%",
+      "x": 284,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 0.625,
+      "input": [
+        0,
+        159,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        234,
+        0
+      ]
+    },
+    {
+      "label": "green 75%",
+      "x": 340,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 0.75,
+      "input": [
+        0,
+        191,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        236,
+        0
+      ]
+    },
+    {
+      "label": "green 88%",
+      "x": 396,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 0.875,
+      "input": [
+        0,
+        223,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        238,
+        0
+      ]
+    },
+    {
+      "label": "green 100%",
+      "x": 452,
+      "y": 238,
+      "w": 48,
+      "h": 72,
+      "hue": "green",
+      "level": 1,
+      "input": [
+        0,
+        255,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        239,
+        0
+      ]
+    },
+    {
+      "label": "blue 13%",
+      "x": 60,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 0.125,
+      "input": [
+        0,
+        0,
+        32
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        91
+      ]
+    },
+    {
+      "label": "blue 25%",
+      "x": 116,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 0.25,
+      "input": [
+        0,
+        0,
+        64
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        140
+      ]
+    },
+    {
+      "label": "blue 38%",
+      "x": 172,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 0.375,
+      "input": [
+        0,
+        0,
+        96
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        173
+      ]
+    },
+    {
+      "label": "blue 50%",
+      "x": 228,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 0.5,
+      "input": [
+        0,
+        0,
+        128
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        194
+      ]
+    },
+    {
+      "label": "blue 63%",
+      "x": 284,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 0.625,
+      "input": [
+        0,
+        0,
+        159
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        209
+      ]
+    },
+    {
+      "label": "blue 75%",
+      "x": 340,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 0.75,
+      "input": [
+        0,
+        0,
+        191
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        220
+      ]
+    },
+    {
+      "label": "blue 88%",
+      "x": 396,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 0.875,
+      "input": [
+        0,
+        0,
+        223
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        228
+      ]
+    },
+    {
+      "label": "blue 100%",
+      "x": 452,
+      "y": 322,
+      "w": 48,
+      "h": 72,
+      "hue": "blue",
+      "level": 1,
+      "input": [
+        0,
+        0,
+        255
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        0,
+        234
+      ]
+    },
+    {
+      "label": "cyan 13%",
+      "x": 60,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 0.125,
+      "input": [
+        0,
+        32,
+        32
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        138,
+        138
+      ]
+    },
+    {
+      "label": "cyan 25%",
+      "x": 116,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 0.25,
+      "input": [
+        0,
+        64,
+        64
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        207,
+        207
+      ]
+    },
+    {
+      "label": "cyan 38%",
+      "x": 172,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 0.375,
+      "input": [
+        0,
+        96,
+        96
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        224,
+        224
+      ]
+    },
+    {
+      "label": "cyan 50%",
+      "x": 228,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 0.5,
+      "input": [
+        0,
+        128,
+        128
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        232,
+        232
+      ]
+    },
+    {
+      "label": "cyan 63%",
+      "x": 284,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 0.625,
+      "input": [
+        0,
+        159,
+        159
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        234,
+        234
+      ]
+    },
+    {
+      "label": "cyan 75%",
+      "x": 340,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 0.75,
+      "input": [
+        0,
+        191,
+        191
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        236,
+        236
+      ]
+    },
+    {
+      "label": "cyan 88%",
+      "x": 396,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 0.875,
+      "input": [
+        0,
+        223,
+        223
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        238,
+        238
+      ]
+    },
+    {
+      "label": "cyan 100%",
+      "x": 452,
+      "y": 406,
+      "w": 48,
+      "h": 72,
+      "hue": "cyan",
+      "level": 1,
+      "input": [
+        0,
+        255,
+        255
+      ],
+      "kind": "block",
+      "output": [
+        0,
+        239,
+        239
+      ]
+    },
+    {
+      "label": "magenta 13%",
+      "x": 60,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 0.125,
+      "input": [
+        32,
+        0,
+        32
+      ],
+      "kind": "block",
+      "output": [
+        102,
+        0,
+        102
+      ]
+    },
+    {
+      "label": "magenta 25%",
+      "x": 116,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 0.25,
+      "input": [
+        64,
+        0,
+        64
+      ],
+      "kind": "block",
+      "output": [
+        171,
+        0,
+        171
+      ]
+    },
+    {
+      "label": "magenta 38%",
+      "x": 172,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 0.375,
+      "input": [
+        96,
+        0,
+        96
+      ],
+      "kind": "block",
+      "output": [
+        210,
+        0,
+        210
+      ]
+    },
+    {
+      "label": "magenta 50%",
+      "x": 228,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 0.5,
+      "input": [
+        128,
+        0,
+        128
+      ],
+      "kind": "block",
+      "output": [
+        228,
+        0,
+        228
+      ]
+    },
+    {
+      "label": "magenta 63%",
+      "x": 284,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 0.625,
+      "input": [
+        159,
+        0,
+        159
+      ],
+      "kind": "block",
+      "output": [
+        234,
+        0,
+        234
+      ]
+    },
+    {
+      "label": "magenta 75%",
+      "x": 340,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 0.75,
+      "input": [
+        191,
+        0,
+        191
+      ],
+      "kind": "block",
+      "output": [
+        236,
+        0,
+        236
+      ]
+    },
+    {
+      "label": "magenta 88%",
+      "x": 396,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 0.875,
+      "input": [
+        223,
+        0,
+        223
+      ],
+      "kind": "block",
+      "output": [
+        238,
+        0,
+        238
+      ]
+    },
+    {
+      "label": "magenta 100%",
+      "x": 452,
+      "y": 490,
+      "w": 48,
+      "h": 72,
+      "hue": "magenta",
+      "level": 1,
+      "input": [
+        255,
+        0,
+        255
+      ],
+      "kind": "block",
+      "output": [
+        239,
+        0,
+        239
+      ]
+    },
+    {
+      "label": "yellow 13%",
+      "x": 60,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 0.125,
+      "input": [
+        32,
+        32,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        147,
+        147,
+        0
+      ]
+    },
+    {
+      "label": "yellow 25%",
+      "x": 116,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 0.25,
+      "input": [
+        64,
+        64,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        207,
+        207,
+        0
+      ]
+    },
+    {
+      "label": "yellow 38%",
+      "x": 172,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 0.375,
+      "input": [
+        96,
+        96,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        224,
+        224,
+        0
+      ]
+    },
+    {
+      "label": "yellow 50%",
+      "x": 228,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 0.5,
+      "input": [
+        128,
+        128,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        232,
+        232,
+        0
+      ]
+    },
+    {
+      "label": "yellow 63%",
+      "x": 284,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 0.625,
+      "input": [
+        159,
+        159,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        234,
+        234,
+        0
+      ]
+    },
+    {
+      "label": "yellow 75%",
+      "x": 340,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 0.75,
+      "input": [
+        191,
+        191,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        236,
+        236,
+        0
+      ]
+    },
+    {
+      "label": "yellow 88%",
+      "x": 396,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 0.875,
+      "input": [
+        223,
+        223,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        238,
+        238,
+        0
+      ]
+    },
+    {
+      "label": "yellow 100%",
+      "x": 452,
+      "y": 574,
+      "w": 48,
+      "h": 72,
+      "hue": "yellow",
+      "level": 1,
+      "input": [
+        255,
+        255,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        239,
+        239,
+        0
+      ]
+    },
+    {
+      "label": "orange 13%",
+      "x": 60,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 0.125,
+      "input": [
+        32,
+        16,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        121,
+        79,
+        0
+      ]
+    },
+    {
+      "label": "orange 25%",
+      "x": 116,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 0.25,
+      "input": [
+        64,
+        32,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        200,
+        157,
+        0
+      ]
+    },
+    {
+      "label": "orange 38%",
+      "x": 172,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 0.375,
+      "input": [
+        96,
+        48,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        224,
+        192,
+        0
+      ]
+    },
+    {
+      "label": "orange 50%",
+      "x": 228,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 0.5,
+      "input": [
+        128,
+        64,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        232,
+        207,
+        0
+      ]
+    },
+    {
+      "label": "orange 63%",
+      "x": 284,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 0.625,
+      "input": [
+        159,
+        80,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        234,
+        217,
+        0
+      ]
+    },
+    {
+      "label": "orange 75%",
+      "x": 340,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 0.75,
+      "input": [
+        191,
+        96,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        236,
+        224,
+        0
+      ]
+    },
+    {
+      "label": "orange 88%",
+      "x": 396,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 0.875,
+      "input": [
+        223,
+        112,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        238,
+        229,
+        0
+      ]
+    },
+    {
+      "label": "orange 100%",
+      "x": 452,
+      "y": 658,
+      "w": 48,
+      "h": 72,
+      "hue": "orange",
+      "level": 1,
+      "input": [
+        255,
+        128,
+        0
+      ],
+      "kind": "block",
+      "output": [
+        239,
+        232,
+        0
+      ]
+    }
+  ]
+}

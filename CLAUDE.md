@@ -159,6 +159,12 @@ The dual-mode architecture was achieved through refactoring:
   - Bloom/glow effects
   - 4x performance improvement from recent optimization
   - **Location**: srv/CanvasGlow.js:1
+  - **The colour you draw is not the colour that appears.** With the live
+    settings (`threshold:0`), everything blooms and is then ACES tone-mapped,
+    so the usable input range is roughly 0–64, feature size affects brightness
+    more than colour does, and saturated hues drift toward white. Measured
+    input→output tables are in `tools/palette/README.md` — consult them before
+    picking RGB values for new drawing code.
 
 - **`WebGLBoilerPlate.js`** - WebGL setup utilities
   - Shader compilation helpers
