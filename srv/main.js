@@ -68,6 +68,11 @@ function update() {
   let ticks = Math.round(diff / 16);
   lastTime = thisTime;
   if (ticks > 10) ticks = 10;
+
+  // gameControl's `advance` queues ticks to be run here, so scripted stepping
+  // is drawn like any other frame instead of racing ahead of the renderer.
+  if (typeof gameControl !== 'undefined') ticks += gameControl.takeTickCredit(200);
+
   ticker += ticks;
 
   try {

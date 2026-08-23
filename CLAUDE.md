@@ -125,6 +125,12 @@ The dual-mode architecture was achieved through refactoring:
   - Pure logic, no browser dependencies
   - **Location**: srv/littleAStar.js:1
 
+- **`commands.js`** - Shared command layer (universal)
+  - The `advance`/`buy_tower`/`list_counts`/... vocabulary
+  - `makeCommands(host)` — host supplies environment-specific I/O
+  - Used by both `nodemain.js` and `gameControl.js`
+  - **Location**: srv/commands.js:1
+
 #### Browser-Specific Files
 - **`main.js`** - Browser entry point and rendering loop
   - window.onload initialization
@@ -162,6 +168,12 @@ The dual-mode architecture was achieved through refactoring:
 - **`renderlist.js`** - WebGL rendering system
   - Batch rendering for sprites
   - **Location**: srv/renderlist.js:1
+
+- **`gameControl.js`** - Browser control surface for automated testing
+  - Runs shared commands against the live page, plus `screenshot`
+  - Synthetic mouse input and cell→client coordinate mapping
+  - Driven over browser-bridge; see `tools/sltd-browser.sh`
+  - **Location**: srv/gameControl.js:1
 
 #### Headless-Specific Files
 - **`nodemain.js`** - Node.js entry point
@@ -233,25 +245,88 @@ node srv/nodemain.js --commands
 
 ---
 
-## Headless Mode Commands
+## Game Commands (shared by both modes)
 
-### Available REPL Commands
+The command vocabulary lives in **`srv/commands.js`** and is environment-agnostic:
+it operates only on `globalThis` game state. Both entry points build on it, so a
+scenario written for the REPL runs unchanged against the live browser game.
+
 - `advance [ticks=1]` - Advance simulation by N ticks
+- `list_counts` - Show game state summary (lives, money, wave, entity counts)
 - `show_creep [index=0]` - Show details of a creep
 - `show_tower [index=0]` - Show details of a tower
-- `save_json <filename>` - Save game state to JSON file
-- `load_json <filename>` - Load game state from JSON file
 - `buy_tower <type> <cellX> <cellY>` - Purchase and place a tower
-- `list_counts` - Show game state summary (lives, money, wave, entity counts)
+- `tower_types` - List tower types and their costs
+- `spots [limit=10]` - List buildable cells adjacent to the creep path
+- `save_json <filename>` - Save game state
+- `load_json <filename>` - Load game state
+- `screenshot [name]` - **Browser only.** Capture the live frame as a PNG
 - `help`, `?` - Show help
-- `exit`, `quit` - Exit REPL
+- `exit`, `quit` - Exit REPL (headless only)
+
+Environment-specific behaviour is supplied by a `host` object passed to
+`makeCommands(host)`: Node backs `save_json`/`load_json` with real files, the
+browser with `localStorage`, and only the browser provides `screenshot`.
+
+---
+
+## Browser Control (browser-bridge integration)
+
+**`srv/gameControl.js`** gives the live page the same commands, plus screenshots
+and synthetic input. It is browser-only — `nodemain.js` never loads it.
+
+```bash
+# Run a command script against the live page and save any screenshots
+tools/sltd-browser.sh --new "buy_tower Tower 3 0; advance 600; screenshot mid" ./shots
+```
+
+`--new` calls `startGame()` for a clean run first. Screenshots land in the output
+directory as `<name>.png`.
+
+Direct use over browser-bridge:
+
+```bash
+wsb run --code 'wslog(await gameControl.run("buy_tower Tower 3 0; advance 300; list_counts"))' --app sltd
+```
+
+### gameControl API
+- `run(script)` - Execute a `;`-separated command script, returns output text
+- `newGame()` - Reset to a fresh game
+- `advanceTicks(n)` - Advance N ticks **as rendered frames** (see below)
+- `screenshot(name)`, `getShot(i|name)`, `listShots()`, `clearShots()`
+- `tapCell(x,y)`, `tapTower(tower)`, `tapCanvas(x,y)` - Synthetic input
+- `spots()` - Buildable cells beside the path
+
+### Three things that will bite you
+
+1. **Screenshots must go through `captureScreenshot()`** (`main.js:104`).
+   The WebGL context has no `preserveDrawingBuffer`, so the drawing buffer is
+   cleared once the browser composites — `outputCanvas.toDataURL()` called any
+   later returns a blank image. Capture happens in the same frame as `glowFrame()`.
+
+2. **`advance` queues ticks for the render loop rather than running them inline.**
+   Calling `gameMode()` directly would advance logic without drawing those frames,
+   so scripted stepping would desync from what a screenshot shows.
+   `gameControl.takeTickCredit()` is drained in `main.js`'s `update()`.
+
+3. **Tower selection needs real `MouseEvent`s.** It gates on
+   `Input.keyWentDown(133)`, which only the document-level `mousedown` listener
+   sets — calling `pressStart()`/`pressEnd()` directly does nothing.
+   Coordinates chain: cell → world (`mapToWorld`) → canvas (`+ mapTop`) →
+   client (`× globalScaleFactor`, scaled to the element box). `tapCell()` handles this.
+
+**Cache busting:** bump the `?v=` query on the script tags in `index.html` (and the
+matching `window.WSB.version`) whenever you edit browser JS, or `wsb reload` will
+serve the cached file.
 
 ### Tower Types
-- `Tower` - Basic tower
-- `Stubby` - Short range, high fire rate
-- `Star` - Multi-target
-- `Boom` - Area damage
-- `BigBoom` - Large area damage
+- `Tower` ($100) - Basic tower, low damage, medium range
+- `Stubby` ($300) - Very short range, high damage
+- `Zappy` ($350) - Rapid fire, low damage
+- `Star` ($1000) - Long range, high damage, slow
+- `Thumper` ($500) - Area damage around tower
+
+The authoritative list is `towerInfo` in `entities.js`; `tower_types` prints it.
 
 ### State Persistence
 
@@ -381,7 +456,9 @@ Files must be loaded in this order (see index.html):
 6. ui.js (browser only)
 7. gadgets.js (UI components)
 8. showRunner.js (game logic)
-9. main.js (browser entry) OR nodemain.js (headless entry)
+9. commands.js (shared command layer)
+10. main.js (browser entry) OR nodemain.js (headless entry)
+11. gameControl.js (browser only; must follow main.js)
 
 ---
 
