@@ -121,13 +121,15 @@ function createTowerSelectionPanel() {
       // subtle under this shader, so the panel must fully cover what it hides.
       //
       // Values below are chosen from the measured transfer curve in
-      // tools/palette/README.md rather than by eye. Input 16 lands at screen
-      // ~75: a distinct dark surface, well clear of the ~200+ of lit content.
-      ctx.fillStyle = "#101010";
+      // tools/palette/README.md rather than by eye. Input 8 lands at screen
+      // ~40: a dark chrome surface that stays well out of the way of the
+      // ~200+ of lit game content.
+      ctx.fillStyle = "#080808";
       ctx.fillRect(0, 0, 1080, 250);
-      // Border at input 40/56 -> screen ~176/200, bright enough to define the
-      // edge without blooming into a halo over the playfield.
-      ctx.strokeStyle = "#283038";
+      // The border carries the panel edge now that the fill is near-black, so
+      // it needs enough input to read against both the panel and the
+      // playfield: input 48 -> screen ~191.
+      ctx.strokeStyle = "#303840";
       ctx.lineWidth = 3;
       ctx.strokeRect(0, 0, 1080, 250);
 
@@ -156,8 +158,13 @@ function createTowerSelectionPanel() {
     ctx.strokeStyle = "#801818";
     ctx.lineWidth = 3;
     ctx.strokeRect(150, 65, 250, 120);
-    // Label at input 40 -> screen ~176: legible without bleeding into the fill.
-    ctx.fillStyle = "#282828";
+    // Text is the opposite case to the fills: glyph strokes are thin features,
+    // and the size curve means a thin stroke never reaches the brightness its
+    // input implies. Dimming label text the way a fill is dimmed makes it
+    // murky -- measured at input 40 it peaked at 163 against a 129 fill, only
+    // 34 points of contrast. Thin features want high input, so labels stay
+    // near white.
+    ctx.fillStyle = "#f0f0f0";
     ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -176,7 +183,7 @@ function createTowerSelectionPanel() {
     ctx.strokeStyle = "#188018";
     ctx.lineWidth = 3;
     ctx.strokeRect(450, 65, 250, 120);
-    ctx.fillStyle = "#282828";
+    ctx.fillStyle = "#f0f0f0";
     ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
