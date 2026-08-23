@@ -114,10 +114,20 @@ function createTowerSelectionPanel() {
       ctx.save();
       ctx.translate(0, towerSelectionPanelCurrentY);
 
-      // Draw panel background (mostly opaque)
-      ctx.fillStyle = "#222e";
+      // Opaque background. The alpha this used to carry ("#222e") let the
+      // purchase bar underneath leak through at ~7%, which the glow then
+      // amplified: measured, the leak composited to input ~49 and rendered at
+      // screen 237 -- as bright as fully lit content. Small leaks are not
+      // subtle under this shader, so the panel must fully cover what it hides.
+      //
+      // Values below are chosen from the measured transfer curve in
+      // tools/palette/README.md rather than by eye. Input 16 lands at screen
+      // ~75: a distinct dark surface, well clear of the ~200+ of lit content.
+      ctx.fillStyle = "#101010";
       ctx.fillRect(0, 0, 1080, 250);
-      ctx.strokeStyle = "#66f4";
+      // Border at input 40/56 -> screen ~176/200, bright enough to define the
+      // edge without blooming into a halo over the playfield.
+      ctx.strokeStyle = "#283038";
       ctx.lineWidth = 3;
       ctx.strokeRect(0, 0, 1080, 250);
 
@@ -138,12 +148,16 @@ function createTowerSelectionPanel() {
   // Create Sell button
   let sellButton = makeButton(150, 65, 250, 120);
   sellButton.draw = function() {
-    ctx.fillStyle = "#d44";
+    // #d44 (221,68,68) sat both the red and the off-channels: red pinned at
+    // 238 while 68 bloomed up too, washing the fill toward pink. Keeping the
+    // brightest channel low preserves the hue -- see tools/palette/README.md.
+    ctx.fillStyle = "#280808";
     ctx.fillRect(150, 65, 250, 120);
-    ctx.strokeStyle = "#f66";
+    ctx.strokeStyle = "#801818";
     ctx.lineWidth = 3;
     ctx.strokeRect(150, 65, 250, 120);
-    ctx.fillStyle = "#fff";
+    // Label at input 40 -> screen ~176: legible without bleeding into the fill.
+    ctx.fillStyle = "#282828";
     ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -157,12 +171,12 @@ function createTowerSelectionPanel() {
   // Create Upgrade button
   let upgradeButton = makeButton(450, 65, 250, 120);
   upgradeButton.draw = function() {
-    ctx.fillStyle = "#4a4";
+    ctx.fillStyle = "#082808";
     ctx.fillRect(450, 65, 250, 120);
-    ctx.strokeStyle = "#6f6";
+    ctx.strokeStyle = "#188018";
     ctx.lineWidth = 3;
     ctx.strokeRect(450, 65, 250, 120);
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#282828";
     ctx.font = "bold 48px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -176,7 +190,9 @@ function createTowerSelectionPanel() {
   // Create Close (X) button
   let closeButton = makeButton(950, 30, 100, 100);
   closeButton.draw = function() {
-    ctx.strokeStyle = "#f66";
+    // A 6px stroke is past the ~2px cliff and saturates like a fill, so this
+    // needs the same low input a block would.
+    ctx.strokeStyle = "#902020";
     ctx.lineWidth = 6;
     ctx.lineCap = "round";
     ctx.beginPath();

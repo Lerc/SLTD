@@ -323,7 +323,15 @@ wsb run --code 'wslog(await gameControl.run("buy_tower Tower 3 0; advance 300; l
 
 **Cache busting:** bump the `?v=` query on the script tags in `index.html` (and the
 matching `window.WSB.version`) whenever you edit browser JS, or `wsb reload` will
-serve the cached file.
+serve the cached file. Every game script needs the query, not just the one you
+edited.
+
+**Backgrounded tabs stall `advance`.** `advanceTicks` drains its queue from
+`requestAnimationFrame`, which browsers throttle heavily (often to zero) when the
+tab is not visible. A run that hangs with `gameControl.pendingTicks()` stuck at
+its starting value is this, not a game bug — check `document.hidden` and ask the
+user to bring the tab to the foreground. Reads that do not advance time
+(`wsb eval` on game state) work fine either way.
 
 ### Tower Types
 - `Tower` ($100) - Basic tower, low damage, medium range
