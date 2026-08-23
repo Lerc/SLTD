@@ -85,6 +85,22 @@ feature has almost no neighbours to gather bloom from, so it never lights up.
 The same holds for lines. A 1px line at input 255 reads 142; a solid bar at
 input 24 reads 115. **Line width is a stronger brightness control than colour.**
 
+### Corollary: dim your fills, but not your text
+
+These two rules pull in opposite directions, and it is easy to apply the wrong
+one. Large fills saturate, so they need **low** input to stay dark or keep a
+hue. Text and thin strokes lose brightness to their own thinness, so they need
+**high** input to read at all.
+
+Dimming label text the way a fill is dimmed produces murky, low-contrast text —
+it is already losing brightness to the size curve, and lowering the input takes
+away what is left. Observed on the tower selection panel: labels at input 40
+peaked at 163 against a 129 fill (34 points of contrast); returning them to
+near-white took the peak to 238 (174 points).
+
+Rule of thumb: **fills go dark (input ≤ 64), text and thin strokes stay bright
+(input ≥ 200).**
+
 Practical rule: never rely on a 1px feature being visible. Use ≥2px for anything
 that must read clearly.
 
