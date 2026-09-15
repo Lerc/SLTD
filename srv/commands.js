@@ -47,6 +47,8 @@ function makeCommands(host) {
     const info = G.towerInfo.find(t => t.type.name === towerType);
     if (!info) return { success: false, reason: `Unknown tower type: ${towerType}` };
 
+    if (!info.upgrades) return {success: false, reason: 'This specialization requires a building upgrade'};
+    if (!Number.isInteger(cellX) || !Number.isInteger(cellY)) return {success: false, reason: 'Invalid cell coordinates'};
     const pos = G.v2(cellX, cellY);
     if (!G.levelMap.canBuildHere(pos)) return { success: false, reason: 'Cannot build at this location' };
 
@@ -57,7 +59,7 @@ function makeCommands(host) {
       return { success: false, reason: `Not enough money (need ${info.cost}, have ${G.money})` };
     }
 
-    G.buyTower(info, cellX, cellY);
+    if (!G.buyTower(info, cellX, cellY)) return {success: false, reason: 'Cannot build now'};
     return {
       success: true,
       tower: { cellX, cellY, type: towerType, cost: info.cost },
@@ -149,6 +151,13 @@ function makeCommands(host) {
       return result.success;
     },
 
+    upgrade_tower(args) {
+      const result = G.upgradeTower(G.towers[Number(args[0])], args[1]);
+      out(result ? 'Upgraded to ' + args[1] : 'Upgrade unavailable');
+      return !!result;
+    },
+    sell_tower(args) { return G.sellTower(G.towers[Number(args[0])]); },
+    send_wave() { return G.sendWave(); },
     tower_types() {
       out('Tower types: ' + G.towerInfo.map(t => `${t.type.name} ($${t.cost})`).join(', '));
       return true;
@@ -215,6 +224,9 @@ function makeCommands(host) {
       'show_tower [index=0]             - Show details of a tower',
       'buy_tower <type> <cellX> <cellY> - Purchase and place a tower',
       'tower_types                      - List tower types and costs',
+      'upgrade_tower <index> <type>     - Choose a specialization',
+      'sell_tower <index>               - Sell for 70% of total investment',
+      'send_wave                        - Launch early for bonus credits',
       'spots [limit=10]                 - List buildable cells beside the path',
       'save_json <filename>             - Save game state to JSON file',
       'load_json <filename>             - Load game state from JSON file'

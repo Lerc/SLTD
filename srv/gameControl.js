@@ -58,7 +58,7 @@
 
   function cellToCanvas(cellX, cellY) {
     const w = mapToWorld(v2(cellX, cellY));
-    return { x: w.x, y: w.y + mapTop };
+    return { x: w.x + 12, y: w.y + mapTop };
   }
 
   function sendMouse(type, x, y) {
@@ -167,7 +167,7 @@
       towers: towers.map(t => ({
         type: t.constructor.name,
         cellX: t.cellPosition.x,
-        cellY: t.cellPosition.y
+        cellY: t.cellPosition.y, invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
       }))
     };
   }
@@ -177,10 +177,15 @@
     globalThis.money = state.money;
     globalThis.waveCounter = state.waveCounter;
     globalThis.difficulty = state.difficulty;
+    globalThis.selectedTower = null;
     globalThis.towers.length = 0;
     for (const t of state.towers || []) {
       const info = towerInfo.find(i => i.type.name === t.type);
-      if (info) towers.push(new info.type(t.cellX, t.cellY));
+      if (info) {
+        const tower = new info.type(t.cellX, t.cellY);
+        for (const key of ['invested', 'targetMode', 'kills', 'damageDealt']) if (t[key] !== undefined) tower[key] = t[key];
+        towers.push(tower);
+      }
     }
   }
 

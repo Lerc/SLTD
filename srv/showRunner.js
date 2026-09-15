@@ -1,7 +1,7 @@
 "use strict"
 
 // Game configuration
-var versionString="0.91";
+var versionString="1.0 — Branching defenses";
 var globalScaleFactor = 0.5;
 var showNote=true;
 var note = "";
@@ -15,7 +15,7 @@ var difficulty =1;
 var gameAcceleration=1;
 var gameAccelerated=false;
 var OutputWidth=540;
-var OutputHeight=960;
+var OutputHeight=768;
 
 var cellSize = 96;
 var lives = 20;
@@ -30,6 +30,10 @@ var mouseCell = v2(-1,-1);
 var canvasMouse = v2(-1,-1);
 
 var selectedTower = null;
+var paused = false;
+var betweenWaves = true;
+var buildTicks = 900;
+var selectedBuild = null;
 
 var x=350;
 var y=100;
@@ -61,7 +65,7 @@ var  endPos = v2(0,0);
 var  dragPos = v2(0,0);
 var draggingTower = null;
 
-var mapTop=106;
+var mapTop=0;
 var angle = 0;
 
 var creeps = [];
@@ -91,34 +95,24 @@ let taps = 0;
 
 // Input handling (called from browser or headless)
 function pressStart(pos) {
-  startPos=pos;
-
-  endPos=pos;
-  dragPos=pos;
-
-  if (typeof pressStartUI !== 'undefined') pressStartUI(pos);
+  startPos = pos;
+  dragPos = pos;
 }
-
+function pressMove(pos) { dragPos = pos; }
 function pressEnd(pos) {
-  endPos=pos;
-  if (draggingTower) {
-    let towerHere = towers.find( ({cellPosition}) => vsame(cellPosition,mouseCell));
-    if (!towerHere && levelMap.canBuildHere(mouseCell)) {
-      buyTower(draggingTower,mouseCell.x,mouseCell.y)
-    }
-  }
-  draggingTower = false;
-  if (typeof pressEndUI !== 'undefined') pressEndUI(pos);
-}
-
-function pressMove(pos) {
-  dragPos=pos;
-
-  if (draggingTower) {
-
-  }
-
-  if (typeof pressMoveUI !== 'undefined') pressMoveUI(pos);
+  if (gameMode !== mainGame) return;
+  setMousePos(pos);
+  if (vdistance(startPos, pos) > 45) return;
+  if (typeof sellConfirmTower !== 'undefined') sellConfirmTower = null;
+  const tower = towers.find(t => vsame(t.cellPosition, mouseCell));
+  if (tower) {
+    selectedTower = globalThis.selectedTower = tower;
+    selectedBuild = null;
+  } else if (selectedBuild) {
+    const built = buyTower(selectedBuild, mouseCell.x, mouseCell.y);
+    if (typeof uiToast === 'function') uiToast(built ? selectedBuild.name + ' deployed' : 'Choose an empty tile and check your credits');
+  } else selectedTower = globalThis.selectedTower = null;
+  if (typeof updateUI === 'function') updateUI(true);
 }
 
 function setMousePos(v) {
@@ -126,7 +120,7 @@ function setMousePos(v) {
   canvasMouseX=canvasMouse.x;
   canvasMouseY=canvasMouse.y;
 
-  viewMouseX=canvasMouse.x;
+  viewMouseX=canvasMouse.x - 12;
   viewMouseY=canvasMouse.y-mapTop;
 
   mouseCell= worldToMap(v2(viewMouseX,viewMouseY))
@@ -151,44 +145,19 @@ function indexOfMax(arr) {
   return maxIndex;
 }
 
-function creepCount(waveNumber) {
-  return Math.floor(min(100, 6 + Math.log(10+waveNumber*4)*Math.sqrt(waveNumber)));
-}
-
+function creepCount(waveNumber) { return wavePlan(waveNumber).count; }
 function generateWave(num) {
-  wave = [];
-  let kinds = [Basic,Zipper,Ball,Basic,Flyer,Spikey,Basic,BigBall];
-
-  let switchChance = [0.2,0.1,0.3,0.2,0.2,0.3,0.2,0.9];
-
-  let rnd = makeRandom(num+42);
-
-  let count = creepCount(num);
-
-  console.log("wave "+num+" has "+count+" creeps");
-  let kind = 0;
-  let batch = [];
-
-  for (let i = 0;i<count; i++) {
-    let p = switchChance[kind];
-    if (num > 1) {
-      if (rnd()<p) {
-
-        kind = (kind+1) % kinds.length;
-      }
-    }
-    batch.push(kind);
-  }
-  batch.sort();
-  for (let i of batch) {
-    globalThis.hopper.push(new kinds[i]());
-    hopper = globalThis.hopper;
-  }
+  const plan = wavePlan(num);
+  difficulty = globalThis.difficulty = waveDifficulty(num);
+  releaseRate = globalThis.releaseRate = plan.interval;
+  waveAge = globalThis.waveAge = 0;
+  for (const Kind of plan.kinds) globalThis.hopper.push(new Kind());
+  hopper = globalThis.hopper;
 }
 
 // Game lifecycle
 function startGame() {
-  money = globalThis.money = 250;
+  money = globalThis.money = 320;
   towers = globalThis.towers = [];
   creeps = globalThis.creeps = [];
   particleSystems = globalThis.particleSystems = [];
@@ -201,6 +170,15 @@ function startGame() {
   lives = globalThis.lives = 20;
   waveCounter = globalThis.waveCounter = 1;
   difficulty = globalThis.difficulty = 1;
+  ticker = globalThis.ticker = 0;
+  waveAge = globalThis.waveAge = 0;
+  selectedTower = globalThis.selectedTower = null;
+  selectedBuild = globalThis.selectedBuild = null;
+  paused = globalThis.paused = false;
+  betweenWaves = globalThis.betweenWaves = true;
+  buildTicks = globalThis.buildTicks = 900;
+  gameViewTransform = null;
+  if (typeof persistenceCtx !== 'undefined') persistenceCtx.clearRect(0, 0, OutputWidth, OutputHeight);
   if (typeof initUI !== 'undefined') initUI();
   gameMode = globalThis.gameMode = mainGame;
   console.log("starting game")
@@ -208,19 +186,22 @@ function startGame() {
   // Create levelMap - will be available globally
   globalThis.levelMap = createWorld(map1);
 
-  generateWave(waveCounter);
+  if (typeof updateUI === 'function') updateUI();
 }
 
-function nextWave( ) {
+function nextWave() {
+  money = globalThis.money = money + wavePlan(waveCounter).reward;
+  if (typeof uiToast === 'function') uiToast('Wave cleared · +' + wavePlan(waveCounter).reward + ' credits');
   waveCounter = globalThis.waveCounter = waveCounter + 1;
-  difficulty = globalThis.difficulty = difficulty * 1.08;
-  generateWave(waveCounter)
+  difficulty = globalThis.difficulty = waveDifficulty(waveCounter);
+  betweenWaves = globalThis.betweenWaves = true;
+  buildTicks = globalThis.buildTicks = 600;
 }
 
 // Game modes
 function waitForContent() {
   if (typeof assetsPending !== 'undefined' && assetsPending.length == 0) {
-    gameMode = globalThis.gameMode = waitForFullScreen;
+    gameMode = globalThis.gameMode = titleScreen;
   }
 }
 
@@ -266,51 +247,20 @@ function titleScreen() {
   }
 }
 
-titleScreen.draw = _=>{
+titleScreen.draw = () => {
   ctx.clear();
-  ctx.fillStyle="#000";
-  ctx.fillRect(0,0,OutputWidth,OutputHeight);
-  ctx.setTransform(globalScaleFactor,0,0,   globalScaleFactor,0,0)
-
-
-  ctx.fillStyle="#0af";
-
-  ctx.font="64px sans-serif";
-  ctx.textAlign="center";
-  ctx.fillText("I Wanted a New Tower Defence",540,100);
-  ctx.fillText("To Play On My Phone",540,200);
-
-  ctx.fillText("So I Made One",540,400);
-
-  ctx.fillText("Press Anywhere to Start",540,650);
-
-  ctx.font="50px sans-serif";
-  ctx.textAlign="left";
-
-  ctx.drawSprite(Assets.TowerIcons, 150,1000,0);
-  ctx.fillText("Low Damage, Medium Range",300,1000);
-
-
-  ctx.drawSprite(Assets.TowerIcons, 150,1200,1);
-  ctx.fillText("High Damage, Very Short Range",300,1200);
-
-
-  ctx.drawSprite(Assets.TowerIcons, 150,1400,2);
-  ctx.fillText("Rapid Fire, Low Damage ",300,1400);
-
-  ctx.drawSprite(Assets.TowerIcons, 150,1600,3);
-  ctx.fillText("Long Range, High Damage, Slow ",300,1600);
-
-  ctx.drawSprite(Assets.TowerIcons, 150,1800,4);
-  ctx.fillText("Area Damage Around Tower ",300,1800);
-}
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, OutputWidth, OutputHeight);
+};
 
 function mainGame() {
+  if (typeof updateUI === 'function') updateUI();
+  if (globalThis.paused) return;
   let cycles = 1;
   if (gameAccelerated) cycles = gameAcceleration;
 
   for (let i=0; i<cycles;i++) {
     mainGame_core();
+    if (gameMode !== mainGame) break;
   }
 }
 
@@ -349,6 +299,15 @@ function updatePersistenceCanvas() {
 }
 
 function mainGame_core() {
+  if (gameMode !== mainGame) return;
+  if (globalThis.betweenWaves) {
+    globalThis.buildTicks--;
+    if (globalThis.buildTicks <= 0) sendWave();
+    updatePersistenceCanvas();
+    for (const p of particleSystems) p.move();
+    particleSystems = globalThis.particleSystems = particleSystems.filter(p => p.isActive());
+    return;
+  }
   angle=(angle+0.1)%TWOPI;
   globalThis.waveAge += 1;
   waveAge = globalThis.waveAge;
@@ -370,7 +329,7 @@ function mainGame_core() {
   }
 
   if (creeps.length+globalThis.hopper.length+backlog.length  == 0 ) {
-    if (lives > 0 ) nextWave();
+    if (lives > 0) { nextWave(); return; }
   }
 
   for (let e of globalThis.creeps) {
@@ -403,24 +362,6 @@ function mainGame_core() {
     gameMode = globalThis.gameMode = gameOver;
   }
 
-  if (typeof Input !== 'undefined' && Input.keyWentDown(133))  {
-    let clickedTower= towers.find( ({cellPosition}) => vsame(cellPosition,mouseCell))
-
-    if (selectedTower === clickedTower && typeof showTowerMenu !== 'undefined') showTowerMenu(clickedTower);
-    selectedTower = clickedTower;
-
-    // Show/hide tower selection panel based on whether a tower is selected
-    if (typeof showTowerSelectionPanel !== 'undefined' && typeof hideTowerSelectionPanel !== 'undefined') {
-      if (selectedTower) {
-        showTowerSelectionPanel();
-      } else {
-        hideTowerSelectionPanel();
-      }
-    }
-  }
-
-  if (typeof updateUI !== 'undefined') updateUI();
-
   // Update persistence canvas every tick for consistent visuals
   updatePersistenceCanvas();
 }
@@ -433,23 +374,7 @@ mainGame.draw = function() {
 
   drawWorld();
 
-  ctx.fillStyle="#0af";
-  if (showNote) {
-    ctx.font="32px sans-serif";
-    ctx.fillText(note, 10, 200);
-  }
-  ctx.font="55px sans-serif";
-  ctx.textAlign="right";
 
-  ctx.fillText("Lives: "+lives,1060,70);
-
-  ctx.textAlign="center";
-  ctx.fillText("$"+money,540,70);
-
-  ctx.textAlign="left";
-  ctx.fillText("Wave "+waveCounter,20,70);
-
-  if (typeof drawUI !== 'undefined') drawUI();
 }
 
 function drawWorld() {
@@ -472,8 +397,12 @@ function drawWorld() {
     e.drawMain();
   }
 
-  if (selectedTower) {
-    selectedTower.drawRange();
+  if (selectedTower) selectedTower.drawRange();
+  if (selectedBuild && levelMap.canBuildHere(mouseCell)) {
+    const p = mapToWorld(mouseCell);
+    ctx.strokeStyle = '#184050'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(p.x, p.y, selectedBuild.maxRange, 0, TWOPI); ctx.stroke();
+    ctx.fillStyle = '#082028'; ctx.fillRect(p.x - 42, p.y - 42, 84, 84);
   }
 
   // Composite persistence canvas onto frame canvas (updated per tick in mainGame_core)
@@ -526,36 +455,8 @@ function drawWorld() {
   ctx.restore();
 }
 
-function gameOver() {
-  mainGame();
-  if (typeof Input !== 'undefined' && Input.keyWentDown(133)) {
-    taps+=1;
-  }
-
-  if (taps > 2) {
-    startGame();
-  }
-}
-
-gameOver.draw = _=>{
-  mainGame.draw();
-
-  ctx.fillStyle="#0006";
-  ctx.strokeStyle="#0af";
-  ctx.fillRect(200,800,680,300);
-  ctx.strokeRect(200,800,680,300);
-  ctx.strokeRect(200-8,800-8,680+16,300+16);
-  ctx.strokeStyle="#6ef";
-  ctx.strokeRect(200-4,800-4,680+8,300+8);
-
-  ctx.fillStyle="#0af";
-  ctx.font="75px sans-serif";
-  ctx.textAlign="center";
-  ctx.fillText("Game Over",540,900);
-
-  ctx.font="50px sans-serif";
-  ctx.fillText("Tap "+(3-taps)+" Times to Play Again",540,1050);
-}
+function gameOver() { if (typeof updateUI === 'function') updateUI(); }
+gameOver.draw = mainGame.draw;
 
 // Export to global environment (works in both browser and Node.js)
 if (typeof module !== 'undefined' && module.exports) {

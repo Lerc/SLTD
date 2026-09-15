@@ -3,13 +3,22 @@
 window.onload = init;
 
 let lastTime = performance.now();
+let tickRemainder = 0;
 
 function init() {
-  document.querySelector("#goFullScreen").onclick=_=>toggleFullScreen();
+  bindUI();
   initInput();
   window.outputCanvas = document.querySelector("#main");
   outputCanvas.width=OutputWidth;
   outputCanvas.height=OutputHeight;
+  const resize = () => {
+    const rect = document.getElementById('battlefield').getBoundingClientRect();
+    const scale = Math.min(rect.width / OutputWidth, rect.height / OutputHeight);
+    outputCanvas.style.width = OutputWidth * scale + 'px';
+    outputCanvas.style.height = OutputHeight * scale + 'px';
+  };
+  new ResizeObserver(resize).observe(document.getElementById('battlefield'));
+  resize();
 
   window.frameCanvas=document.createElement("canvas");
   frameCanvas.width=OutputWidth;
@@ -37,24 +46,25 @@ function init() {
 
 function screenToCanvas({x,y}) {
   let canvas=outputCanvas;
-  let v=v2(x/canvas.clientWidth*canvas.width,y/canvas.clientHeight*canvas.height);
+  const rect = canvas.getBoundingClientRect();
+  let v=v2((x-rect.left)/rect.width*canvas.width,(y-rect.top)/rect.height*canvas.height);
   return vscale(v,1/globalScaleFactor);
 }
 
 function mouseMoveHandler(e) {
-  let v = screenToCanvas(v2(e.pageX,e.pageY));
+  let v = screenToCanvas(v2(e.clientX,e.clientY));
   setMousePos(v);
   if (e.button==0) pressMove(v);
 }
 
 function mouseUpHandler(e) {
-  let v = screenToCanvas(v2(e.pageX,e.pageY));
+  let v = screenToCanvas(v2(e.clientX,e.clientY));
   setMousePos(v);
   if (e.button==0) pressEnd(v);
 }
 
 function mouseDownHandler(e) {
-  let v = screenToCanvas(v2(e.pageX,e.pageY));
+  let v = screenToCanvas(v2(e.clientX,e.clientY));
   setMousePos(v);
   if (e.button==0) pressStart(v);
 }
@@ -65,9 +75,10 @@ function update() {
 
   let thisTime = performance.now();
   let diff = thisTime - lastTime;
-  let ticks = Math.round(diff / 16);
+  tickRemainder += Math.min(diff, 160) / (1000 / 60);
+  let ticks = Math.floor(tickRemainder);
+  tickRemainder -= ticks;
   lastTime = thisTime;
-  if (ticks > 10) ticks = 10;
 
   // gameControl's `advance` queues ticks to be run here, so scripted stepping
   // is drawn like any other frame instead of racing ahead of the renderer.

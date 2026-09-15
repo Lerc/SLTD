@@ -1,37 +1,58 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>A game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
-
-  <script>window.WSB = { app: 'sltd', version: '2026-08-23-8' };</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#091116">
+  <title>SLTD · Branching Defenses</title>
+  <link rel="stylesheet" href="main.css?v=2026-09-16-7">
+  <script>window.WSB = {app: 'sltd', version: '2026-09-16-7'};</script>
   <script src="wsb-client.js"></script>
-
-  <script src="Extras.js"></script>
-  <script src="Assets.js"></script>
-  <script src="entities.js"></script>
-  <script src="world.js"></script>
-  <script src="input.js"></script>
-  <script src="gadgets.js"></script>
-  <script src="ui.js?v=2026-08-23-8"></script>
-  <script src="CanvasGlow.js"></script>
-  <script src="WebGLBoilerPlate.js"></script>
-
-  <script src="showRunner.js"></script>
-  <script src="commands.js?v=2026-08-23-8"></script>
-  <script src="main.js?v=2026-08-23-8"></script>
-  <script src="gameControl.js?v=2026-08-23-8"></script>
+  <script src="Extras.js?v=2026-09-16-7"></script>
+  <script src="Assets.js?v=2026-09-16-7"></script>
+  <script src="entities.js?v=2026-09-16-7"></script>
+  <script src="world.js?v=2026-09-16-7"></script>
+  <script src="input.js?v=2026-09-16-7"></script>
+  <script src="gadgets.js?v=2026-09-16-7"></script>
+  <script src="arsenal.js?v=2026-09-16-7"></script>
+  <script src="waves.js?v=2026-09-16-7"></script>
+  <script src="ui.js?v=2026-09-16-7"></script>
+  <script src="CanvasGlow.js?v=2026-09-16-7"></script>
+  <script src="WebGLBoilerPlate.js?v=2026-09-16-7"></script>
+  <script src="showRunner.js?v=2026-09-16-7"></script>
+  <script src="commands.js?v=2026-09-16-7"></script>
+  <script src="main.js?v=2026-09-16-7"></script>
+  <script src="gameControl.js?v=2026-09-16-7"></script>
 </head>
-
 <body>
-  <div class="fill">
-    <canvas id="main" width="800" height="600" class="fill"></canvas>
-  </div>
-  <div id="goFullScreen">Full Screen</div>
+  <main id="game-shell">
+    <header class="hud">
+      <div class="status-row">
+        <div class="brand" aria-label="SLTD">SL<span>TD</span><small>BRANCHING DEFENSES</small></div>
+        <div class="resource"><span class="resource-label">CREDITS</span><strong id="credits">320</strong></div>
+        <div class="resource lives"><span class="resource-label">INTEGRITY</span><strong id="lives">20 <small>/ 20</small></strong></div>
+        <button id="pause" class="icon-button" aria-label="Pause game">Ⅱ</button>
+        <button id="speed" class="icon-button" aria-label="Change game speed">1×</button>
+      </div>
+      <div class="wave-row"><div><span class="eyebrow" id="wave-label">WAVE 01</span><span id="wave-name">First contact</span></div><button id="send-wave">Send wave <span>+15</span></button></div>
+      <div class="wave-progress"><div id="wave-progress"></div></div>
+    </header>
+    <section id="battlefield" aria-label="Battlefield. Select a tower below, then tap an empty tile to build.">
+      <canvas id="main" width="540" height="768" aria-label="Tower defense battlefield"></canvas>
+      <div id="toast" role="status" aria-live="polite"></div>
+      <div id="pause-banner" hidden>PAUSED<span>Take your time. You can still build and upgrade.</span></div>
+    </section>
+    <footer class="command-deck">
+      <div class="deck-heading"><span id="deck-title">BUILD YOUR DEFENSE</span><button id="help" aria-label="Open field guide">Field guide <span>?</span></button></div>
+      <div id="build-deck"></div>
+      <div id="tower-deck" hidden></div>
+      <div class="deck-note" id="deck-note">Choose a tower, then tap an empty tile.</div>
+    </footer>
+    <section id="welcome" class="overlay">
+      <div class="intro-card"><span class="eyebrow">A SMALL MAP. A THOUSAND DECISIONS.</span><div class="intro-emblem" aria-hidden="true">⌖</div><h1>Hold the line.<br><em>Find your branch.</em></h1><p>Five foundations. Ten specializations.<br>Build a defense that works together.</p><button id="start" class="primary">Deploy defenses <span>→</span></button><p class="intro-tip">Tap to build · Tap a tower to specialize<br>Designed for your thumbs.</p></div>
+    </section>
+    <section id="game-over" class="overlay" hidden><div class="intro-card"><span class="eyebrow">DEFENSE BREACHED</span><h1>Every run<br>teaches something.</h1><p id="run-result"></p><button id="restart" class="primary">Deploy again →</button></div></section>
+    <dialog id="field-guide"><div class="guide-heading"><div><span class="eyebrow">INTELLIGENCE</span><h2>Know your enemy.</h2></div><button id="close-guide" class="icon-button" aria-label="Close field guide">×</button></div><p id="wave-intel"></p><dl><dt>Iron shells <span>AMBER SQUARE</span></dt><dd>Block 60% of physical damage. Use Pulse, Ranger, or Railgun.</dd><dt>Shieldbugs <span>VIOLET RING</span></dt><dd>Energy drains shields twice as fast. Piercing ignores the shield.</dd><dt>Menders <span>GREEN CROSS</span></dt><dd>Recover health while moving. Incinerator burns stop regeneration.</dd><dt>Splitters <span>SPIKED BODY</span></dt><dd>Release two runners on defeat. Splash and chains catch the brood.</dd><dt>Guardians <span>LARGE SHELL</span></dt><dd>Resist slows and cost 3 integrity if they escape. Focus sustained damage.</dd></dl><p class="guide-tip">Each foundation has two permanent branches. Mix damage with slowing fields. Sell for 70% of everything invested.</p><button id="goFullScreen">Toggle fullscreen</button></dialog>
+  </main>
 </body>
-
 </html>

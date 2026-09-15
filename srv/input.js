@@ -56,43 +56,16 @@ function flushKeysDown() {
 
 let mainElement=document.querySelector("#main");
 
-mainElement.addEventListener("touchstart", touchStartHandler);
+mainElement.addEventListener("touchstart", touchStartHandler, {passive: false});
 mainElement.addEventListener("touchend", touchEndHandler);
-mainElement.addEventListener("touchcancel", touchEndHandler);
-mainElement.addEventListener("touchmove", touchMoveHandler);
+mainElement.addEventListener("touchcancel", () => { mainTouch = null; });
+mainElement.addEventListener("touchmove", touchMoveHandler, {passive: false});
 
 function localCoordinates({x, y}) {
-	//assuming main element is a canvas;
-	let canvas=mainElement;
-	let ox = 0;
-	let oy = 0;
-	let actualHeight = canvas.clientHeight;
-	let actualWidth = canvas.clientWidth;
-	if (document.fullscreenElement == canvas) {
-		//need to do do shenanigans to handle canvas indent
-		let w = canvas.width;
-		let h = canvas.height
-		let cw = canvas.clientWidth;
-		let ch = canvas.clientHeight;
-
-		if (w/h > cw/ch) {
-			actualHeight=(cw/w*h);
-			oy= (ch-actualHeight)/2;
-		} else {
-			actualWidth=(ch/h*w);
-			ox= (cw-actualWidth)/2;
-		}
-	}
-
-	x-=ox+canvas.offsetLeft;
-	y-=oy+canvas.offsetTop;
-
-	x = x/actualWidth * canvas.width;
-	y = y/actualHeight * canvas.height;
-	
-	return vscale({x,y},1/globalScaleFactor)
+  const rect = mainElement.getBoundingClientRect();
+  return v2((x - rect.left) / rect.width * mainElement.width / globalScaleFactor,
+    (y - rect.top) / rect.height * mainElement.height / globalScaleFactor);
 }
-window.screenToCanvas=localCoordinates;
 
 window.touchList=[];
 
@@ -133,7 +106,7 @@ function touchStartHandler(e){
 
 	for (let touch of e.changedTouches) {
 		let pos = localCoordinates(v2(touch.clientX,touch.clientY));		
-		if (!mainTouch) {
+		if (mainTouch === null) {
 			mainTouch=touch.identifier;
 			pressStart(pos);
 		}
@@ -159,6 +132,7 @@ function touchStartHandler(e){
 }
 
 function touchMoveHandler(e){
+  e.preventDefault();
 	for (let touch of e.touches) {
 		let pos = localCoordinates(v2(touch.clientX,touch.clientY));
 		setMousePos(pos);

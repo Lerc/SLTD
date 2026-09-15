@@ -120,14 +120,6 @@ function makeButton (left,top,width,height) {
   return {draw,update,surrounds,pressStart,pressMove,pressEnd,touched,getBounds }
 }
 
-var towerInfo= [
-  {cost: 100, type: Tower, minRange : 0, maxRange: 250},
-  {cost: 300, type: Stubby, minRange : 0, maxRange: 180},
-  {cost: 350, type: Zappy, minRange : 0, maxRange: 350},
-  {cost: 1000, type: Star, minRange : 250, maxRange: 600},
-  {cost: 500, type: Thumper, minRange : 0, maxRange: 150},
-  
-]
 function makeTowerButton(centerX,centerY,type) {
   let width = 180;
   let height = 200;
@@ -158,6 +150,5 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.makeContainer = makeContainer;
   globalThis.makePanel = makePanel;
   globalThis.makeButton = makeButton;
-  globalThis.towerInfo = towerInfo;
   globalThis.makeTowerButton = makeTowerButton;
 }

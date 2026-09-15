@@ -18,7 +18,10 @@ require('./littleAStar.js');
 require('./entities.js');
 require('./world.js');
 require('./gadgets.js');
-require('./showRunner.js');
+require('./arsenal.js');
+require('./waves.js');
+// Match browser script semantics: state vars and globalThis must be the same storage.
+require('vm').runInThisContext(require('fs').readFileSync(__dirname + '/showRunner.js', 'utf8'), {filename: 'showRunner.js'});
 const { makeCommands } = require('./commands.js');
 
 // Stub out browser-only globals
@@ -175,6 +178,7 @@ function saveState() {
     gameAcceleration: globalThis.gameAcceleration,
     gameAccelerated: globalThis.gameAccelerated,
     gameMode: gameModeName,
+    paused: globalThis.paused, betweenWaves: globalThis.betweenWaves, buildTicks: globalThis.buildTicks,
     taps: globalThis.taps,
 
     // Creeps
@@ -193,7 +197,10 @@ function saveState() {
       turn: c.turn,
       scale: c.scale,
       radius: c.radius,
-      value: c.value
+      value: c.value,
+      slowTicks: c.slowTicks, slowFactor: c.slowFactor, burnTicks: c.burnTicks, burnPower: c.burnPower,
+      shield: c.shield, vulnerableTicks: c.vulnerableTicks,
+      burnSourceIndex: globalThis.towers.indexOf(c.burnSource)
     })),
 
     // Towers
@@ -210,7 +217,8 @@ function saveState() {
       minimumRange: t.minimumRange,
       targetIndex: globalThis.creeps.indexOf(t.target),
       // Star-specific
-      outAngle: t.outAngle
+      outAngle: t.outAngle, focus: t.focus, focusTargetIndex: globalThis.creeps.indexOf(t.focusTarget),
+      invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
     })),
 
     // Bullets
@@ -235,7 +243,8 @@ function saveState() {
 
     // Backlog
     backlog: globalThis.backlog.map(c => ({
-      type: c.constructor.name
+      type: c.constructor.name, x: c.x, y: c.y, pathIndex: c.pathIndex,
+      destination: {...c.destination}, source: {...c.source}, motion: {...c.motion}, hitPoints: c.hitPoints
     })),
 
     // Map
@@ -260,6 +269,9 @@ function loadState(stateData) {
   globalThis.gameAcceleration = stateData.gameAcceleration || 1;
   globalThis.gameAccelerated = stateData.gameAccelerated || false;
   globalThis.taps = stateData.taps || 0;
+  globalThis.paused = stateData.paused || false;
+  globalThis.betweenWaves = stateData.betweenWaves || false;
+  globalThis.buildTicks = stateData.buildTicks || 0;
 
   // Initialize world
   globalThis.levelMap = globalThis.createWorld(stateData.map || globalThis.map1);
@@ -281,6 +293,9 @@ function loadState(stateData) {
     }
 
     const creep = new CreepClass();
+    for (const key of ['slowTicks', 'slowFactor', 'burnTicks', 'burnPower', 'shield', 'vulnerableTicks']) {
+      if (creepData[key] !== undefined) creep[key] = creepData[key];
+    }
     creep.x = creepData.x;
     creep.y = creepData.y;
     creep.angle = creepData.angle;
@@ -311,6 +326,9 @@ function loadState(stateData) {
     }
 
     const tower = new TowerClass(towerData.cellX, towerData.cellY);
+    for (const key of ['invested', 'targetMode', 'kills', 'damageDealt']) {
+      if (towerData[key] !== undefined) tower[key] = towerData[key];
+    }
     tower.angle = towerData.angle;
     tower.cooldown = towerData.cooldown;
     if (towerData.outAngle !== undefined) tower.outAngle = towerData.outAngle;
@@ -321,9 +339,16 @@ function loadState(stateData) {
   // Restore tower targets (after all creeps and towers are loaded)
   for (let i = 0; i < globalThis.towers.length; i++) {
     const towerData = stateData.towers[i];
+    const tower = globalThis.towers[i];
+    if (towerData.focus !== undefined) tower.focus = towerData.focus;
+    tower.focusTarget = globalThis.creeps[towerData.focusTargetIndex] || null;
     if (towerData.targetIndex >= 0 && towerData.targetIndex < globalThis.creeps.length) {
       globalThis.towers[i].target = globalThis.creeps[towerData.targetIndex];
     }
+  }
+
+  for (let i = 0; i < globalThis.creeps.length; i++) {
+    globalThis.creeps[i].burnSource = globalThis.towers[stateData.creeps[i].burnSourceIndex] || null;
   }
 
   // Restore bullets
@@ -364,7 +389,11 @@ function loadState(stateData) {
   for (const backlogData of stateData.backlog || []) {
     const CreepClass = globalThis[backlogData.type];
     if (CreepClass) {
-      globalThis.backlog.push(new CreepClass());
+      const child = new CreepClass();
+      for (const key of ['x', 'y', 'pathIndex', 'destination', 'source', 'motion', 'hitPoints']) {
+        if (backlogData[key] !== undefined) child[key] = backlogData[key];
+      }
+      globalThis.backlog.push(child);
     }
   }
 

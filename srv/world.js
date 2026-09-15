@@ -16,8 +16,7 @@ function createWorld(textRepresentation) {
   let path = generatePath();
 
   function at({x,y}) {
-    x|=0;
-    y|=0;
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return voidCell;
     if (x<0 || y<0 || x>=width || y>=height) return voidCell;
     return mapData[y*width+x];
   }
@@ -68,24 +67,37 @@ function createWorld(textRepresentation) {
 
   function draw() {
 
-    ctx.strokeWidth=1;
-    ctx.strokeStyle="#4f4";
-    ctx.fillStyle="#000800";
-  
-    for (let ty=0; ty<height;ty++) {
-      for (let tx=0;tx<width;tx++) {
-        if (isSolid(v2(tx,ty))) {
-          ctx.fillRect(tx*cellSize,ty*cellSize,cellSize,cellSize)
-          ctx.strokeRect(tx*cellSize,ty*cellSize,cellSize,cellSize);  
+    ctx.lineWidth = 2;
+    ctx.fillStyle = '#020706';
+    ctx.fillRect(0, 0, width * cellSize, height * cellSize);
+    // Quiet grid, brighter route: threats and tower effects carry the light.
+    for (let ty = 0; ty < height; ty++) {
+      for (let tx = 0; tx < width; tx++) {
+        if (isSolid(v2(tx, ty))) {
+          ctx.fillStyle = (tx + ty) % 2 ? '#020504' : '#030605';
+          ctx.fillRect(tx * cellSize + 3, ty * cellSize + 3, cellSize - 6, cellSize - 6);
+          ctx.strokeStyle = '#06100c';
+          ctx.strokeRect(tx * cellSize + 3, ty * cellSize + 3, cellSize - 6, cellSize - 6);
+        } else {
+          ctx.fillStyle = '#070c0c';
+          ctx.fillRect(tx * cellSize, ty * cellSize, cellSize, cellSize);
         }
       }
     }
+    ctx.strokeStyle = '#0c201c';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 22]);
+    ctx.beginPath();
+    path.forEach((p, i) => {
+      const w = mapToWorld(p);
+      if (i === 0) ctx.moveTo(w.x, w.y); else ctx.lineTo(w.x, w.y);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    const entry = mapToWorld(path[1]);
+    const exit = mapToWorld(path[path.length - 2]);
+    ctx.fillStyle = '#103c28'; ctx.fillRect(entry.x - 30, 0, 60, 8);
+    ctx.fillStyle = '#482014'; ctx.fillRect(exit.x - 30, height * cellSize - 8, 60, 8);
 
-    for (let p of path) {
-      let {x,y} = mapToWorld(p);
-      ctx.fillStyle="#ffaa88";
-      //ctx.fillRect(x-2,y-2,4,4)
-    }
   }
 
   return {mapData,startPoint,at,isSolid,canBuildHere,generatePath,path,draw}

@@ -6,17 +6,19 @@ function scaleHitPoints(amount) {
 
 let economy = 0.8;
 function scaleIncome(amount) {
-  return Math.floor(amount*Math.sqrt(difficulty) * economy);
+  return Math.floor(amount * economy);
 }
 
 
-function buyTower(info,cellX,cellY) {
-  if (money >= info.cost) {
-    money = globalThis.money = money - info.cost;
-    globalThis.towers.push(new info.type(cellX,cellY));
-    towers = globalThis.towers;
-  }
-
+function buyTower(info, cellX, cellY) {
+  const pos = v2(cellX, cellY);
+  if (globalThis.gameMode !== globalThis.mainGame || !info?.upgrades || !Number.isInteger(cellX) || !Number.isInteger(cellY) || !levelMap.canBuildHere(pos) || towers.some(t => vsame(t.cellPosition, pos)) || money < info.cost) return false;
+  money = globalThis.money = money - info.cost;
+  const tower = new info.type(cellX, cellY);
+  globalThis.towers.push(tower);
+  towers = globalThis.towers;
+  combatEffect(tower.position, '#184038', null, 75);
+  return tower;
 }
 
 class Entity {
@@ -37,7 +39,7 @@ class Entity {
   }
 
   distanceTo(other) {
-    if (other===this) return 0; 
+    if (other===this) return 0;
     let dx = this.x-other.x;
     let dy = this.y-other.y;
     return Math.sqrt(dx*dx+dy*dy);
@@ -53,7 +55,7 @@ class Entity {
     ctx.scale(this.scale,this.scale);
 
     this.draw();
-    
+
     ctx.restore();
   }
 
@@ -85,14 +87,23 @@ class Creep extends Entity {
     this.hitPoints = scaleHitPoints(this.constructor.hitPoints);
 
     this.timeout=0;
+    this.slowTicks = 0;
+    this.slowFactor = 1;
+    this.burnTicks = 0;
+    this.burnPower = 0;
+    this.vulnerableTicks = 0;
+    this.armor = 0;
+    this.regeneration = 0;
+    this.shield = 0;
+    this.hitFlash = 0;
   }
 
   distanceTraveled() {
     return this.pathIndex * 1000 + this.travel;
-  } 
+  }
 
 
-   
+
   findNextStep () {
     this.timeout=0;
     this.pathIndex+=1;
@@ -101,23 +112,33 @@ class Creep extends Entity {
       this.destination = vadd(mapToWorld(levelMap.path[this.pathIndex]),vrandom(16));
     } else {
       this.dead=true;
-      lives = globalThis.lives = lives - 1;
+      lives = globalThis.lives = Math.max(0, lives - (this.leakDamage || 1));
     }
   }
 
   move () {
+    if (this.dead) return;
+    if (this.hitFlash > 0) this.hitFlash--;
+    if (this.vulnerableTicks > 0) this.vulnerableTicks--;
+    if (this.burnTicks > 0) {
+      this.burnTicks--;
+      this.takeDamage(this.burnPower, 'fire', this.burnSource);
+    } else if (this.regeneration) this.damage = Math.max(0, this.damage - this.regeneration * this.hitPoints);
+    if (this.dead) return;
+    const speedFactor = this.slowTicks > 0 ? this.slowFactor : 1;
+    if (this.slowTicks > 0) this.slowTicks--;
 
     if (this.timeout++ >100) { //in case we're orbiting try a slightly different destination
       this.destination = vadd(mapToWorld(levelMap.path[this.pathIndex]),vrandom(8));
       this.timeout=0;
-    } 
+    }
 
     let delta = vdiff(this.destination,v2(this.x,this.y));
 
     this.travel = 1 - (vlength(delta)/1000);
 
     let turn = this.turn + (this.timeout/2000) // get tighter turning over time.
-    this.motion= vnormalize(vadd(vnormalize(delta,turn),this.motion),this.speed);
+    this.motion= vnormalize(vadd(vnormalize(delta,turn),this.motion),this.speed * speedFactor);
 
     this.x+=this.motion.x;
     this.y+=this.motion.y;
@@ -128,12 +149,40 @@ class Creep extends Entity {
     }
   }
 
-  takeDamage(amount) {
-    this.damage += amount;
-    if (!this.dead && this.damage > this.hitPoints) {
-      this.die();
-      money = globalThis.money = money + scaleIncome(this.value);
+  applySlow(factor, ticks) {
+    if (this.slowResistance) factor = 1 - (1 - factor) * 0.5;
+    if (!this.slowTicks || factor < this.slowFactor) this.slowFactor = factor;
+    this.slowTicks = Math.max(this.slowTicks, ticks);
+  }
+
+  applyBurn(ticks, power, source) {
+    this.burnTicks = Math.max(this.burnTicks, ticks);
+    this.burnPower = Math.max(this.burnPower, power);
+    this.burnSource = source;
+  }
+
+  takeDamage(amount, kind = 'physical', source = null) {
+    if (this.dead) return 0;
+    if (kind === 'physical') amount *= 1 - this.armor;
+    if (this.vulnerableTicks > 0) amount *= 1.35;
+    // Shields absorb energy less efficiently; piercing bypasses them entirely.
+    if (this.shield > 0 && kind !== 'piercing') {
+      const multiplier = kind === 'energy' ? 2 : 1;
+      const absorbed = Math.min(this.shield, amount * multiplier);
+      this.shield -= absorbed;
+      amount -= absorbed / multiplier;
     }
+    const dealt = Math.min(amount, this.hitPoints - this.damage);
+    this.damage += amount;
+    this.hitFlash = 5;
+    if (source) source.damageDealt += dealt;
+    if (this.damage >= this.hitPoints) {
+      this.die();
+      if (source) source.kills++;
+      money = globalThis.money = money + scaleIncome(this.value);
+      combatEffect(this.position, '#403018');
+    }
+    return dealt;
   }
 
   die () {
@@ -141,9 +190,30 @@ class Creep extends Entity {
   }
 
   draw () {
+    if (this.shield > 0 || this.slowTicks > 0 || this.burnTicks > 0 || this.armor > 0 || this.regeneration) {
+      ctx.strokeStyle = this.burnTicks > 0 ? '#602008' : this.slowTicks > 0 ? '#185060' : this.shield > 0 ? '#303060' : this.armor ? '#403020' : '#105020';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      if (this.armor) ctx.rect(-32, -32, 64, 64);
+      else ctx.arc(0, 0, this.radius + 9, 0, TWOPI);
+      ctx.stroke();
+      if (this.regeneration) {
+        ctx.fillStyle = '#105020';
+        ctx.fillRect(-5, -20, 10, 40);
+        ctx.fillRect(-20, -5, 40, 10);
+      }
+    }
+    if (this.brood) {
+      ctx.fillStyle = '#402838';
+      for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(side * 44, 0, 8, 0, TWOPI); ctx.fill(); }
+    }
+    if (this.hitFlash > 0) {
+      ctx.fillStyle = '#302018';
+      ctx.beginPath(); ctx.arc(0, 0, 20, 0, TWOPI); ctx.fill();
+    }
     ctx.rotate(this.angle);
     ctx.drawSprite(this.image,0,0)
-    
+
   }
 
   drawHealthBar () {
@@ -161,7 +231,7 @@ class Creep extends Entity {
       ctx.fillStyle="#800";
 
       ctx.fillRect(r,-r,-2*r*p,4);
-  
+
 
       ctx.restore();
     }
@@ -175,7 +245,7 @@ class Basic extends Creep {
     super();
     this.speed = 2;
     this.turn = 0.1;
-    this.image = Assets.Creep1;      
+    this.image = Assets.Creep1;
   }
 }
 
@@ -187,12 +257,12 @@ class Zipper extends Creep {
     this.speed = 4;
     this.turn = 0.3;
     this.scale = 0.5;
-    this.image = Assets.Creep1;    
+    this.image = Assets.Creep1;
   }
 }
 
 class Flyer extends Creep {
-  static value=2; 
+  static value=2;
   static hitPoints=15;
   constructor () {
     super();
@@ -200,7 +270,7 @@ class Flyer extends Creep {
     this.turn = 0.1;
     this.scale = 0.5;
     this.radius = 60;
-    this.image = Assets.Creep4;    
+    this.image = Assets.Creep4;
   }
 }
 
@@ -210,11 +280,12 @@ class Ball extends Creep {
 
   constructor () {
     super();
-    this.speed = 0.5;
+    this.speed = 1.1;
     this.turn = 0.09;
     this.radius=45;
     this.scale = 0.5;
-    this.image = Assets.Creep3;    
+    this.image = Assets.Creep3;
+    this.armor = 0.6;
   }
 
   move() {
@@ -228,11 +299,14 @@ class BigBall extends Ball {
   static hitPoints = 180;
   constructor () {
     super();
-    this.speed = 0.5;
+    this.speed = 0.85;
     this.turn = 0.09;
     this.radius=45;
     this.scale = 1;
-    this.image = Assets.Creep3;    
+    this.image = Assets.Creep3;
+    this.armor = 0.35;
+    this.leakDamage = 3;
+    this.slowResistance = true;
   }
 }
 
@@ -242,15 +316,46 @@ class Spikey extends Creep {
 
     constructor () {
       super();
-      this.speed = 0.75;
+      this.speed = 1.1;
       this.turn = 0.0001;
       this.scale = 0.75;
       this.radius=55;
-      this.image = Assets.Creep2;    
+      this.image = Assets.Creep2;
     }
 }
 
 
+
+class Mender extends Creep {
+  static hitPoints = 32;
+  static value = 14;
+  constructor() {
+    super(); this.speed = 1.5; this.regeneration = 0.0008;
+    this.image = Assets.Creep2; this.scale = 0.55;
+  }
+}
+class Shieldbug extends Creep {
+  static hitPoints = 24;
+  static value = 12;
+  constructor() {
+    super(); this.speed = 1.7; this.shield = this.hitPoints * 0.8;
+    this.image = Assets.Creep4; this.scale = 0.65;
+  }
+}
+class Splitter extends Creep {
+  static hitPoints = 42;
+  static value = 10;
+  constructor() { super(); this.speed = 1.3; this.image = Assets.Creep2; this.scale = 0.6; this.brood = true; }
+  die() {
+    super.die();
+    for (let i = 0; i < 2; i++) {
+      const child = new Zipper();
+      Object.assign(child, {x: this.x + i * 8, y: this.y, pathIndex: this.pathIndex,
+        destination: {...this.destination}, source: {...this.source}, motion: {...this.motion}});
+      backlog.push(child);
+    }
+  }
+}
 
 class Tower extends Entity {
   static range = 250;
@@ -263,11 +368,15 @@ class Tower extends Entity {
       this.target = null;
       this.angle=2;
       this.cooldown=0;
-      this.rate = 20;
+      this.rate = 35;
       this.range =this.constructor.range || Tower.range ;
       this.minimumRange= this.constructor.minimumRange || Tower.minimumRange;
-      
+
       this.bulletKind = Pea;
+      this.targetMode = 'first';
+      this.kills = 0;
+      this.damageDealt = 0;
+      this.invested = typeof towerInfo !== 'undefined' ? (getTowerInfo(this)?.cost || 100) : 100;
 
     }
 
@@ -283,11 +392,11 @@ class Tower extends Entity {
       //}
       if (this.target) {
         this.angle = vangle( vdiff( this.target.position,this.position ))
-      
+
         if (this.cooldown===0) {
           this.fire()
         }
-        
+
       }
 
     }
@@ -299,12 +408,14 @@ class Tower extends Entity {
     }
 
     findTarget() {
-      for (let c of creeps) {
-        let d = this.distanceTo(c)
-        if ( d < this.range && d > this.minimumRange) {
-          return c;
-        }
+      let best = null;
+      for (const c of creeps) {
+        const d = this.distanceTo(c);
+        if (c.dead || d >= this.range || d < this.minimumRange) continue;
+        if (!best || (this.targetMode === 'strong' ? c.hitPoints - c.damage > best.hitPoints - best.damage
+          : this.targetMode === 'near' ? d < this.distanceTo(best) : c.distanceTraveled() > best.distanceTraveled())) best = c;
       }
+      return best;
     }
 
     draw () {
@@ -316,9 +427,9 @@ class Tower extends Entity {
     }
 
     drawRange() {
-      ctx.fillStyle="#fff2";
-      ctx.lineWidth=5;
-      ctx.strokeStyle="#fff7";
+      ctx.fillStyle="#08281c30";
+      ctx.lineWidth=3;
+      ctx.strokeStyle="#184038";
       let {x,y,range,minimumRange}=this;
       ctx.circle(x,y,range);
 
@@ -359,7 +470,7 @@ class Thumper extends Tower  {
   static range = 150;
   constructor (cellX,cellY) {
     super(cellX,cellY);
-    this.rate = 5;
+    this.rate = 10;
     this.bulletKind = Woosh;
   }
 
@@ -369,7 +480,7 @@ class Thumper extends Tower  {
 
   draw () {
     ctx.drawSprite(Assets.Tower5);
-    
+
 
     let p = 1-(this.cooldown / (1000/this.rate)) ;
     /*
@@ -441,17 +552,18 @@ class Woosh extends Entity {
     super(x,y)
     this.source=source;
     this.age = 0;
-    this.damage = 45; 
-    
+    this.damage = 45;
+    this.range = source.range;
+
   }
 
   move() {
     this.age+=1;
     if (this.age > 30) {
 
-      let enemies = creeps.filter(a=>a.distanceTo(this)<this.source.range);
+      let enemies = creeps.filter(a=>!a.dead && a.distanceTo(this)<this.range);
       for (let e of enemies) {
-        e.takeDamage(this.damage);
+        e.takeDamage(this.damage, 'explosive', this.source);
       }
       this.dead=true;
     }
@@ -481,10 +593,10 @@ class Bullet extends Entity {
   }
 
   hit() {
-    this.target.takeDamage(this.damage);
+    this.target.takeDamage(this.damage, this instanceof Laser ? 'energy' : this instanceof Spiral ? 'piercing' : 'physical', this.source);
     this.dead=true;
     let pos= this.position;
-    globalThis.particleSystems.push(particleSystem(this.damage,{pos}));
+    if (particleSystems.length < 64) globalThis.particleSystems.push(particleSystem(Math.min(8, this.damage),{pos}));
     particleSystems = globalThis.particleSystems;
   }
 }
@@ -500,6 +612,7 @@ class Spiral extends Bullet {
   }
 
   move() {
+    if (this.target.dead || this.age > 400) { this.dead = true; return; }
     this.age+=1;
     this.angle+=0.05;
 
@@ -508,8 +621,8 @@ class Spiral extends Bullet {
 
     let out = vadd(this.source.position,vFromAngle(this.angle, 300*t));
 
-    this.position = vadd(vscale(out,it), vscale(this.target.position,t)); 
-    
+    this.position = vadd(vscale(out,it), vscale(this.target.position,t));
+
     if (this.distanceTo(this.target) < this.target.radius) this.hit(this.target);
   }
 
@@ -532,11 +645,12 @@ class Pea extends Bullet {
   }
 
   move() {
+    if (this.target.dead || this.age++ > 400) { this.dead = true; return; }
     let delta = vdiff(this.target.position,this.position)
     let motion = vnormalize(delta,this.speed);
 
     this.position=vadd(this.position,motion);
-    
+
     if (this.distanceTo(this.target) < this.target.radius) this.hit(this.target);
   }
 
@@ -594,6 +708,7 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.buyTower = buyTower;
   globalThis.Entity = Entity;
   globalThis.Creep = Creep;
+  Object.assign(globalThis, {Mender, Shieldbug, Splitter});
   globalThis.Basic = Basic;
   globalThis.Zipper = Zipper;
   globalThis.Flyer = Flyer;

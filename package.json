@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "npx http-server srv -p 8000 -o",
     "lint": "npx eslint srv/**/*.js",
-    "format": "npx prettier --write 'srv/**/*.{js,html,css}'"
+    "format": "npx prettier --write 'srv/**/*.{js,html,css}'",
+    "test": "node tests/node/combat.test.js && node tests/node/progression.test.js"
   },
   "keywords": [
     "game",
