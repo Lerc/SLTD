@@ -15,10 +15,10 @@ check(uiModal()==='maps'&&gameMode===titleScreen,'Map picker precedes game start
 check(uiControls().filter(b=>b.map).length===3,'Three selectable route previews');
 await tap('map-switchback'); check(uiMapChoice==='switchback','Map card changes choice');
 await tap('deploy'); paused=true;
-check(selectedMapId==='switchback'&&levelMap.path.length===42,'Deploy uses chosen route');
+check(selectedMapId==='switchback'&&levelMap.path[0].x===9&&levelMap.path[0].y===16,'Deploy uses bottom-right entrance');
 const saved=gameControl.saveState();
 startGame('crosswind'); gameControl.loadState(saved); paused=true;
-check(selectedMapId==='switchback'&&levelMap.path.length===42,'Browser snapshot retains selected map');
+check(selectedMapId==='switchback'&&JSON.stringify(levelMap.path)===JSON.stringify(mapCatalog[1].path),'Browser snapshot retains ordered map route');
 startGame('foundry'); paused=true;
 await frame();
 const original=JSON.stringify(outputCanvas.getBoundingClientRect().toJSON());
@@ -60,8 +60,8 @@ check(send.stamp==='SEND'&&send.label==='1'&&send.sub==='+$15','Send stamp previ
 paused=false; sendWave();
 send=uiHudControls().find(b=>b.id==='send');
 check(send.label==='2'&&send.disabled,'During wave one Send previews wave two');
-nextWave(); paused=true;
+creeps=[]; hopper=[]; backlog=[]; mainGame_core(); paused=true;
 send=uiHudControls().find(b=>b.id==='send');
 check(send.label==='2'&&send.sub==='+$10','Preparation shows correct pending wave and bonus');
 check(JSON.stringify(outputCanvas.getBoundingClientRect().toJSON())===original,'Map, placement and HUD changes never resize view');
-wslog({result:'PASS',maps:mapCatalog.map(m=>m.id),placement:'preview/confirm or one-shot drag',hud:'stroked Wave/Send numbers',viewport:[innerWidth,innerHeight]});
+wslog({result:'PASS',maps:mapCatalog.map(m=>m.id),placement:'preview/confirm or one-shot drag',hud:'filled Wave/Send labels',viewport:[innerWidth,innerHeight]});

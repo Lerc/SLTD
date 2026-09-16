@@ -351,7 +351,8 @@ class Splitter extends Creep {
     for (let i = 0; i < 2; i++) {
       const child = new Zipper();
       Object.assign(child, {x: this.x + i * 8, y: this.y, pathIndex: this.pathIndex,
-        destination: {...this.destination}, source: {...this.source}, motion: {...this.motion}});
+        destination: {...this.destination}, source: {...this.source}, motion: {...this.motion},
+        waveNumber: this.waveNumber, hitPoints: Zipper.hitPoints * this.hitPoints / this.constructor.hitPoints});
       backlog.push(child);
     }
   }

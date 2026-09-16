@@ -155,7 +155,7 @@
   function saveState() {
     return {
       lives, money, waveCounter, difficulty, ticker, waveAge,
-      mapId: selectedMapId, map: activeMapCells,
+      mapId: selectedMapId, map: activeMapCells, mapPath: activeMapPath,
       towers: towers.map(t => ({
         type: t.constructor.name,
         cellX: t.cellPosition.x,
@@ -169,7 +169,8 @@
     if (state.map) {
       activeMapCells = state.map;
       selectedMapId = mapCatalog.find(m => JSON.stringify(m.cells) === JSON.stringify(state.map))?.id || 'custom';
-      globalThis.levelMap = createWorld(activeMapCells);
+      activeMapPath = state.mapPath || mapCatalog.find(m => m.id === selectedMapId)?.path || null;
+      globalThis.levelMap = createWorld(activeMapCells, activeMapPath);
     }
     globalThis.lives = state.lives;
     globalThis.money = state.money;

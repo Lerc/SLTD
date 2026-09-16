@@ -91,6 +91,7 @@ test('preparation, early launch, wave reward, pause, game over, and restart are 
   globalThis.creeps = []; globalThis.hopper = []; const balance = money;
   game.tick(); assert.equal(waveCounter, 2); assert.equal(money, balance + wavePlan(1).reward);
   assert.equal(betweenWaves, true);
+  game.tick(sendCooldown);
   sendWave(); globalThis.lives = 0; game.tick(); assert.equal(gameMode, gameOver);
   const state = game.saveState(); game.tick(100); assert.equal(waveAge, state.waveAge);
   game.reset(); assert.equal(waveCounter, 1); assert.equal(waveAge, 0); assert.equal(selectedTower, null);

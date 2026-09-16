@@ -1,0 +1,64 @@
+const assert = require('node:assert/strict');
+const game = require('../../srv/nodemain.js');
+startGame('foundry');
+assert.equal(sendWave(),true);
+game.tick(179);
+assert.equal(canSendWave(),false,'Send is locked before three seconds');
+assert.equal(sendWave(),false,'Early calls cannot skip the cooldown');
+paused=true; game.tick(60);
+assert.equal(waveAge,179,'Paused time cannot unlock Send');
+paused=false; game.tick();
+assert.equal(canSendWave(),true,'Send unlocks at exactly three seconds');
+const firstQueued=hopper.filter(c=>c.waveNumber===1).map(c=>c.hitPoints);
+const before=money;
+assert.equal(sendWave(),true);
+assert.equal(money,before+10,'Combat sends receive the full preparation bonus');
+assert.equal(waveCounter,2); assert.equal(waveAge,0);
+assert.equal(activeWaves[0].age,180,'An overlap never resets the older wave clock');
+game.tick();
+assert.equal(activeWaves[0].age,181);
+assert.equal(activeWaves[1].age,1);
+assert.ok(creeps.some(c=>c.waveNumber===1)&&creeps.some(c=>c.waveNumber===2),'Both waves are on the field together');
+assert.deepEqual(hopper.filter(c=>c.waveNumber===1).map(c=>c.hitPoints),firstQueued,'New difficulty cannot rescale queued older enemies');
+for(let i=0;i<4;i++) { game.tick(180); assert.equal(sendWave(),true); }
+assert.equal(activeWaves.length,6,'Repeated sends allow many concurrent waves');
+
+const state=JSON.parse(JSON.stringify(game.saveState()));
+game.reset(); game.loadState(state);
+assert.deepEqual(activeWaves,state.activeWaves,'All wave clocks survive save/load');
+assert.deepEqual(hopper.map(c=>[c.waveNumber,c.hitPoints,c.shield]),state.hopper.map(c=>[c.waveNumber,c.hitPoints,c.shield]),'Queued wave identities and health survive save/load');
+assert.deepEqual(creeps.map(c=>c.waveNumber),state.creeps.map(c=>c.waveNumber));
+assert.equal(canSendWave(),false,'Reload cannot bypass the cooldown');
+
+// A newer wave can clear before an older one, and earns exactly one reward.
+creeps=creeps.filter(c=>c.waveNumber!==2);
+hopper=hopper.filter(c=>c.waveNumber!==2);
+backlog=backlog.filter(c=>c.waveNumber!==2);
+const balance=money; game.tick();
+assert.equal(money,balance+wavePlan(2).reward);
+assert.equal(betweenWaves,false);
+game.tick(); assert.equal(money,balance+wavePlan(2).reward,'No duplicate clear reward');
+const pendingReward=activeWaves.reduce((sum,w)=>sum+wavePlan(w.number).reward,0);
+const lastBalance=money;
+creeps=[]; hopper=[]; backlog=[]; game.tick();
+assert.equal(money,lastBalance+pendingReward);
+assert.equal(activeWaves.length,0);
+assert.equal(betweenWaves,true);
+assert.equal(waveCounter,7,'Preparation resumes at the next unsent wave');
+assert.equal(buildTicks,600);
+assert.equal(canSendWave(),false,'A fast clear cannot bypass the launch cooldown');
+assert.equal(sendWave(),false);
+game.tick(sendCooldown);
+assert.equal(canSendWave(),true,'The cooldown also expires during preparation');
+
+startGame('foundry'); waveCounter=7; sendWave();
+const parent=hopper.find(c=>c instanceof Splitter);
+const parentScale=parent.hitPoints/Splitter.hitPoints;
+game.tick(180); sendWave();
+parent.takeDamage(1e9,'piercing');
+assert.equal(backlog.length,2);
+assert.ok(backlog.every(c=>c.waveNumber===7&&Math.abs(c.hitPoints-Zipper.hitPoints*parentScale)<1e-10),'Split children inherit their original wave and difficulty');
+const splitState=JSON.parse(JSON.stringify(game.saveState()));
+game.loadState(splitState);
+assert.ok(backlog.every(c=>c.waveNumber===7&&Math.abs(c.hitPoints-Zipper.hitPoints*parentScale)<1e-10));
+console.log('PASS three-second gate, six concurrent waves, independent spawning/rewards, splitters and overlapping saves');

@@ -27,13 +27,42 @@ function wavePlan(num) {
   return {...theme, name: theme.name + (num > 12 ? ' · veteran ' + Math.floor((num - 1) / 12) : ''), kinds, count: kinds.length, interval: Math.max(22, 70 - num * 2), reward: 35 + num * 5};
 }
 function waveDifficulty(num) { return 1 + (num - 1) * 0.16 + Math.pow(Math.max(0, num - 5), 1.35) * 0.07 + Math.pow(Math.max(0, num - 12), 2) * 0.16; }
+function canSendWave() {
+  return globalThis.gameMode === globalThis.mainGame && !globalThis.paused &&
+    globalThis.sendCooldown === 0;
+}
+function waveSendBonus() { return betweenWaves ? Math.max(0, Math.ceil(buildTicks / 60)) : 10; }
 function sendWave() {
-  if (globalThis.gameMode !== globalThis.mainGame || !globalThis.betweenWaves || globalThis.paused) return false;
-  const bonus = Math.ceil(globalThis.buildTicks / 60);
+  if (!canSendWave()) return false;
+  const bonus = waveSendBonus();
   money = globalThis.money = money + bonus;
+  if (!betweenWaves) waveCounter = globalThis.waveCounter = waveCounter + 1;
   globalThis.buildTicks = 0;
   globalThis.betweenWaves = false;
+  globalThis.sendCooldown = 180;
   generateWave(globalThis.waveCounter);
   return true;
 }
-if (typeof module !== 'undefined' && module.exports) Object.assign(globalThis, {waveThemes, wavePlan, waveDifficulty, sendWave});
+
+function spawnWaveCreeps() {
+  for (const wave of activeWaves) {
+    wave.age++;
+    // Each wave keeps its own cadence when another wave is called in.
+    if (wave.age % wave.interval !== 0 && creeps.some(c => c.waveNumber === wave.number)) continue;
+    const index = hopper.findIndex(c => c.waveNumber === wave.number);
+    if (index >= 0) creeps.push(hopper.splice(index, 1)[0]);
+  }
+}
+function rewardClearedWaves() {
+  const remaining = new Set([...creeps, ...hopper, ...backlog].map(c => c.waveNumber));
+  activeWaves = globalThis.activeWaves = activeWaves.filter(wave => {
+    if (remaining.has(wave.number)) return true;
+    const reward = wavePlan(wave.number).reward;
+    money = globalThis.money = money + reward;
+    if (typeof uiToast === 'function') uiToast('Wave ' + wave.number + ' cleared · +' + reward + ' credits');
+    return false;
+  });
+}
+if (typeof module !== 'undefined' && module.exports) Object.assign(globalThis, {
+  waveThemes, wavePlan, waveDifficulty, canSendWave, waveSendBonus, sendWave, spawnWaveCreeps, rewardClearedWaves
+});

@@ -89,7 +89,7 @@ function uiHudControls() {
   return [
     uiButton('pause', 570, 0, 156, 156, paused ? '▶' : 'Ⅱ'),
     uiButton('speed', 726, 0, 156, 156, gameAccelerated ? '2×' : '1×'),
-    uiButton('send', 882, 0, 198, 156, String(betweenWaves ? waveCounter : waveCounter + 1), '+$' + (betweenWaves ? Math.ceil(buildTicks / 60) : 0), {stamp:'SEND', disabled: !betweenWaves || paused})
+    uiButton('send', 882, 0, 198, 156, String(betweenWaves ? waveCounter : waveCounter + 1), '+$' + waveSendBonus(), {stamp:'SEND', disabled: !canSendWave()})
   ];
 }
 function uiTowerControls(tower, offset) {
@@ -252,7 +252,7 @@ function uiDrawGuide(c) {
       'Tap a placed tower to replace the build strip with its upgrades, targeting and selling controls.',
       'Invalid tiles cancel placement. Orange means insufficient funds; tap anywhere to cancel. Sell twice for a 70% refund.',
       'First targets enemies closest to the exit. Strong picks the most health. Near picks the closest enemy.',
-      'Send waves early for extra credits. Pause lets you inspect and build without time advancing.'
+      'Send unlocks three seconds after each launch. Call waves together for extra credits. Pause lets you inspect and build.'
     ]) y = uiWrap(c, text, 90, y, 900, 36, 50) + 38;
   } else if (uiGuidePage === 1) {
     // Selecting a tower before opening help puts its own branches first.
@@ -294,7 +294,7 @@ function drawUI(now = performance.now()) {
   if (selectedTower) uiPanelTower = selectedTower;
   if (!uiSlide) uiPanelTower = null;
   const signature = [interfaceCanvas.width, interfaceCanvas.height, gameMode.name, uiOverlay, uiGuidePage, uiMapChoice, selectedMapId,
-    paused, money, lives, waveCounter, betweenWaves, Math.ceil(buildTicks / 60),
+    paused, money, lives, waveCounter, betweenWaves, Math.ceil(buildTicks / 60), canSendWave(),
     creeps.length + hopper.length + backlog.length, gameAccelerated, selectedBuild?.type.name,
     selectedTower?.cellPosition.x, selectedTower?.cellPosition.y, selectedTower?.constructor.name,
     selectedTower?.targetMode, selectedTower?.kills, Math.floor(selectedTower?.damageDealt || 0),
@@ -360,11 +360,13 @@ function uiDrawNumberStamp(c, word, number, bounds, sub, disabled = false) {
   c.save();
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.font = '900 72px system-ui, sans-serif';
-  c.strokeStyle = disabled ? '#52655e' : uiColors.mint;
-  c.globalAlpha = .38; c.lineWidth = 2.5;
-  c.strokeText(word, center, bounds.y + 61, bounds.w - 12);
+  c.fillStyle = disabled ? '#52655e' : uiColors.mint;
+  c.globalAlpha = .3;
+  c.fillText(word, center, bounds.y + 61, bounds.w - 12);
   c.globalAlpha = 1;
-  uiText(c, number, center, bounds.y + 63, number.length > 2 ? 70 : 86, disabled ? '#8b9e95' : uiColors.text, 'center');
+  c.font = '900 54px system-ui, sans-serif'; // Number height is 75% of the 72px label.
+  c.fillStyle = disabled ? '#8b9e95' : uiColors.text;
+  c.fillText(number, center, bounds.y + 61, bounds.w - 12);
   uiText(c, sub, center, bounds.y + 125, 32, disabled ? uiColors.muted : uiColors.gold, 'center');
   c.restore();
 }
@@ -378,6 +380,11 @@ function uiDrawMapCard(c, button) {
   for (let row = 0; row < 16; row++) for (let column = 0; column < 11; column++) {
     c.fillStyle = map.cells[row][column] === '.' ? uiColors.mint : '#09191b';
     c.fillRect(x + 24 + column * size, y + 30 + row * size, size - 1, size - 1);
+  }
+  const path = map.path || createWorld(map.cells).path;
+  for (const [cell, color] of [[path[1], uiColors.mint], [path[path.length - 2], '#edaa79']]) {
+    c.beginPath(); c.arc(x + 24 + (cell.x + .5) * size, y + 30 + (cell.y + .5) * size, 8, 0, TWOPI);
+    c.fillStyle = color; c.fill(); c.strokeStyle = '#09191b'; c.lineWidth = 3; c.stroke();
   }
   uiText(c, map.name, x + 242, y + 70, 55, uiColors.text);
   uiWrap(c, map.description, x + 242, y + 150, w - 276, 34, 47);

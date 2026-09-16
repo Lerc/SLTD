@@ -3,7 +3,7 @@
 let mapToWorld = ({x,y})=>v2((x+0.5)*cellSize,(y+0.5)*cellSize);
 let worldToMap = ({x,y})=>v2(Math.floor(x/cellSize),Math.floor(y/cellSize));
 
-function createWorld(textRepresentation) {
+function createWorld(textRepresentation, orderedPath = null) {
   let height = textRepresentation.length;
   let width = textRepresentation[0].length;
 
@@ -11,7 +11,8 @@ function createWorld(textRepresentation) {
 
   let mapData=textRepresentation.flatMap(line => Array.from(line).map(char => ({char}) ))
 
-  let startPoint = findMapStart();
+  // Explicit paths retain their order through crossings and can enter any edge.
+  let startPoint = orderedPath ? {...orderedPath[0]} : findMapStart();
 
   let path = generatePath();
 
@@ -42,6 +43,7 @@ function createWorld(textRepresentation) {
   }
   
   function generatePath() {
+    if (orderedPath) return orderedPath.map(p => ({...p}));
     let result = [startPoint];
     let last = startPoint;
     let current = startPoint.x<0?v2(0,startPoint.y):v2(startPoint.x,0);
@@ -93,11 +95,22 @@ function createWorld(textRepresentation) {
       if (i === 0) ctx.moveTo(w.x, w.y); else ctx.lineTo(w.x, w.y);
     });
     ctx.stroke(); ctx.setLineDash([]);
-    const entry = mapToWorld(path[1]);
-    const exit = mapToWorld(path[path.length - 2]);
-    ctx.fillStyle = '#103c28'; ctx.fillRect(entry.x - 30, 0, 60, 8);
-    ctx.fillStyle = '#482014'; ctx.fillRect(exit.x - 30, height * cellSize - 8, 60, 8);
+    drawGate(path[1], path[0], '#103c28', true);
+    drawGate(path[path.length - 2], path[path.length - 1], '#482014', false);
 
+  }
+
+  function drawGate(inside, outside, color, entry) {
+    const p = mapToWorld(inside), dx = outside.x - inside.x, dy = outside.y - inside.y;
+    ctx.save();
+    ctx.translate(p.x + dx * cellSize / 2, p.y + dy * cellSize / 2);
+    ctx.rotate(Math.atan2(dy, dx));
+    ctx.fillStyle = color;
+    ctx.fillRect(-4, -30, 8, 60);
+    // Directional triangle stays inside the map at either entrance or exit.
+    const tip = entry ? -40 : -10, base = entry ? -16 : -36;
+    ctx.beginPath(); ctx.moveTo(tip, 0); ctx.lineTo(base, -14); ctx.lineTo(base, 14); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
 
   return {mapData,startPoint,at,isSolid,canBuildHere,generatePath,path,draw}
@@ -109,4 +122,3 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.worldToMap = worldToMap;
   globalThis.createWorld = createWorld;
 }
-

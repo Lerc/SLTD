@@ -44,6 +44,7 @@ var running=true;
 var map1 = mapCatalog[0].cells;
 var selectedMapId = mapCatalog[0].id;
 var activeMapCells = map1;
+var activeMapPath = null;
 
 var  startPos = v2(0,0);
 var  endPos = v2(0,0);
@@ -63,6 +64,8 @@ var backlog = [];
 var hopper =[];
 var waveAge =0;
 var releaseRate =80;
+var activeWaves = [];
+var sendCooldown = 0;
 
 var gameViewTransform = null;
 
@@ -140,7 +143,12 @@ function generateWave(num) {
   difficulty = globalThis.difficulty = waveDifficulty(num);
   releaseRate = globalThis.releaseRate = plan.interval;
   waveAge = globalThis.waveAge = 0;
-  for (const Kind of plan.kinds) globalThis.hopper.push(new Kind());
+  activeWaves.push({number:num, age:0, interval:plan.interval});
+  for (const Kind of plan.kinds) {
+    const creep = new Kind();
+    creep.waveNumber = num;
+    globalThis.hopper.push(creep);
+  }
   hopper = globalThis.hopper;
 }
 
@@ -149,6 +157,7 @@ function startGame(mapId = selectedMapId) {
   const chosenMap = mapCatalog.find(map => map.id === mapId) || mapCatalog[0];
   selectedMapId = globalThis.selectedMapId = chosenMap.id;
   activeMapCells = globalThis.activeMapCells = chosenMap.cells;
+  activeMapPath = globalThis.activeMapPath = chosenMap.path || null;
   money = globalThis.money = 320;
   towers = globalThis.towers = [];
   creeps = globalThis.creeps = [];
@@ -156,6 +165,8 @@ function startGame(mapId = selectedMapId) {
   bullets = globalThis.bullets = [];
   hopper = globalThis.hopper = [];
   backlog = globalThis.backlog = [];
+  activeWaves = globalThis.activeWaves = [];
+  sendCooldown = globalThis.sendCooldown = 0;
   gameAcceleration = globalThis.gameAcceleration = 2;
   gameAccelerated = globalThis.gameAccelerated = false;
 
@@ -176,14 +187,12 @@ function startGame(mapId = selectedMapId) {
   console.log("starting game")
 
   // Create levelMap - will be available globally
-  globalThis.levelMap = createWorld(activeMapCells);
+  globalThis.levelMap = createWorld(activeMapCells, activeMapPath);
 
   if (typeof updateUI === 'function') updateUI();
 }
 
 function nextWave() {
-  money = globalThis.money = money + wavePlan(waveCounter).reward;
-  if (typeof uiToast === 'function') uiToast('Wave cleared · +' + wavePlan(waveCounter).reward + ' credits');
   waveCounter = globalThis.waveCounter = waveCounter + 1;
   difficulty = globalThis.difficulty = waveDifficulty(waveCounter);
   betweenWaves = globalThis.betweenWaves = true;
@@ -289,6 +298,7 @@ function updatePersistenceCanvas() {
 
 function mainGame_core() {
   if (gameMode !== mainGame) return;
+  if (sendCooldown > 0) sendCooldown--;
   if (globalThis.betweenWaves) {
     globalThis.buildTicks--;
     if (globalThis.buildTicks <= 0) sendWave();
@@ -308,14 +318,8 @@ function mainGame_core() {
       creeps = globalThis.creeps;
     }
   }
-  if ((globalThis.creeps.length==0) || (globalThis.waveAge % releaseRate  == 0)) {
-    if (globalThis.hopper.length>0) {
-      let e = globalThis.hopper.shift();
-      hopper = globalThis.hopper;
-      globalThis.creeps.push(e);
-      creeps = globalThis.creeps;
-    }
-  }
+  spawnWaveCreeps();
+  if (lives > 0) rewardClearedWaves();
 
   if (creeps.length+globalThis.hopper.length+backlog.length  == 0 ) {
     if (lives > 0) { nextWave(); return; }

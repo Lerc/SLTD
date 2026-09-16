@@ -18,8 +18,15 @@ function init() {
     shell.style.width = OutputWidth * scale + 'px';
     shell.style.height = OutputHeight * scale + 'px';
     const density = Math.min(window.devicePixelRatio || 1, 3);
-    interfaceCanvas.width = Math.round(OutputWidth * scale * density);
-    interfaceCanvas.height = Math.round(OutputHeight * scale * density);
+    const width = Math.round(OutputWidth * scale * density);
+    const height = Math.round(OutputHeight * scale * density);
+    // Assigning either dimension clears the canvas, even at the same size.
+    // The observer's initial callback must not erase an already cached frame.
+    if (interfaceCanvas.width !== width || interfaceCanvas.height !== height) {
+      interfaceCanvas.width = width;
+      interfaceCanvas.height = height;
+      uiDrawSignature = '';
+    }
   };
   new ResizeObserver(resize).observe(document.getElementById('viewport'));
   resize();

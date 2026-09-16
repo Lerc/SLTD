@@ -176,6 +176,8 @@ function saveState() {
     difficulty: globalThis.difficulty,
     ticker: globalThis.ticker,
     waveAge: globalThis.waveAge,
+    activeWaves: globalThis.activeWaves.map(wave => ({...wave})),
+    sendCooldown: globalThis.sendCooldown,
     releaseRate: globalThis.releaseRate,
     gameAcceleration: globalThis.gameAcceleration,
     gameAccelerated: globalThis.gameAccelerated,
@@ -186,6 +188,7 @@ function saveState() {
     // Creeps
     creeps: globalThis.creeps.map(c => ({
       type: c.constructor.name,
+      waveNumber: c.waveNumber,
       x: c.x,
       y: c.y,
       angle: c.angle,
@@ -240,18 +243,19 @@ function saveState() {
 
     // Hopper (pending creeps to spawn)
     hopper: globalThis.hopper.map(c => ({
-      type: c.constructor.name
+      type: c.constructor.name, waveNumber: c.waveNumber, hitPoints: c.hitPoints, shield: c.shield
     })),
 
     // Backlog
     backlog: globalThis.backlog.map(c => ({
       type: c.constructor.name, x: c.x, y: c.y, pathIndex: c.pathIndex,
-      destination: {...c.destination}, source: {...c.source}, motion: {...c.motion}, hitPoints: c.hitPoints
+      destination: {...c.destination}, source: {...c.source}, motion: {...c.motion}, hitPoints: c.hitPoints, waveNumber: c.waveNumber
     })),
 
     // Map
     map: globalThis.activeMapCells,
     mapId: globalThis.selectedMapId,
+    mapPath: globalThis.activeMapPath,
 
     // Selected tower
     selectedTowerIndex: globalThis.towers.indexOf(globalThis.selectedTower)
@@ -275,11 +279,15 @@ function loadState(stateData) {
   globalThis.paused = stateData.paused || false;
   globalThis.betweenWaves = stateData.betweenWaves || false;
   globalThis.buildTicks = stateData.buildTicks || 0;
+  globalThis.sendCooldown = stateData.sendCooldown ?? (globalThis.betweenWaves ? 0 : Math.max(0, 180 - globalThis.waveAge));
+  globalThis.activeWaves = stateData.activeWaves ? stateData.activeWaves.map(wave => ({...wave})) :
+    globalThis.betweenWaves ? [] : [{number:globalThis.waveCounter, age:globalThis.waveAge, interval:globalThis.releaseRate}];
 
   // Initialize world
   globalThis.activeMapCells = stateData.map || globalThis.mapCatalog.find(m => m.id === stateData.mapId)?.cells || globalThis.map1;
   globalThis.selectedMapId = globalThis.mapCatalog.find(m => JSON.stringify(m.cells) === JSON.stringify(globalThis.activeMapCells))?.id || 'custom';
-  globalThis.levelMap = globalThis.createWorld(globalThis.activeMapCells);
+  globalThis.activeMapPath = stateData.mapPath || globalThis.mapCatalog.find(m => m.id === globalThis.selectedMapId)?.path || null;
+  globalThis.levelMap = globalThis.createWorld(globalThis.activeMapCells, globalThis.activeMapPath);
   globalThis.cancelPlacement();
 
   // Clear arrays
@@ -299,6 +307,7 @@ function loadState(stateData) {
     }
 
     const creep = new CreepClass();
+    creep.waveNumber = creepData.waveNumber ?? globalThis.waveCounter;
     for (const key of ['slowTicks', 'slowFactor', 'burnTicks', 'burnPower', 'shield', 'vulnerableTicks']) {
       if (creepData[key] !== undefined) creep[key] = creepData[key];
     }
@@ -387,7 +396,11 @@ function loadState(stateData) {
   for (const hopperData of stateData.hopper || []) {
     const CreepClass = globalThis[hopperData.type];
     if (CreepClass) {
-      globalThis.hopper.push(new CreepClass());
+      const creep = new CreepClass();
+      creep.waveNumber = hopperData.waveNumber ?? globalThis.waveCounter;
+      if (hopperData.hitPoints !== undefined) creep.hitPoints = hopperData.hitPoints;
+      if (hopperData.shield !== undefined) creep.shield = hopperData.shield;
+      globalThis.hopper.push(creep);
     }
   }
 
@@ -396,6 +409,7 @@ function loadState(stateData) {
     const CreepClass = globalThis[backlogData.type];
     if (CreepClass) {
       const child = new CreepClass();
+      child.waveNumber = backlogData.waveNumber ?? globalThis.waveCounter;
       for (const key of ['x', 'y', 'pathIndex', 'destination', 'source', 'motion', 'hitPoints']) {
         if (backlogData[key] !== undefined) child[key] = backlogData[key];
       }
