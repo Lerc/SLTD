@@ -15,7 +15,7 @@ var difficulty =1;
 var gameAcceleration=1;
 var gameAccelerated=false;
 var OutputWidth=540;
-var OutputHeight=768;
+var OutputHeight=924;
 
 var cellSize = 96;
 var lives = 20;
@@ -65,7 +65,7 @@ var  endPos = v2(0,0);
 var  dragPos = v2(0,0);
 var draggingTower = null;
 
-var mapTop=0;
+var mapTop=156;
 var angle = 0;
 
 var creeps = [];
@@ -97,10 +97,16 @@ let taps = 0;
 function pressStart(pos) {
   startPos = pos;
   dragPos = pos;
+  if (typeof pressStartUI === 'function') pressStartUI(pos);
 }
-function pressMove(pos) { dragPos = pos; }
+function pressMove(pos) {
+  dragPos = pos;
+  if (typeof pressMoveUI === 'function') pressMoveUI(pos);
+}
 function pressEnd(pos) {
+  if (typeof pressEndUI === 'function' && pressEndUI(pos)) return;
   if (gameMode !== mainGame) return;
+  if (pos.y < mapTop || pos.y >= mapTop + 1536) return;
   setMousePos(pos);
   if (vdistance(startPos, pos) > 45) return;
   if (typeof sellConfirmTower !== 'undefined') sellConfirmTower = null;
@@ -241,11 +247,7 @@ waitForFullScreen.draw = _=> {
   ctx.fillText(versionString,100,1800);
 }
 
-function titleScreen() {
-  if (typeof Input !== 'undefined' && Input.keyWentDown(133)){
-    startGame();
-  }
-}
+function titleScreen() {}
 
 titleScreen.draw = () => {
   ctx.clear();

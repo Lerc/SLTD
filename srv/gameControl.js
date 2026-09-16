@@ -40,12 +40,8 @@
 
   // --- input synthesis -----------------------------------------------------
   //
-  // Tower selection gates on Input.keyWentDown(133), which only the real
-  // document-level mousedown listener sets -- calling pressStart() directly
-  // is not enough. So taps go through genuine MouseEvents.
-  //
-  // Coordinate chain: cell -> world (mapToWorld) -> canvas (+ mapTop on y)
-  // -> client (x globalScaleFactor, then scaled to the element's box).
+  // Coordinates use the same fixed portrait canvas for the map and controls.
+  // Synthetic pointer events exercise the same routing as real touch input.
 
   function canvasToClient(x, y) {
     const el = outputCanvas;
@@ -71,20 +67,15 @@
       clientX,
       clientY
     };
-    // input.js listens on document (for the 133 key state), main.js on the canvas.
-    document.dispatchEvent(new MouseEvent(type, opts));
-    outputCanvas.dispatchEvent(new MouseEvent(type, opts));
+    const pointerType = {mousedown: 'pointerdown', mouseup: 'pointerup', mousemove: 'pointermove'}[type];
+    outputCanvas.dispatchEvent(new PointerEvent(pointerType, {...opts, pointerId: 1, pointerType: 'mouse'}));
   }
 
   const frame = () => new Promise(r => requestAnimationFrame(r));
 
   async function tapCanvas(x, y) {
     sendMouse('mousemove', x, y);
-    await frame();
     sendMouse('mousedown', x, y);
-    // The 133 key-down flag is consumed by the next tick, so let one pass.
-    await frame();
-    await frame();
     sendMouse('mouseup', x, y);
     await frame();
   }

@@ -14,7 +14,9 @@ Open **http://localhost:8000**. Tap **Deploy defenses**.
 - Tap a built tower to choose one of its two permanent specializations.
 - Choose **First**, **Strong**, or **Near** targeting. Sell with two taps for 70% of the total investment.
 - Pause to plan, or use 2× speed. The game pauses when its tab is hidden.
-- Launch waves early for a small credit bonus. The field guide explains enemy counters.
+- Launch waves early for a small credit bonus. Open the field guide from the pause overlay.
+- The game always uses a portrait canvas. Tower management slides over the build strip without moving or resizing the map.
+- **Space** pauses/resumes; **Escape** closes menus or clears selection. Choose **Inspect defenses** in the pause overlay to build while time is stopped.
 
 ## Upgrade branches
 
@@ -40,7 +42,7 @@ node srv/nodemain.js -e 'buy_tower Tower 3 2; upgrade_tower 0 Ranger; send_wave;
 The Node suite checks combat, legal upgrades, refunds, save/load and seeded progression. Browser interaction tests live in `tests/browser/mobile.test.js` and run through the browser-bridge CLI:
 
 ```sh
-/path/to/browser-bridge/wsb run tests/browser/mobile.test.js --app sltd --wait
+/path/to/browser-bridge/wsb run tests/browser/mobile.test.js --app sltd --timeout 90 --wait
 ```
 
 See [balance and implementation notes](plans/branching-defenses.md) for the tuning targets and validation scope.

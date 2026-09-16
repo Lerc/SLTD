@@ -6,19 +6,25 @@ let lastTime = performance.now();
 let tickRemainder = 0;
 
 function init() {
+  window.outputCanvas = document.querySelector('#main');
+  window.interfaceCanvas = document.querySelector('#interface');
+  window.interfaceCtx = interfaceCanvas.getContext('2d');
+  outputCanvas.width = OutputWidth;
+  outputCanvas.height = OutputHeight;
+  const resize = () => {
+    const rect = document.getElementById('viewport').getBoundingClientRect();
+    const scale = Math.min(rect.width / OutputWidth, rect.height / OutputHeight);
+    const shell = document.getElementById('game-shell');
+    shell.style.width = OutputWidth * scale + 'px';
+    shell.style.height = OutputHeight * scale + 'px';
+    const density = Math.min(window.devicePixelRatio || 1, 3);
+    interfaceCanvas.width = Math.round(OutputWidth * scale * density);
+    interfaceCanvas.height = Math.round(OutputHeight * scale * density);
+  };
+  new ResizeObserver(resize).observe(document.getElementById('viewport'));
+  resize();
   bindUI();
   initInput();
-  window.outputCanvas = document.querySelector("#main");
-  outputCanvas.width=OutputWidth;
-  outputCanvas.height=OutputHeight;
-  const resize = () => {
-    const rect = document.getElementById('battlefield').getBoundingClientRect();
-    const scale = Math.min(rect.width / OutputWidth, rect.height / OutputHeight);
-    outputCanvas.style.width = OutputWidth * scale + 'px';
-    outputCanvas.style.height = OutputHeight * scale + 'px';
-  };
-  new ResizeObserver(resize).observe(document.getElementById('battlefield'));
-  resize();
 
   window.frameCanvas=document.createElement("canvas");
   frameCanvas.width=OutputWidth;
@@ -39,9 +45,6 @@ function init() {
 
   requestAnimationFrame(update);
 
-  outputCanvas.addEventListener("mousemove",mouseMoveHandler);
-  outputCanvas.addEventListener("mousedown",mouseDownHandler);
-  outputCanvas.addEventListener("mouseup",mouseUpHandler);
 }
 
 function screenToCanvas({x,y}) {
@@ -49,24 +52,6 @@ function screenToCanvas({x,y}) {
   const rect = canvas.getBoundingClientRect();
   let v=v2((x-rect.left)/rect.width*canvas.width,(y-rect.top)/rect.height*canvas.height);
   return vscale(v,1/globalScaleFactor);
-}
-
-function mouseMoveHandler(e) {
-  let v = screenToCanvas(v2(e.clientX,e.clientY));
-  setMousePos(v);
-  if (e.button==0) pressMove(v);
-}
-
-function mouseUpHandler(e) {
-  let v = screenToCanvas(v2(e.clientX,e.clientY));
-  setMousePos(v);
-  if (e.button==0) pressEnd(v);
-}
-
-function mouseDownHandler(e) {
-  let v = screenToCanvas(v2(e.clientX,e.clientY));
-  setMousePos(v);
-  if (e.button==0) pressStart(v);
 }
 
 function update() {
@@ -99,6 +84,7 @@ function update() {
   }
 
   glowFrame(frameCanvas);
+  drawUI(thisTime);
 
   // Must run in the same frame as glowFrame: the WebGL context has no
   // preserveDrawingBuffer, so the drawing buffer is cleared once the browser
@@ -107,7 +93,13 @@ function update() {
     let request = pendingScreenshot;
     pendingScreenshot = null;
     try {
-      request.resolve(outputCanvas.toDataURL("image/png"));
+      const capture = document.createElement('canvas');
+      capture.width = interfaceCanvas.width;
+      capture.height = interfaceCanvas.height;
+      const captureCtx = capture.getContext('2d');
+      captureCtx.drawImage(outputCanvas, 0, 0, capture.width, capture.height);
+      captureCtx.drawImage(interfaceCanvas, 0, 0);
+      request.resolve(capture.toDataURL('image/png'));
     } catch (e) {
       request.reject(e);
     }
