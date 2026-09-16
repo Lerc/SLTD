@@ -3,7 +3,7 @@ const game = require('../../srv/nodemain.js');
 game.reset();
 // Record the actual specialist draw geometry after its rotation. This catches
 // a sideways barrel even when aiming and projectile direction are correct.
-for (const info of towerInfo.filter(i => !i.upgrades)) {
+for (const info of towerInfo.filter(i => i.type.prototype instanceof Specialist)) {
   const tower = new info.type(3, 2);
   for (const direction of [v2(1,0), v2(0,1), v2(-1,0), v2(0,-1)]) {
     const target = new Basic(); target.position = vadd(tower.position, vscale(direction, 100));
@@ -29,4 +29,4 @@ for (const info of towerInfo.filter(i => !i.upgrades)) {
   }
 }
 globalThis.ctx = null;
-console.log('PASS all ten specialist barrels and muzzles align in all four directions');
+console.log('PASS all specialist barrels and muzzles align in all four directions');

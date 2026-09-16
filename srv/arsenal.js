@@ -1,11 +1,12 @@
 "use strict";
 
-// Upgrade prices are incremental. Only the five foundations can be built.
+// Upgrade prices are incremental; buildability is independent of upgrade branches.
 class Specialist extends Tower {
   constructor(x, y) {
     super(x, y);
     const info = towerInfo.find(i => i.type === this.constructor);
-    Object.assign(this, info.combat);
+    Object.assign(this, {burnPower:0.18, burnDuration:180, slowDuration:150,
+      slowFactor:info.combat.behavior === 'slow' ? 0.48 : 0.7, chainCount:4, chainRange:160}, info.combat);
     this.tint = info.tint;
     this.icon = info.icon;
   }
@@ -17,26 +18,26 @@ class Specialist extends Tower {
     if (this.behavior === 'chain') {
       let current = this.target;
       const visited = new Set();
-      for (let n = 0; current && n < 4; n++) {
+      for (let n = 0; current && n < this.chainCount; n++) {
         visited.add(current);
         hit(current, this.power * Math.pow(0.78, n), 'energy');
         beam(n === 0 ? this : this.lastLink, current);
         this.lastLink = current;
-        current = creeps.find(c => !c.dead && !visited.has(c) && c.distanceTo(current) < 160);
+        current = creeps.find(c => !c.dead && !visited.has(c) && c.distanceTo(current) < this.chainRange);
       }
       this.lastLink = null;
     } else if (this.behavior === 'splash' || this.behavior === 'burn') {
       for (const c of creeps) {
         if (c.dead || c.distanceTo(this.target) > this.splash) continue;
         hit(c, this.power, this.behavior === 'burn' ? 'fire' : 'explosive');
-        if (this.behavior === 'burn') c.applyBurn(180, 0.18, this);
+        if (this.behavior === 'burn') c.applyBurn(this.burnDuration, this.burnPower, this);
       }
       beam(this, this.target);
       combatEffect(this.target.position, this.tint, null, this.splash);
     } else if (this.behavior === 'slow' || this.behavior === 'quake') {
       for (const c of targets) {
         hit(c, this.power, 'energy');
-        c.applySlow(this.behavior === 'slow' ? 0.48 : 0.7, 150);
+        c.applySlow(this.slowFactor, this.slowDuration);
         if (this.behavior === 'quake') c.vulnerableTicks = 180;
       }
       combatEffect(this.position, this.tint, null, this.range);
@@ -55,7 +56,7 @@ class Specialist extends Tower {
   }
 
   draw() {
-    ctx.drawSprite(Assets['Tower' + (this.icon + 1)]);
+    ctx.drawSprite(Assets['Tower' + (this.icon === 5 ? 2 : this.icon + 1)]);
     ctx.strokeStyle = this.tint;
     ctx.lineWidth = 5;
     ctx.beginPath();
@@ -76,6 +77,8 @@ class Ranger extends Specialist {}
 class Repeater extends Specialist {}
 class Mortar extends Specialist {}
 class Incinerator extends Specialist {}
+class Inferno extends Specialist {}
+class Firestorm extends Specialist {}
 class Tesla extends Specialist {}
 class Prism extends Specialist {}
 class Railgun extends Specialist {}
@@ -84,21 +87,23 @@ class Cryo extends Specialist {}
 class Quake extends Specialist {}
 
 var towerInfo = [
-  {type: Tower, name: 'Sentry', cost: 100, icon: 0, desc: 'Reliable single-target fire', upgrades: ['Ranger', 'Repeater']},
-  {type: Stubby, name: 'Cannon', cost: 180, icon: 1, desc: 'Heavy hits at close range', upgrades: ['Mortar', 'Incinerator']},
-  {type: Zappy, name: 'Pulse', cost: 220, icon: 2, desc: 'Rapid energy fire • breaks armor', upgrades: ['Tesla', 'Prism']},
-  {type: Star, name: 'Orbital', cost: 360, icon: 3, desc: 'Long range • cannot fire up close', upgrades: ['Railgun', 'Executioner']},
-  {type: Thumper, name: 'Nova', cost: 260, icon: 4, desc: 'Area pulse • handles swarms', upgrades: ['Cryo', 'Quake']},
-  {type: Ranger, name: 'Ranger', cost: 140, icon: 0, tint: '#184060', desc: 'Long-range armor-piercing shots', combat: {range: 420, rate: 30, power: 15, damageKind: 'piercing'}},
-  {type: Repeater, name: 'Repeater', cost: 160, icon: 0, tint: '#403008', desc: 'Rapid fire • shreds runners', combat: {range: 270, rate: 130, power: 5}},
-  {type: Mortar, name: 'Mortar', cost: 210, icon: 1, tint: '#402008', desc: 'Explosive shells • 120 splash radius', combat: {range: 330, rate: 16, power: 28, behavior: 'splash', splash: 120}},
-  {type: Incinerator, name: 'Incinerator', cost: 190, icon: 1, tint: '#401008', desc: 'Burning splash • stops regeneration', combat: {range: 230, rate: 30, power: 7, behavior: 'burn', splash: 95}},
-  {type: Tesla, name: 'Tesla', cost: 240, icon: 2, tint: '#103840', desc: 'Lightning chains through 4 enemies', combat: {range: 310, rate: 30, power: 16, behavior: 'chain'}},
-  {type: Prism, name: 'Prism', cost: 240, icon: 2, tint: '#381040', desc: 'Damage ramps to 4× on one target', combat: {range: 360, rate: 70, power: 4, behavior: 'focus', damageKind: 'energy'}},
-  {type: Railgun, name: 'Railgun', cost: 280, icon: 3, tint: '#204038', desc: 'Huge armor-piercing hits • no blind spot', combat: {range: 640, rate: 12, power: 85, damageKind: 'piercing'}},
-  {type: Executioner, name: 'Executioner', cost: 260, icon: 3, tint: '#401820', desc: 'Double damage below 35% health', combat: {range: 540, rate: 24, power: 36, behavior: 'execute', damageKind: 'energy'}},
-  {type: Cryo, name: 'Cryo', cost: 180, icon: 4, tint: '#103848', desc: 'Frost field • slows groups by 52%', combat: {range: 225, rate: 18, power: 5, behavior: 'slow'}},
-  {type: Quake, name: 'Quake', cost: 220, icon: 4, tint: '#403018', desc: 'Slows groups • makes them take +35% damage', combat: {range: 200, rate: 14, power: 24, behavior: 'quake'}}
+  {type: Tower, name: 'Sentry', cost: 100, buildable: true, icon: 0, desc: 'Reliable single-target fire', upgrades: ['Ranger', 'Repeater']},
+  {type: Stubby, name: 'Cannon', cost: 180, buildable: true, icon: 1, desc: 'Heavy hits at close range', upgrades: ['Mortar', 'Star']},
+  {type: Zappy, name: 'Pulse', cost: 220, buildable: true, icon: 2, desc: 'Rapid energy fire • breaks armor', upgrades: ['Tesla', 'Prism']},
+  {type: Incinerator, name: 'Incinerator', cost: 190, buildable: true, icon: 5, tint: '#401008', desc: 'Burning splash • stops regeneration', upgrades: ['Inferno', 'Firestorm'], combat: {range: 230, rate: 30, power: 7, behavior: 'burn', splash: 95}},
+  {type: Thumper, name: 'Nova', cost: 260, buildable: true, icon: 4, desc: 'Area pulse • handles swarms', upgrades: ['Cryo', 'Quake']},
+  {type: Ranger, name: 'Ranger', cost: 420, icon: 0, tint: '#184060', desc: 'Long-range armor-piercing shots', combat: {range: 420, rate: 30, power: 15, damageKind: 'piercing'}},
+  {type: Repeater, name: 'Repeater', cost: 480, icon: 0, tint: '#403008', desc: 'Rapid fire • shreds runners', combat: {range: 270, rate: 130, power: 5}},
+  {type: Mortar, name: 'Mortar', cost: 630, icon: 1, tint: '#402008', desc: 'Explosive shells • 120 splash radius', combat: {range: 330, rate: 16, power: 28, behavior: 'splash', splash: 120}},
+  {type: Star, name: 'Orbital', cost: 900, icon: 3, tint: '#381840', desc: 'Long-range spirals • cannot fire up close', upgrades: ['Railgun', 'Executioner']},
+  {type: Inferno, name: 'Inferno', cost: 570, icon: 5, tint: '#502008', desc: 'Intense lingering burns • short range', combat: {range: 245, rate: 35, power: 12, behavior: 'burn', splash: 100, burnPower:0.45, burnDuration:240}},
+  {type: Firestorm, name: 'Firestorm', cost: 660, icon: 5, tint: '#482018', desc: 'Wide burning blasts • area denial', combat: {range: 320, rate: 22, power: 18, behavior: 'burn', splash: 165, burnPower:0.22, burnDuration:210}},
+  {type: Tesla, name: 'Tesla', cost: 720, icon: 2, tint: '#103840', desc: 'Lightning chains through 4 enemies', combat: {range: 310, rate: 30, power: 16, behavior: 'chain'}},
+  {type: Prism, name: 'Prism', cost: 720, icon: 2, tint: '#381040', desc: 'Damage ramps to 4× on one target', combat: {range: 360, rate: 70, power: 4, behavior: 'focus', damageKind: 'energy'}},
+  {type: Railgun, name: 'Railgun', cost: 1000, icon: 3, tint: '#204038', desc: 'Huge armor-piercing hits • no blind spot', combat: {range: 640, rate: 12, power: 85, damageKind: 'piercing'}},
+  {type: Executioner, name: 'Executioner', cost: 900, icon: 3, tint: '#401820', desc: 'Double damage below 35% health', combat: {range: 540, rate: 24, power: 36, behavior: 'execute', damageKind: 'energy'}},
+  {type: Cryo, name: 'Cryo', cost: 540, icon: 4, tint: '#103848', desc: 'Frost field • slows groups by 52%', combat: {range: 225, rate: 18, power: 5, behavior: 'slow'}},
+  {type: Quake, name: 'Quake', cost: 660, icon: 4, tint: '#403018', desc: 'Slows groups • makes them take +35% damage', combat: {range: 200, rate: 14, power: 24, behavior: 'quake'}}
 ];
 for (const info of towerInfo) {
   info.minRange = info.combat?.minimumRange || info.type.minimumRange || 0;
@@ -111,6 +116,7 @@ function upgradeTower(tower, typeName) {
   if (globalThis.gameMode !== globalThis.mainGame || !towers.includes(tower) || !current?.upgrades?.includes(typeName) || !next) return false;
   if (money < next.cost) return false;
   const replacement = new next.type(tower.cellPosition.x, tower.cellPosition.y);
+  applyTowerLevel(replacement, tower.level);
   replacement.invested = tower.invested + next.cost;
   replacement.targetMode = tower.targetMode;
   replacement.kills = tower.kills;
@@ -159,5 +165,5 @@ function combatEffect(position, tint, end = null, radius = 30) {
 }
 if (typeof module !== 'undefined' && module.exports) {
   Object.assign(globalThis, {towerInfo, getTowerInfo, upgradeTower, sellTower, sellValue, combatEffect,
-    Ranger, Repeater, Mortar, Incinerator, Tesla, Prism, Railgun, Executioner, Cryo, Quake});
+    Ranger, Repeater, Mortar, Incinerator, Inferno, Firestorm, Specialist, Tesla, Prism, Railgun, Executioner, Cryo, Quake});
 }

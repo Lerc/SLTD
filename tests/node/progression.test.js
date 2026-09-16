@@ -3,11 +3,11 @@ const game = require('../../srv/nodemain.js');
 
 // Representative strategy, using only earned money and legal placements.
 const orders = [
-  ['Tower',3,2], ['Tower',5,4], ['upgrade',0,'Ranger'],
-  ['Zappy',8,4], ['upgrade',2,'Tesla'], ['Stubby',8,8], ['upgrade',3,'Incinerator'],
-  ['Thumper',6,8], ['upgrade',4,'Cryo'], ['upgrade',1,'Repeater'],
-  ['Star',5,6], ['upgrade',5,'Railgun'], ['Zappy',5,11], ['upgrade',6,'Prism'],
-  ['Thumper',4,10], ['upgrade',7,'Quake']
+  ['Tower',3,2], ['Tower',5,4], ['level',0], ['level',1],
+  ['Incinerator',8,8], ['Zappy',8,4], ['level',2], ['level',3],
+  ['upgrade',0,'Ranger'], ['upgrade',1,'Repeater'], ['Thumper',6,8],
+  ['level',4], ['level',4], ['upgrade',3,'Tesla'], ['upgrade',2,'Inferno'],
+  ['Stubby',4,10], ['level',5], ['upgrade',5,'Star'], ['upgrade',4,'Cryo']
 ];
 function simulate(seed, active) {
   Math.random = makeRandom(seed);
@@ -18,7 +18,7 @@ function simulate(seed, active) {
     if (betweenWaves) {
       while (order < (active ? orders.length : 2)) {
         const [kind, x, y] = orders[order];
-        const result = kind === 'upgrade' ? upgradeTower(towers[x], y) : game.placeTower(kind, x, y).success;
+        const result = kind === 'level' ? levelUpTower(towers[x]) : kind === 'upgrade' ? upgradeTower(towers[x], y) : game.placeTower(kind, x, y).success;
         if (!result) break;
         order++;
       }

@@ -12,9 +12,10 @@ function scaleIncome(amount) {
 
 function buyTower(info, cellX, cellY) {
   const pos = v2(cellX, cellY);
-  if (globalThis.gameMode !== globalThis.mainGame || !info?.upgrades || !Number.isInteger(cellX) || !Number.isInteger(cellY) || !levelMap.canBuildHere(pos) || towers.some(t => vsame(t.cellPosition, pos)) || money < info.cost) return false;
+  if (globalThis.gameMode !== globalThis.mainGame || !info?.buildable || !Number.isInteger(cellX) || !Number.isInteger(cellY) || !levelMap.canBuildHere(pos) || towers.some(t => vsame(t.cellPosition, pos)) || money < info.cost) return false;
   money = globalThis.money = money - info.cost;
   const tower = new info.type(cellX, cellY);
+  applyTowerLevel(tower, 1);
   globalThis.towers.push(tower);
   towers = globalThis.towers;
   combatEffect(tower.position, '#184038', null, 75);
@@ -372,6 +373,8 @@ class Tower extends Entity {
       this.angle=2;
       this.cooldown=0;
       this.rate = 35;
+      this.power = 4;
+      this.level = 1;
       this.range =this.constructor.range || Tower.range ;
       this.minimumRange= this.constructor.minimumRange || Tower.minimumRange;
 
@@ -451,6 +454,7 @@ class Star extends Tower  {
   constructor (cellX,cellY) {
     super(cellX,cellY);
     this.rate = 7;
+    this.power = 100;
     this.bulletKind = Spiral;
     this.outAngle= 0;
   }
@@ -474,6 +478,7 @@ class Thumper extends Tower  {
   constructor (cellX,cellY) {
     super(cellX,cellY);
     this.rate = 10;
+    this.power = 45;
     this.bulletKind = Woosh;
   }
 
@@ -503,6 +508,7 @@ class Stubby extends Tower {
   constructor (cellX,cellY) {
     super(cellX,cellY);
     this.rate = 20;
+    this.power = 15;
     this.bulletKind = Rock;
   }
 
@@ -525,6 +531,7 @@ class Zappy extends Tower {
   constructor (cellX,cellY) {
     super(cellX,cellY);
     this.rate = 80;
+    this.power = 2;
     this.bulletKind = Laser;
     this.side = 40;
   }
@@ -555,7 +562,7 @@ class Woosh extends Entity {
     super(x,y)
     this.source=source;
     this.age = 0;
-    this.damage = 45;
+    this.damage = source.power;
     this.range = source.range;
 
   }
@@ -592,7 +599,7 @@ class Bullet extends Entity {
     this.source = source;
     this.target = target;
     this.age = 0;
-    this.damage = 2;
+    this.damage = source.power;
   }
 
   hit() {
@@ -609,7 +616,7 @@ class Spiral extends Bullet {
     super(source,target);
 
 
-    this.damage = 100;
+    this.damage = source.power;
     this.angle = source.outAngle;
     this.age = 0;
   }
@@ -643,7 +650,7 @@ class Pea extends Bullet {
     super(source,target);
 
 
-    this.damage = 4;
+    this.damage = source.power;
     this.speed = 5;
   }
 
@@ -667,7 +674,7 @@ class Pea extends Bullet {
 class Laser extends Pea {
   constructor (source,target)  {
     super(source,target);
-    this.damage = 2;
+    this.damage = source.power;
     this.speed = 10;
   }
 
@@ -693,7 +700,7 @@ class Laser extends Pea {
 class Rock extends Pea {
   constructor (source,target)  {
     super(source,target);
-    this.damage = 15;
+    this.damage = source.power;
     this.speed = 3;
   }
 

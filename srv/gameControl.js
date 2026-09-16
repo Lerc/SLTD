@@ -159,7 +159,7 @@
       towers: towers.map(t => ({
         type: t.constructor.name,
         cellX: t.cellPosition.x,
-        cellY: t.cellPosition.y, invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
+        cellY: t.cellPosition.y, level: t.level, invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
       }))
     };
   }
@@ -182,6 +182,7 @@
       const info = towerInfo.find(i => i.type.name === t.type);
       if (info) {
         const tower = new info.type(t.cellX, t.cellY);
+        applyTowerLevel(tower, t.level || 1);
         for (const key of ['invested', 'targetMode', 'kills', 'damageDealt']) if (t[key] !== undefined) tower[key] = t[key];
         towers.push(tower);
       }

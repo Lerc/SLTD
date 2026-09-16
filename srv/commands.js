@@ -47,7 +47,7 @@ function makeCommands(host) {
     const info = G.towerInfo.find(t => t.type.name === towerType);
     if (!info) return { success: false, reason: `Unknown tower type: ${towerType}` };
 
-    if (!info.upgrades) return {success: false, reason: 'This specialization requires a building upgrade'};
+    if (!info.buildable) return {success: false, reason: 'This specialization requires a building upgrade'};
     if (!Number.isInteger(cellX) || !Number.isInteger(cellY)) return {success: false, reason: 'Invalid cell coordinates'};
     const pos = G.v2(cellX, cellY);
     if (!G.levelMap.canBuildHere(pos)) return { success: false, reason: 'Cannot build at this location' };
@@ -156,6 +156,11 @@ function makeCommands(host) {
       out(result ? 'Upgraded to ' + args[1] : 'Upgrade unavailable');
       return !!result;
     },
+    level_up_tower(args) {
+      const result = G.levelUpTower(G.towers[Number(args[0])]);
+      out(result ? 'Tower level ' + result.level : 'Level unavailable');
+      return !!result;
+    },
     sell_tower(args) { return G.sellTower(G.towers[Number(args[0])]); },
     send_wave() { return G.sendWave(); },
     tower_types() {
@@ -225,6 +230,7 @@ function makeCommands(host) {
       'buy_tower <type> <cellX> <cellY> - Purchase and place a tower',
       'tower_types                      - List tower types and costs',
       'upgrade_tower <index> <type>     - Choose a specialization',
+      'level_up_tower <index>           - Improve the current tower',
       'sell_tower <index>               - Sell for 70% of total investment',
       'send_wave                        - Launch early for bonus credits',
       'spots [limit=10]                 - List buildable cells beside the path',

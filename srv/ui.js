@@ -18,7 +18,8 @@ const uiGlyphs = [
   'M5 23h22v6H5zM9 15h14v8H9zM16 4v14M10 4h12v7H10z',
   'M18 2 9 18h7l-2 12 10-17h-8z',
   'M16 2 20 12 30 16 20 20 16 30 12 20 2 16 12 12z',
-  'M16 1v5M16 26v5M1 16h5M26 16h5'
+  'M16 1v5M16 26v5M1 16h5M26 16h5',
+  'M17 2c5 10-4 10 3 17 2-5 5-6 5-6 7 12-1 17-9 17S3 23 7 16c0 5 4 5 4 5-2-9 8-10 6-19z'
 ];
 
 function uiGeometry() {
@@ -78,7 +79,7 @@ function uiControls() {
   const g = uiGeometry();
   const buttons = uiHudControls();
   if (!selectedTower && uiSlide < 0.01) {
-    towerInfo.filter(info => info.upgrades).forEach((info, i) => buttons.push(
+    towerInfo.filter(info => info.buildable).forEach((info, i) => buttons.push(
       uiButton('build-' + info.type.name, i * 216, g.dock, 216, g.strip, info.name, String(info.cost), {info, unaffordable: money < info.cost, selected: selectedBuild === info})
     ));
   }
@@ -97,12 +98,12 @@ function uiTowerControls(tower, offset) {
   const buttons = [];
   if (info.upgrades) info.upgrades.forEach((name, i) => {
     const branch = towerInfo.find(t => t.type.name === name);
-    buttons.push(uiButton('upgrade-' + name, offset + i * 290, y, 290, 156, branch.name, '+' + branch.cost, {disabled: money < branch.cost, branch}));
+    buttons.push(uiButton('upgrade-' + name, offset + i * 235, y, 235, 156, branch.name, '+' + branch.cost, {disabled: money < branch.cost, branch}));
   });
   buttons.push(
-    uiButton('target', offset + 580, y, 160, 156, {first: 'First', strong: 'Strong', near: 'Near'}[tower.targetMode], '⌖'),
-    uiButton('sell', offset + 740, y, 190, 156, sellConfirmTower === tower ? 'Confirm' : 'Sell', String(sellValue(tower)), {danger: sellConfirmTower === tower}),
-    uiButton('close-tower', offset + 930, y, 150, 156, '×')
+    uiButton('level-up', offset + 470, y, 240, 156, 'L' + tower.level + ' → ' + (tower.level + 1), '$' + levelUpCost(tower), {levelUp:true, gain:levelUpHighlight(tower), disabled:money < levelUpCost(tower)}),
+    uiButton('target', offset + 710, y, 170, 156, {first: 'First', strong: 'Strong', near: 'Near'}[tower.targetMode], '⌖'),
+    uiButton('sell', offset + 880, y, 200, 156, sellConfirmTower === tower ? 'Confirm' : 'Sell', String(sellValue(tower)), {danger: sellConfirmTower === tower})
   );
   return buttons;
 }
@@ -133,13 +134,15 @@ function uiActivate(button) {
   } else if (id.startsWith('upgrade-')) {
     upgradeTower(selectedTower, id.slice(8));
     sellConfirmTower = null;
+  } else if (id === 'level-up') {
+    levelUpTower(selectedTower); sellConfirmTower = null;
   } else if (id === 'target') {
     const modes = ['first', 'strong', 'near'];
     selectedTower.targetMode = modes[(modes.indexOf(selectedTower.targetMode) + 1) % modes.length];
   } else if (id === 'sell') {
     if (sellConfirmTower === selectedTower) { sellTower(selectedTower); sellConfirmTower = null; }
     else sellConfirmTower = selectedTower;
-  } else if (id === 'close-tower') { selectedTower = null; sellConfirmTower = null; }
+  }
 }
 function pressStartUI(pos) {
   const button = uiControls().find(b => uiRectContains(b, pos));
@@ -232,8 +235,12 @@ function uiDrawButton(c, b) {
   const color = b.disabled || b.unaffordable ? '#6f8984' : b.danger ? '#ffb3a3' : uiColors.text;
   const center = b.x + b.w / 2;
   if (b.stamp) { uiDrawNumberStamp(c, b.stamp, b.label, b, b.sub, b.disabled); return; }
-  if (b.info) {
-    uiDrawGlyph(c, b.info.icon, center, b.y + 42, 54, b.unaffordable ? '#627a73' : ['#81e4bd', '#e3b67b', '#94bde9', '#c4a1e4', '#eba69f'][b.info.icon]);
+  if (b.levelUp) {
+    uiText(c, b.label, center, b.y + 32, 35, color, 'center');
+    uiText(c, b.sub, center, b.y + 79, 36, b.disabled ? color : uiColors.gold, 'center');
+    uiText(c, b.gain, center, b.y + 126, 26, uiColors.muted, 'center');
+  } else if (b.info) {
+    uiDrawGlyph(c, b.info.icon, center, b.y + 42, 54, b.unaffordable ? '#627a73' : ['#81e4bd', '#e3b67b', '#94bde9', '#c4a1e4', '#eba69f', '#efa277'][b.info.icon]);
     uiText(c, b.label, center, b.y + 91, 31, color, 'center');
     uiText(c, b.sub, center, b.y + 130, 36, b.unaffordable ? color : uiColors.gold, 'center');
   } else {
@@ -249,22 +256,22 @@ function uiDrawGuide(c) {
   if (uiGuidePage === 0) {
     for (const text of [
       'Tap a tower, tap an empty tile to preview, then tap that tile again to build. Or drag and release to place once.',
-      'Tap a placed tower to replace the build strip with its upgrades, targeting and selling controls.',
+      'Tap a placed tower for branches, levels, targeting and selling. Tap empty ground to return to building.',
       'Invalid tiles cancel placement. Orange means insufficient funds; tap anywhere to cancel. Sell twice for a 70% refund.',
       'First targets enemies closest to the exit. Strong picks the most health. Near picks the closest enemy.',
       'Send unlocks three seconds after each launch. Call waves together for extra credits. Pause lets you inspect and build.'
     ]) y = uiWrap(c, text, 90, y, 900, 36, 50) + 38;
   } else if (uiGuidePage === 1) {
     // Selecting a tower before opening help puts its own branches first.
-    const foundations = towerInfo.filter(i => i.upgrades);
+    const foundations = towerInfo.filter(i => i.buildable);
     const selected = selectedTower && getTowerInfo(selectedTower);
-    const focus = foundations.find(i => i === selected || i.upgrades.includes(selected?.type.name));
+    const focus = selected?.upgrades ? selected : towerInfo.find(i => i.upgrades?.includes(selected?.type.name));
     const info = focus || foundations[0];
     const entries = selectedTower ? [info] : foundations;
     for (const foundation of entries) {
       if (!selectedTower) {
         uiText(c, foundation.name, 90, y, 39, uiColors.mint);
-        y = uiWrap(c, foundation.upgrades.join(' / '), 90, y + 54, 900, 35, 48) + 38;
+        y = uiWrap(c, foundation.upgrades.map(name => towerInfo.find(t => t.type.name === name).name).join(' / '), 90, y + 54, 900, 35, 48) + 38;
         continue;
       }
       uiText(c, foundation.name, 90, y, 39, uiColors.mint); y += 56;
@@ -273,6 +280,7 @@ function uiDrawGuide(c) {
         y = uiWrap(c, branch.name + ' +' + branch.cost + ' · ' + branch.desc, 90, y, 900, selectedTower ? 38 : 29, selectedTower ? 55 : 40);
       }
       y += selectedTower ? 48 : 20;
+      if (selectedTower) uiWrap(c, 'Levels improve damage, rate and range along curves unique to each weapon. Levels carry through branches; each new level costs more. ' + levelUpHighlight(selectedTower) + ' leads the next level.', 90, y, 900, 35, 48);
     }
   } else {
     for (const [name, description] of [
@@ -297,7 +305,7 @@ function drawUI(now = performance.now()) {
     paused, money, lives, waveCounter, betweenWaves, Math.ceil(buildTicks / 60), canSendWave(),
     creeps.length + hopper.length + backlog.length, gameAccelerated, selectedBuild?.type.name,
     selectedTower?.cellPosition.x, selectedTower?.cellPosition.y, selectedTower?.constructor.name,
-    selectedTower?.targetMode, selectedTower?.kills, Math.floor(selectedTower?.damageDealt || 0),
+    selectedTower?.level, selectedTower?.targetMode, selectedTower?.kills, Math.floor(selectedTower?.damageDealt || 0),
     uiSlide, sellConfirmTower === selectedTower, uiGesture?.button?.id,
     placement.mode, placement.cell?.x, placement.cell?.y, placement.blocked,
     now < uiToastUntil ? uiToastMessage : '', assetsPending.length].join('|');
@@ -313,7 +321,7 @@ function drawUI(now = performance.now()) {
     uiText(c, '$' + money, 194, 78, money > 9999 ? 40 : 48, uiColors.gold);
     uiText(c, '♥ ' + lives, 416, 78, 44, uiColors.mint);
     for (const button of uiHudControls()) uiDrawButton(c, button);
-    const bases = towerInfo.filter(i => i.upgrades);
+    const bases = towerInfo.filter(i => i.buildable);
     bases.forEach((info, i) => uiDrawButton(c, uiButton('build-' + info.type.name, i * 216, g.dock, 216, g.strip, info.name, String(info.cost), {info, selected: selectedBuild === info, unaffordable: money < info.cost})));
     if (uiPanelTower && uiSlide > 0) {
       c.save(); c.beginPath(); c.rect(0, g.dock, g.width, g.strip); c.clip();
@@ -321,8 +329,8 @@ function drawUI(now = performance.now()) {
       c.fillStyle = uiColors.surface; c.fillRect(offset, g.dock, g.width, g.strip);
       const info = getTowerInfo(uiPanelTower);
       if (!info.upgrades) {
-        uiText(c, info.name, offset + 24, g.dock + 50, 42, uiColors.mint);
-        uiText(c, uiPanelTower.kills + ' kills · ' + Math.floor(uiPanelTower.damageDealt) + ' dmg', offset + 24, g.dock + 108, 30, uiColors.muted);
+        uiText(c, info.name + ' · L' + uiPanelTower.level, offset + 24, g.dock + 50, 37, uiColors.mint);
+        uiText(c, Math.round(uiPanelTower.power) + ' dmg · ' + Math.round(uiPanelTower.range) + ' range', offset + 24, g.dock + 108, 30, uiColors.muted);
       }
       for (const button of uiTowerControls(uiPanelTower, offset)) uiDrawButton(c, button);
       c.restore();
@@ -342,7 +350,7 @@ function drawUI(now = performance.now()) {
       uiWrap(c, 'Wave ' + waveCounter + ' · ' + wavePlan(waveCounter).hint, 180, 525, 720, 36, 48);
     } else {
       uiText(c, modal === 'welcome' ? 'SLTD' : 'Defense breached', 180, 510, modal === 'welcome' ? 110 : 67, uiColors.mint);
-      uiWrap(c, modal === 'welcome' ? 'Five foundations. Ten specializations.' : 'Reached wave ' + waveCounter + '.', 180, 660, 720, 43, 62);
+      uiWrap(c, modal === 'welcome' ? 'Five foundations. Branches and levels.' : 'Reached wave ' + waveCounter + '.', 180, 660, 720, 43, 62);
       uiWrap(c, 'Choose a map, then build your defense. Pause for the field guide.', 180, 810, 720, 37, 56);
     }
     for (const button of uiControls()) uiDrawButton(c, button);
@@ -362,9 +370,10 @@ function uiDrawNumberStamp(c, word, number, bounds, sub, disabled = false) {
   c.font = '900 72px system-ui, sans-serif';
   c.fillStyle = disabled ? '#52655e' : uiColors.mint;
   c.globalAlpha = .3;
-  c.fillText(word, center, bounds.y + 61, bounds.w - 12);
+  c.save(); c.translate(center, bounds.y + 61); c.scale(1, 1.5);
+  c.fillText(word, 0, 0, bounds.w - 12); c.restore();
   c.globalAlpha = 1;
-  c.font = '900 54px system-ui, sans-serif'; // Number height is 75% of the 72px label.
+  c.font = '900 54px system-ui, sans-serif'; // Keep numbers unchanged when stretching labels.
   c.fillStyle = disabled ? '#8b9e95' : uiColors.text;
   c.fillText(number, center, bounds.y + 61, bounds.w - 12);
   uiText(c, sub, center, bounds.y + 125, 32, disabled ? uiColors.muted : uiColors.gold, 'center');

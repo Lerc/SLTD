@@ -20,6 +20,7 @@ require('./world.js');
 require('./maps.js');
 require('./gadgets.js');
 require('./arsenal.js');
+require('./levels.js');
 require('./waves.js');
 require('./placement.js');
 // Match browser script semantics: state vars and globalThis must be the same storage.
@@ -223,7 +224,7 @@ function saveState() {
       targetIndex: globalThis.creeps.indexOf(t.target),
       // Star-specific
       outAngle: t.outAngle, focus: t.focus, focusTargetIndex: globalThis.creeps.indexOf(t.focusTarget),
-      invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
+      level: t.level, invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
     })),
 
     // Bullets
@@ -233,6 +234,7 @@ function saveState() {
       y: b.y,
       age: b.age,
       damage: b.damage,
+      range: b.range,
       sourceIndex: globalThis.towers.indexOf(b.source),
       targetIndex: globalThis.creeps.indexOf(b.target),
       // Spiral-specific
@@ -341,6 +343,7 @@ function loadState(stateData) {
     }
 
     const tower = new TowerClass(towerData.cellX, towerData.cellY);
+    applyTowerLevel(tower, towerData.level || 1);
     for (const key of ['invested', 'targetMode', 'kills', 'damageDealt']) {
       if (towerData[key] !== undefined) tower[key] = towerData[key];
     }
@@ -377,7 +380,7 @@ function loadState(stateData) {
     const source = globalThis.towers[bulletData.sourceIndex];
     const target = globalThis.creeps[bulletData.targetIndex];
 
-    if (!source || !target) {
+    if (!source || (!target && BulletClass !== globalThis.Woosh)) {
       console.warn(`Skipping bullet with invalid source/target`);
       continue;
     }
@@ -386,6 +389,8 @@ function loadState(stateData) {
     bullet.x = bulletData.x;
     bullet.y = bulletData.y;
     bullet.age = bulletData.age;
+    if (bulletData.damage !== undefined) bullet.damage = bulletData.damage;
+    if (bulletData.range !== undefined) bullet.range = bulletData.range;
     if (bulletData.angle !== undefined) bullet.angle = bulletData.angle;
     if (bulletData.speed !== undefined) bullet.speed = bulletData.speed;
 

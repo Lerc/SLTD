@@ -3,6 +3,12 @@ const {test, beforeEach} = require('node:test');
 const game = require('../../srv/nodemain.js');
 beforeEach(() => { game.reset(); });
 function build(type = 'Tower', x = 3, y = 2) { assert.equal(game.placeTower(type, x, y).success, true); return towers.at(-1); }
+function buildTree(type) {
+  const info=towerInfo.find(i=>i.type.name===type);
+  if(info.buildable) return build(type);
+  const parent=towerInfo.find(i=>i.upgrades?.includes(type));
+  return upgradeTower(buildTree(parent.type.name),type);
+}
 function enemy(Kind = Basic, x = 380, y = 240) { const c = new Kind(); c.x = x; c.y = y; creeps.push(c); return c; }
 function fund() { globalThis.money = 10000; }
 test('only foundations can be purchased, placement validates coordinates and occupancy', () => {
@@ -13,16 +19,17 @@ test('only foundations can be purchased, placement validates coordinates and occ
   assert.equal(money, before);
   build(); assert.equal(game.placeTower('Tower', 3, 2).success, false);
 });
-test('all ten branches require their own foundation and preserve investment', () => {
+test('all branches require their parent and preserve investment', () => {
   for (const base of towerInfo.filter(i => i.upgrades)) for (const branch of base.upgrades) {
-    game.reset(); fund(); const tower = build(base.type.name);
+    game.reset(); fund(); const tower = buildTree(base.type.name);
+    const investment = tower.invested;
     tower.kills = 4; tower.targetMode = 'strong';
     const balance = money;
     const next = towerInfo.find(i => i.type.name === branch);
     const upgraded = upgradeTower(tower, branch);
     assert.equal(upgraded.constructor.name, branch);
     assert.equal(upgraded.kills, 4); assert.equal(upgraded.targetMode, 'strong');
-    assert.equal(upgraded.invested, base.cost + next.cost);
+    assert.equal(upgraded.invested, investment + next.cost);
     assert.equal(money, balance - next.cost);
     assert.equal(upgradeTower(upgraded, branch), false);
     const refund = sellValue(upgraded), before = money;
@@ -70,8 +77,7 @@ test('target priority ignores dead creeps and selects first, strong, or near', (
 test('specialized weapons apply chaining, splash, burn, vulnerability, and focused damage', () => {
   for (const branch of ['Tesla', 'Mortar', 'Incinerator', 'Cryo', 'Quake', 'Prism']) {
     game.reset(); fund();
-    const info = towerInfo.find(i => i.upgrades?.includes(branch));
-    const tower = upgradeTower(build(info.type.name), branch);
+    const tower = buildTree(branch);
     const first = enemy(BigBall, 380, 240), second = enemy(BigBall, 400, 240);
     tower.target = first; tower.fire();
     assert.ok(first.damage > 0, branch);
@@ -102,7 +108,7 @@ test('save/load preserves upgrade investment, targeting, statuses, and continued
   creeps[0].applySlow(.5, 100);
   const state = game.saveState(); game.loadState(state);
   assert.equal(towers[0].constructor.name, 'Ranger');
-  assert.equal(towers[0].invested, 240); assert.equal(towers[0].targetMode, 'strong');
+  assert.equal(towers[0].invested, 520); assert.equal(towers[0].targetMode, 'strong');
   assert.equal(creeps[0].slowTicks, 100);
   const age = waveAge; game.tick(20); assert.equal(waveAge, age + 20);
 });

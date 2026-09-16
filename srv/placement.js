@@ -8,7 +8,7 @@ function cancelPlacement() {
 }
 function beginPlacement(info, mode = 'tap') {
   cancelPlacement();
-  if (globalThis.gameMode !== globalThis.mainGame || !info?.upgrades) return false;
+  if (globalThis.gameMode !== globalThis.mainGame || !info?.buildable) return false;
   Object.assign(placement, {mode, info});
   globalThis.selectedBuild = info;
   globalThis.selectedTower = null;

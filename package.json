@@ -6,7 +6,7 @@
     "serve": "npx http-server srv -p 8000 -o",
     "lint": "npx eslint srv/**/*.js",
     "format": "npx prettier --write 'srv/**/*.{js,html,css}'",
-    "test": "node tests/node/combat.test.js && node tests/node/turret-orientation.test.js && node tests/node/placement-maps.test.js && node tests/node/overlapping-waves.test.js && node tests/node/progression.test.js"
+    "test": "node tests/node/combat.test.js && node tests/node/levels.test.js && node tests/node/turret-orientation.test.js && node tests/node/placement-maps.test.js && node tests/node/overlapping-waves.test.js && node tests/node/progression.test.js"
   },
   "keywords": [
     "game",
