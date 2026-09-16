@@ -2,6 +2,7 @@
 
 // All geometry is in game coordinates. UI state never changes the viewport.
 var uiOverlay = '';
+var uiMapChoice = 'foundry';
 var uiGuidePage = 0;
 var uiSlide = 0;
 var uiPanelTower = null;
@@ -46,6 +47,7 @@ function uiButton(id, x, y, w, h, label, sub = '', extra = {}) {
   return {id, x, y, w, h, label, sub, ...extra};
 }
 function uiModal() {
+  if (uiOverlay === 'maps') return 'maps';
   if (gameMode === gameOver) return 'gameOver';
   if (gameMode !== mainGame) return 'welcome';
   return uiOverlay;
@@ -55,8 +57,13 @@ function uiModal() {
 function uiControls() {
   const modal = uiModal();
   if (modal === 'welcome' || modal === 'gameOver') {
-    return [uiButton('start', 180, 1040, 720, 160, modal === 'welcome' ? 'Deploy defenses' : 'Deploy again', '', {disabled: assetsPending.length > 0})];
+    return [uiButton('start', 180, 1040, 720, 160, 'Choose map', '', {disabled: assetsPending.length > 0})];
   }
+  if (modal === 'maps') return [
+    ...mapCatalog.map((map, i) => uiButton('map-' + map.id, 60, 430 + i * 350, 960, 320, map.name, '', {map, selected: uiMapChoice === map.id})),
+    uiButton('map-back', 60, 1580, 156, 156, '‹'),
+    uiButton('deploy', 240, 1580, 780, 156, 'Deploy defenses')
+  ];
   if (modal === 'pause') return [
     uiButton('resume', 180, 650, 720, 156, 'Resume'),
     uiButton('plan', 180, 824, 720, 156, 'Inspect defenses', 'Keep time paused'),
@@ -72,7 +79,7 @@ function uiControls() {
   const buttons = uiHudControls();
   if (!selectedTower && uiSlide < 0.01) {
     towerInfo.filter(info => info.upgrades).forEach((info, i) => buttons.push(
-      uiButton('build-' + info.type.name, i * 216, g.dock, 216, g.strip, info.name, String(info.cost), {info, disabled: money < info.cost && selectedBuild !== info, selected: selectedBuild === info})
+      uiButton('build-' + info.type.name, i * 216, g.dock, 216, g.strip, info.name, String(info.cost), {info, unaffordable: money < info.cost, selected: selectedBuild === info})
     ));
   }
   if (selectedTower && uiSlide > 0.99) buttons.push(...uiTowerControls(selectedTower, 0));
@@ -82,7 +89,7 @@ function uiHudControls() {
   return [
     uiButton('pause', 570, 0, 156, 156, paused ? '▶' : 'Ⅱ'),
     uiButton('speed', 726, 0, 156, 156, gameAccelerated ? '2×' : '1×'),
-    uiButton('send', 882, 0, 198, 156, betweenWaves ? 'Send' : '•••', betweenWaves ? '+' + Math.ceil(buildTicks / 60) : String(creeps.length + hopper.length + backlog.length), {disabled: !betweenWaves || paused})
+    uiButton('send', 882, 0, 198, 156, String(betweenWaves ? waveCounter : waveCounter + 1), '+$' + (betweenWaves ? Math.ceil(buildTicks / 60) : 0), {stamp:'SEND', disabled: !betweenWaves || paused})
   ];
 }
 function uiTowerControls(tower, offset) {
@@ -102,7 +109,10 @@ function uiTowerControls(tower, offset) {
 function uiActivate(button) {
   if (button.disabled) return;
   const id = button.id;
-  if (id === 'start') startGame();
+  if (id === 'start') { uiMapChoice = mapCatalog.some(m => m.id === selectedMapId) ? selectedMapId : mapCatalog[0].id; uiOverlay = 'maps'; cancelPlacement(); }
+  else if (id === 'map-back') uiOverlay = '';
+  else if (id === 'deploy') startGame(uiMapChoice);
+  else if (id.startsWith('map-')) uiMapChoice = id.slice(4);
   else if (id === 'pause') {
     if (paused) { paused = false; uiOverlay = ''; }
     else { paused = true; uiOverlay = 'pause'; }
@@ -118,8 +128,8 @@ function uiActivate(button) {
   } else if (id === 'speed') { gameAccelerated = !gameAccelerated; gameAcceleration = 2; }
   else if (id === 'send') sendWave();
   else if (id.startsWith('build-')) {
-    selectedBuild = selectedBuild === button.info ? null : button.info;
-    selectedTower = null;
+    if (selectedBuild === button.info) cancelPlacement();
+    else beginPlacement(button.info);
   } else if (id.startsWith('upgrade-')) {
     upgradeTower(selectedTower, id.slice(8));
     sellConfirmTower = null;
@@ -134,17 +144,19 @@ function uiActivate(button) {
 function pressStartUI(pos) {
   const button = uiControls().find(b => uiRectContains(b, pos));
   const g = uiGeometry();
-  const captured = !!uiModal() || pos.y < g.hud || pos.y >= g.dock;
-  uiGesture = {button, start: pos, captured, dragging: false};
+  const cancelOnly = placement.mode === 'tap' && placement.blocked;
+  const captured = cancelOnly || !!uiModal() || pos.y < g.hud || pos.y >= g.dock;
+  uiGesture = {button, start: pos, captured, dragging: false, cancelOnly};
   return captured;
 }
 function pressMoveUI(pos) {
   if (!uiGesture?.captured) return false;
+  if (uiGesture.cancelOnly) return true;
   if (uiGesture.button?.info && !uiGesture.button.disabled && vdistance(uiGesture.start, pos) > 24) {
+    if (!uiGesture.dragging) beginPlacement(uiGesture.button.info, 'drag');
     uiGesture.dragging = true;
-    selectedBuild = uiGesture.button.info;
-    selectedTower = null;
     setMousePos(pos);
+    dragPlacement(mouseCell);
   }
   return true;
 }
@@ -152,11 +164,10 @@ function pressEndUI(pos) {
   const gesture = uiGesture;
   uiGesture = null;
   if (!gesture?.captured) return false;
+  if (gesture.cancelOnly) { cancelPlacement(); return true; }
   if (gesture.dragging) {
-    if (pos.y >= mapTop && pos.y < uiGeometry().dock) {
-      setMousePos(pos);
-      if (!buyTower(gesture.button.info, mouseCell.x, mouseCell.y)) uiToast('Cannot build here');
-    }
+    setMousePos(pos);
+    finishPlacementDrag(mouseCell);
   } else if (gesture.button) {
     // Revalidate after the press: money, selection or game mode may have changed.
     const button = uiControls().find(b => b.id === gesture.button.id && uiRectContains(b, pos));
@@ -164,7 +175,10 @@ function pressEndUI(pos) {
   }
   return true;
 }
-function cancelUIInput() { uiGesture = null; }
+function cancelUIInput() {
+  if (placement.mode === 'drag') cancelPlacement();
+  uiGesture = null;
+}
 function bindUI() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && gameMode === mainGame) { paused = true; uiOverlay = 'pause'; cancelUIInput(); }
@@ -175,7 +189,7 @@ function bindUI() {
     if (event.code === 'Escape') {
       if (uiOverlay === 'guide') uiOverlay = 'pause';
       else if (uiOverlay === 'pause') uiActivate({id: 'resume'});
-      else if (selectedTower || selectedBuild) { selectedTower = null; selectedBuild = null; }
+      else if (selectedTower || selectedBuild) { selectedTower = null; cancelPlacement(); }
       else uiActivate({id: 'pause'});
     }
   });
@@ -207,6 +221,7 @@ function uiDrawGlyph(c, index, x, y, size, color) {
   c.restore();
 }
 function uiDrawButton(c, b) {
+  if (b.map) { uiDrawMapCard(c, b); return; }
   const pressed = uiGesture?.button?.id === b.id;
   c.fillStyle = b.selected ? '#204638' : pressed ? '#274448' : uiColors.card;
   c.fillRect(b.x + 3, b.y + 5, b.w - 6, b.h - 10);
@@ -214,12 +229,13 @@ function uiDrawButton(c, b) {
     c.fillStyle = b.danger ? '#ec9d8e' : uiColors.mint;
     c.fillRect(b.x + 3, b.y + b.h - 9, b.w - 6, 4);
   }
-  const color = b.disabled ? '#6f8984' : b.danger ? '#ffb3a3' : uiColors.text;
+  const color = b.disabled || b.unaffordable ? '#6f8984' : b.danger ? '#ffb3a3' : uiColors.text;
   const center = b.x + b.w / 2;
+  if (b.stamp) { uiDrawNumberStamp(c, b.stamp, b.label, b, b.sub, b.disabled); return; }
   if (b.info) {
-    uiDrawGlyph(c, b.info.icon, center, b.y + 42, 54, b.disabled ? '#627a73' : ['#81e4bd', '#e3b67b', '#94bde9', '#c4a1e4', '#eba69f'][b.info.icon]);
+    uiDrawGlyph(c, b.info.icon, center, b.y + 42, 54, b.unaffordable ? '#627a73' : ['#81e4bd', '#e3b67b', '#94bde9', '#c4a1e4', '#eba69f'][b.info.icon]);
     uiText(c, b.label, center, b.y + 91, 31, color, 'center');
-    uiText(c, b.sub, center, b.y + 130, 36, b.disabled ? color : uiColors.gold, 'center');
+    uiText(c, b.sub, center, b.y + 130, 36, b.unaffordable ? color : uiColors.gold, 'center');
   } else {
     uiText(c, b.label, center, b.y + (b.sub ? 57 : b.h / 2), b.label.length > 14 ? 38 : b.label.length > 8 ? 33 : 41, color, 'center');
     if (b.sub) uiText(c, b.sub, center, b.y + 108, b.sub.length > 14 ? 30 : 38, b.disabled ? color : uiColors.gold, 'center');
@@ -232,9 +248,9 @@ function uiDrawGuide(c) {
   let y = 540;
   if (uiGuidePage === 0) {
     for (const text of [
-      'Tap a tower in the strip, then a tile to build. Or drag straight onto the map.',
+      'Tap a tower, tap an empty tile to preview, then tap that tile again to build. Or drag and release to place once.',
       'Tap a placed tower to replace the build strip with its upgrades, targeting and selling controls.',
-      'Choose one permanent branch. Sell twice to refund 70% of all credits invested.',
+      'Invalid tiles cancel placement. Orange means insufficient funds; tap anywhere to cancel. Sell twice for a 70% refund.',
       'First targets enemies closest to the exit. Strong picks the most health. Near picks the closest enemy.',
       'Send waves early for extra credits. Pause lets you inspect and build without time advancing.'
     ]) y = uiWrap(c, text, 90, y, 900, 36, 50) + 38;
@@ -277,12 +293,13 @@ function drawUI(now = performance.now()) {
   uiSlide = destination ? Math.min(1, uiSlide + step) : Math.max(0, uiSlide - step);
   if (selectedTower) uiPanelTower = selectedTower;
   if (!uiSlide) uiPanelTower = null;
-  const signature = [interfaceCanvas.width, interfaceCanvas.height, gameMode.name, uiOverlay, uiGuidePage,
+  const signature = [interfaceCanvas.width, interfaceCanvas.height, gameMode.name, uiOverlay, uiGuidePage, uiMapChoice, selectedMapId,
     paused, money, lives, waveCounter, betweenWaves, Math.ceil(buildTicks / 60),
     creeps.length + hopper.length + backlog.length, gameAccelerated, selectedBuild?.type.name,
     selectedTower?.cellPosition.x, selectedTower?.cellPosition.y, selectedTower?.constructor.name,
     selectedTower?.targetMode, selectedTower?.kills, Math.floor(selectedTower?.damageDealt || 0),
     uiSlide, sellConfirmTower === selectedTower, uiGesture?.button?.id,
+    placement.mode, placement.cell?.x, placement.cell?.y, placement.blocked,
     now < uiToastUntil ? uiToastMessage : '', assetsPending.length].join('|');
   if (signature === uiDrawSignature) return;
   uiDrawSignature = signature;
@@ -292,13 +309,12 @@ function drawUI(now = performance.now()) {
   c.fillRect(0, 0, g.width, g.hud);
   c.fillRect(0, g.dock, g.width, g.strip);
   if (gameMode === mainGame || gameMode === gameOver) {
-    uiText(c, 'W' + waveCounter, 22, 51, 47, uiColors.mint);
-    uiText(c, betweenWaves ? Math.ceil(buildTicks / 60) + 's' : String(creeps.length + hopper.length + backlog.length) + ' left', 22, 107, 33, uiColors.muted);
+    uiDrawNumberStamp(c, 'WAVE', String(betweenWaves ? Math.max(0, waveCounter - 1) : waveCounter), {x:6,y:0,w:180,h:156}, betweenWaves ? Math.ceil(buildTicks / 60) + 's' : String(creeps.length + hopper.length + backlog.length) + ' left');
     uiText(c, '$' + money, 194, 78, money > 9999 ? 40 : 48, uiColors.gold);
     uiText(c, '♥ ' + lives, 416, 78, 44, uiColors.mint);
     for (const button of uiHudControls()) uiDrawButton(c, button);
     const bases = towerInfo.filter(i => i.upgrades);
-    bases.forEach((info, i) => uiDrawButton(c, uiButton('build-' + info.type.name, i * 216, g.dock, 216, g.strip, info.name, String(info.cost), {info, selected: selectedBuild === info, disabled: money < info.cost})));
+    bases.forEach((info, i) => uiDrawButton(c, uiButton('build-' + info.type.name, i * 216, g.dock, 216, g.strip, info.name, String(info.cost), {info, selected: selectedBuild === info, unaffordable: money < info.cost})));
     if (uiPanelTower && uiSlide > 0) {
       c.save(); c.beginPath(); c.rect(0, g.dock, g.width, g.strip); c.clip();
       const offset = (1 - uiSlide) * g.width;
@@ -313,17 +329,21 @@ function drawUI(now = performance.now()) {
     }
     c.fillStyle = uiColors.edge; c.fillRect(0, g.hud - 3, g.width, 3); c.fillRect(0, g.dock, g.width, 3);
   }
+  uiDrawPlacement(c);
   const modal = uiModal();
   if (modal) {
     c.fillStyle = '#071114ed'; c.fillRect(0, 0, g.width, g.height);
-    if (modal === 'guide') uiDrawGuide(c);
+    if (modal === 'maps') {
+      uiText(c, 'Choose your ground', 90, 220, 70, uiColors.mint);
+      uiText(c, 'Three routes. The same defenses.', 90, 315, 38, uiColors.muted);
+    } else if (modal === 'guide') uiDrawGuide(c);
     else if (modal === 'pause') {
       uiText(c, 'Paused', 180, 420, 84, uiColors.mint);
       uiWrap(c, 'Wave ' + waveCounter + ' · ' + wavePlan(waveCounter).hint, 180, 525, 720, 36, 48);
     } else {
       uiText(c, modal === 'welcome' ? 'SLTD' : 'Defense breached', 180, 510, modal === 'welcome' ? 110 : 67, uiColors.mint);
       uiWrap(c, modal === 'welcome' ? 'Five foundations. Ten specializations.' : 'Reached wave ' + waveCounter + '.', 180, 660, 720, 43, 62);
-      uiWrap(c, 'Tap to build. Tap a tower to upgrade. Pause for the field guide.', 180, 810, 720, 37, 56);
+      uiWrap(c, 'Choose a map, then build your defense. Pause for the field guide.', 180, 810, 720, 37, 56);
     }
     for (const button of uiControls()) uiDrawButton(c, button);
   }
@@ -333,4 +353,50 @@ function drawUI(now = performance.now()) {
     c.fillStyle = '#152c2ff0'; c.fillRect((g.width - width) / 2, g.hud + 18, width, 64);
     uiText(c, uiToastMessage, g.width / 2, g.hud + 50, 34, uiColors.text, 'center');
   }
+}
+
+function uiDrawNumberStamp(c, word, number, bounds, sub, disabled = false) {
+  const center = bounds.x + bounds.w / 2;
+  c.save();
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '900 72px system-ui, sans-serif';
+  c.strokeStyle = disabled ? '#52655e' : uiColors.mint;
+  c.globalAlpha = .38; c.lineWidth = 2.5;
+  c.strokeText(word, center, bounds.y + 61, bounds.w - 12);
+  c.globalAlpha = 1;
+  uiText(c, number, center, bounds.y + 63, number.length > 2 ? 70 : 86, disabled ? '#8b9e95' : uiColors.text, 'center');
+  uiText(c, sub, center, bounds.y + 125, 32, disabled ? uiColors.muted : uiColors.gold, 'center');
+  c.restore();
+}
+function uiDrawMapCard(c, button) {
+  const {map, x, y, w, h} = button;
+  c.fillStyle = button.selected ? '#1a3832' : uiColors.card;
+  c.fillRect(x, y, w, h);
+  c.strokeStyle = button.selected ? uiColors.mint : uiColors.edge;
+  c.lineWidth = 3; c.strokeRect(x, y, w, h);
+  const size = 16;
+  for (let row = 0; row < 16; row++) for (let column = 0; column < 11; column++) {
+    c.fillStyle = map.cells[row][column] === '.' ? uiColors.mint : '#09191b';
+    c.fillRect(x + 24 + column * size, y + 30 + row * size, size - 1, size - 1);
+  }
+  uiText(c, map.name, x + 242, y + 70, 55, uiColors.text);
+  uiWrap(c, map.description, x + 242, y + 150, w - 276, 34, 47);
+  if (button.selected) uiText(c, '✓', x + w - 45, y + 38, 36, uiColors.mint, 'center');
+}
+function uiDrawPlacement(c) {
+  if (!placement.info || !placement.cell || gameMode !== mainGame) return;
+  const p = mapToWorld(placement.cell);
+  const x = p.x + 12, y = p.y + mapTop;
+  c.save(); c.beginPath(); c.rect(12, mapTop, 1056, 1536); c.clip();
+  if (placement.blocked) {
+    const centerX = Math.max(110, Math.min(970, x));
+    const centerY = Math.max(mapTop + 42, Math.min(mapTop + 1494, y));
+    uiText(c, 'Insufficient', centerX, centerY - 17, 30, '#ffc077', 'center');
+    uiText(c, 'funds', centerX, centerY + 18, 30, '#ffc077', 'center');
+  } else if (placement.mode === 'tap') {
+    c.fillStyle = '#10332bdd'; c.fillRect(x - 44, y - 44, 88, 88);
+    uiText(c, 'Tap to', x, y - 16, 26, uiColors.text, 'center');
+    uiText(c, 'build', x, y + 16, 26, uiColors.text, 'center');
+  }
+  c.restore();
 }

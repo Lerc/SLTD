@@ -17,12 +17,14 @@ function geometry() {
   const p = gameControl.canvasToClient(...Object.values(gameControl.cellToCanvas(5, 4)));
   return JSON.stringify({rect:[r.x,r.y,r.width,r.height], map:p, buffer:[outputCanvas.width,outputCanvas.height], transform:[gameViewTransform.a,gameViewTransform.d,gameViewTransform.e,gameViewTransform.f]});
 }
-startGame(); paused = true;
+startGame('foundry'); paused = true;
 await settle();
 const original = geometry();
 const fixed = phase => check(geometry() === original, 'Map geometry unchanged: ' + phase);
 check(document.querySelectorAll('button, dialog, header, footer, svg').length === 0, 'All controls are canvas-rendered');
 await tap('build-Tower'); await gameControl.tapCell(3, 2);
+check(towers.length === 0 && placement.cell?.x === 3, 'First map tap previews without building');
+await gameControl.tapCell(3, 2);
 check(towers.length === 1 && money === 220, 'Tap builds exactly one tower');
 await gameControl.tapTower(towers[0]);
 // Sample every frame through the slide, not just its endpoints.
@@ -46,10 +48,11 @@ const build = uiControls().find(b => b.id === 'build-Tower');
 const start = {x:build.x+build.w/2,y:build.y+build.h/2};
 const end = gameControl.cellToCanvas(5,4);
 pointer('pointerdown',start); pointer('pointermove',end); pointer('pointerup',end);
+check(placement.mode === 'idle', 'Drag release clears modal placement');
 check(towers.length === 1 && towers[0].cellPosition.x === 5 && towers[0].cellPosition.y === 4, 'Touch drag with identifier zero builds at correct coordinates');
 const cancelEnd = gameControl.cellToCanvas(6,4);
 pointer('pointerdown',start); pointer('pointermove',cancelEnd); pointer('pointercancel',cancelEnd); pointer('pointerup',cancelEnd);
-check(towers.length === 1, 'Cancelled drag never builds');
+check(towers.length === 1 && placement.mode === 'idle', 'Cancelled drag never builds or leaves placement active');
 await gameControl.tapTower(towers[0]); await settle();
 await tap('close-tower'); fixed('closed');
 await tap('pause'); check(!paused, 'Resume from paused inspection');

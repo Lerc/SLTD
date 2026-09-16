@@ -67,8 +67,9 @@ class Specialist extends Tower {
     ctx.stroke();
     ctx.rotate(this.angle);
     ctx.fillStyle = this.tint;
-    ctx.fillRect(8, -6, 43, 12);
-    ctx.fillRect(-10, -13, 18, 26);
+    // All turret art faces up locally; angle zero is north, clockwise positive.
+    ctx.fillRect(-6, -51, 12, 43);
+    ctx.fillRect(-13, -10, 26, 18);
   }
 }
 class Ranger extends Specialist {}

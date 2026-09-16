@@ -8,13 +8,15 @@ A phone-friendly tower defense game using vanilla JavaScript, Canvas and WebGL. 
 python3 -m http.server 8000 --directory srv
 ```
 
-Open **http://localhost:8000**. Tap **Deploy defenses**.
+Open **http://localhost:8000**. Choose a map, then tap **Deploy defenses**. Foundry is the original route; Switchback offers long shared firing lanes, and Crosswind has a shorter, tighter route.
 
-- Tap a foundation, then an empty tile to build. Dragging from the build bar also works.
+- Tap a foundation, then an empty tile to preview its range. Tap the **Tap to build** square again to confirm. An invalid tile cancels.
+- Or drag from the build bar and release to build once. Every drag ends in placement or cancellation.
+- An orange range circle means **Insufficient funds**. Your next tap cancels the preview.
 - Tap a built tower to choose one of its two permanent specializations.
 - Choose **First**, **Strong**, or **Near** targeting. Sell with two taps for 70% of the total investment.
 - Pause to plan, or use 2× speed. The game pauses when its tab is hidden.
-- Launch waves early for a small credit bonus. Open the field guide from the pause overlay.
+- **Wave** shows the current or last completed wave; **Send** shows the next wave and its early-launch credit bonus. Open the field guide from the pause overlay.
 - The game always uses a portrait canvas. Tower management slides over the build strip without moving or resizing the map.
 - **Space** pauses/resumes; **Escape** closes menus or clears selection. Choose **Inspect defenses** in the pause overlay to build while time is stopped.
 
@@ -39,10 +41,11 @@ npm test
 node srv/nodemain.js -e 'buy_tower Tower 3 2; upgrade_tower 0 Ranger; send_wave; advance 1000; list_counts'
 ```
 
-The Node suite checks combat, legal upgrades, refunds, save/load and seeded progression. Browser interaction tests live in `tests/browser/mobile.test.js` and run through the browser-bridge CLI:
+The Node suite checks combat, turret orientation, placement, map routes, legal upgrades, refunds, save/load and seeded progression. Browser interaction tests run through the browser-bridge CLI:
 
 ```sh
 /path/to/browser-bridge/wsb run tests/browser/mobile.test.js --app sltd --timeout 90 --wait
+/path/to/browser-bridge/wsb run tests/browser/placement-maps.test.js --app sltd --timeout 90 --wait
 ```
 
 See [balance and implementation notes](plans/branching-defenses.md) for the tuning targets and validation scope.

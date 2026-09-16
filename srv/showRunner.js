@@ -41,24 +41,9 @@ var dx=5;
 var dy=5;
 var running=true;
 
-var map1 = [
-  '##.########',
-  '##.########',
-  '##.###....#',
-  '##.....##.#',
-  '#########.#',
-  '#########.#',
-  '#########.#',
-  '#########.#',
-  '#########.#',
-  '###.......#',
-  '###.#######',
-  '###.#######',
-  '###.....###',
-  '#######.###',
-  '#######.###',
-  '#######.###',
-]
+var map1 = mapCatalog[0].cells;
+var selectedMapId = mapCatalog[0].id;
+var activeMapCells = map1;
 
 var  startPos = v2(0,0);
 var  endPos = v2(0,0);
@@ -109,14 +94,12 @@ function pressEnd(pos) {
   if (pos.y < mapTop || pos.y >= mapTop + 1536) return;
   setMousePos(pos);
   if (vdistance(startPos, pos) > 45) return;
+  if (tapPlacement(mouseCell)) return;
   if (typeof sellConfirmTower !== 'undefined') sellConfirmTower = null;
   const tower = towers.find(t => vsame(t.cellPosition, mouseCell));
   if (tower) {
     selectedTower = globalThis.selectedTower = tower;
     selectedBuild = null;
-  } else if (selectedBuild) {
-    const built = buyTower(selectedBuild, mouseCell.x, mouseCell.y);
-    if (typeof uiToast === 'function') uiToast(built ? selectedBuild.name + ' deployed' : 'Choose an empty tile and check your credits');
   } else selectedTower = globalThis.selectedTower = null;
   if (typeof updateUI === 'function') updateUI(true);
 }
@@ -162,7 +145,10 @@ function generateWave(num) {
 }
 
 // Game lifecycle
-function startGame() {
+function startGame(mapId = selectedMapId) {
+  const chosenMap = mapCatalog.find(map => map.id === mapId) || mapCatalog[0];
+  selectedMapId = globalThis.selectedMapId = chosenMap.id;
+  activeMapCells = globalThis.activeMapCells = chosenMap.cells;
   money = globalThis.money = 320;
   towers = globalThis.towers = [];
   creeps = globalThis.creeps = [];
@@ -179,7 +165,7 @@ function startGame() {
   ticker = globalThis.ticker = 0;
   waveAge = globalThis.waveAge = 0;
   selectedTower = globalThis.selectedTower = null;
-  selectedBuild = globalThis.selectedBuild = null;
+  cancelPlacement();
   paused = globalThis.paused = false;
   betweenWaves = globalThis.betweenWaves = true;
   buildTicks = globalThis.buildTicks = 900;
@@ -190,7 +176,7 @@ function startGame() {
   console.log("starting game")
 
   // Create levelMap - will be available globally
-  globalThis.levelMap = createWorld(map1);
+  globalThis.levelMap = createWorld(activeMapCells);
 
   if (typeof updateUI === 'function') updateUI();
 }
@@ -255,6 +241,7 @@ titleScreen.draw = () => {
 };
 
 function mainGame() {
+  updatePlacement();
   if (typeof updateUI === 'function') updateUI();
   if (globalThis.paused) return;
   let cycles = 1;
@@ -400,11 +387,19 @@ function drawWorld() {
   }
 
   if (selectedTower) selectedTower.drawRange();
-  if (selectedBuild && levelMap.canBuildHere(mouseCell)) {
-    const p = mapToWorld(mouseCell);
-    ctx.strokeStyle = '#184050'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(p.x, p.y, selectedBuild.maxRange, 0, TWOPI); ctx.stroke();
-    ctx.fillStyle = '#082028'; ctx.fillRect(p.x - 42, p.y - 42, 84, 84);
+  if (placement.info && placement.cell) {
+    const p = mapToWorld(placement.cell);
+    const blocked = placement.blocked || money < placement.info.cost;
+    const valid = validPlacementCell(placement.cell);
+    ctx.strokeStyle = blocked ? '#602d08' : valid ? '#184050' : '#501010';
+    ctx.fillStyle = blocked ? '#30150828' : '#08202828';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(p.x, p.y, placement.info.maxRange, 0, TWOPI);
+    ctx.fill(); ctx.stroke();
+    if (placement.info.minRange) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, placement.info.minRange, 0, TWOPI); ctx.stroke();
+    }
+    ctx.strokeRect(p.x - 45, p.y - 45, 90, 90);
   }
 
   // Composite persistence canvas onto frame canvas (updated per tick in mainGame_core)
@@ -431,28 +426,6 @@ function drawWorld() {
     e.drawHealthBar();
   }
 
-  if (draggingTower) {
-    let towerHere = towers.find( ({cellPosition}) => vsame(cellPosition,mouseCell));
-
-    if ( levelMap.canBuildHere(mouseCell)  && (draggingTower.cost <= money)  &&  !towerHere) {
-      ctx.fillStyle="#fff2";
-      ctx.lineWidth=5;
-      ctx.strokeStyle="#fff7";
-    } else {
-      ctx.fillStyle="#f001";
-      ctx.lineWidth=5;
-      ctx.strokeStyle="#f002";
-    }
-    let {x,y} = mapToWorld(mouseCell);
-
-    let {maxRange,minRange}=draggingTower;
-    ctx.circle(x,y,maxRange);
-
-    ctx.moveTo(x+minRange,y);
-    ctx.ellipse(x, y, minRange, minRange, 0, 0, Math.PI * 2,true);
-    ctx.fill();
-    ctx.stroke();
-  }
 
   ctx.restore();
 }

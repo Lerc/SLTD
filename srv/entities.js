@@ -357,6 +357,8 @@ class Splitter extends Creep {
   }
 }
 
+// Shared angle convention: 0 faces up; positive angles rotate clockwise.
+// Sprite guns, specialist geometry and vFromAngle all use this frame.
 class Tower extends Entity {
   static range = 250;
   static minimumRange = 0;

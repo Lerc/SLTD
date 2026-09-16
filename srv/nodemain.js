@@ -17,9 +17,11 @@ require('./Extras.js');
 require('./littleAStar.js');
 require('./entities.js');
 require('./world.js');
+require('./maps.js');
 require('./gadgets.js');
 require('./arsenal.js');
 require('./waves.js');
+require('./placement.js');
 // Match browser script semantics: state vars and globalThis must be the same storage.
 require('vm').runInThisContext(require('fs').readFileSync(__dirname + '/showRunner.js', 'utf8'), {filename: 'showRunner.js'});
 const { makeCommands } = require('./commands.js');
@@ -248,7 +250,8 @@ function saveState() {
     })),
 
     // Map
-    map: globalThis.map1,
+    map: globalThis.activeMapCells,
+    mapId: globalThis.selectedMapId,
 
     // Selected tower
     selectedTowerIndex: globalThis.towers.indexOf(globalThis.selectedTower)
@@ -274,7 +277,10 @@ function loadState(stateData) {
   globalThis.buildTicks = stateData.buildTicks || 0;
 
   // Initialize world
-  globalThis.levelMap = globalThis.createWorld(stateData.map || globalThis.map1);
+  globalThis.activeMapCells = stateData.map || globalThis.mapCatalog.find(m => m.id === stateData.mapId)?.cells || globalThis.map1;
+  globalThis.selectedMapId = globalThis.mapCatalog.find(m => JSON.stringify(m.cells) === JSON.stringify(globalThis.activeMapCells))?.id || 'custom';
+  globalThis.levelMap = globalThis.createWorld(globalThis.activeMapCells);
+  globalThis.cancelPlacement();
 
   // Clear arrays
   globalThis.creeps = [];

@@ -155,6 +155,7 @@
   function saveState() {
     return {
       lives, money, waveCounter, difficulty, ticker, waveAge,
+      mapId: selectedMapId, map: activeMapCells,
       towers: towers.map(t => ({
         type: t.constructor.name,
         cellX: t.cellPosition.x,
@@ -164,6 +165,12 @@
   }
 
   function loadState(state) {
+    startGame(state.mapId);
+    if (state.map) {
+      activeMapCells = state.map;
+      selectedMapId = mapCatalog.find(m => JSON.stringify(m.cells) === JSON.stringify(state.map))?.id || 'custom';
+      globalThis.levelMap = createWorld(activeMapCells);
+    }
     globalThis.lives = state.lives;
     globalThis.money = state.money;
     globalThis.waveCounter = state.waveCounter;
