@@ -600,6 +600,30 @@ class Bullet extends Entity {
     this.target = target;
     this.age = 0;
     this.damage = source.power;
+    this.motion = v2(0, 0);
+    this.fadeTicks = 0;
+    this.fadeDuration = 12;
+  }
+
+  dissipate(ticks = 12) {
+    if (this.fadeTicks || this.dead) return;
+    this.target = null;
+    this.fadeTicks = this.fadeDuration = ticks;
+  }
+
+  moveDissipation() {
+    if (!this.fadeTicks) return false;
+    this.position = vadd(this.position, this.motion);
+    this.motion = vscale(this.motion, 0.85);
+    if (--this.fadeTicks === 0) this.dead = true;
+    return true;
+  }
+
+  drawMain() {
+    ctx.save();
+    if (this.fadeTicks) ctx.globalAlpha *= this.fadeTicks / this.fadeDuration;
+    super.drawMain();
+    ctx.restore();
   }
 
   hit() {
@@ -619,10 +643,28 @@ class Spiral extends Bullet {
     this.damage = source.power;
     this.angle = source.outAngle;
     this.age = 0;
+    this.level = source.level;
+  }
+
+  scatter() {
+    const count = 6 + 3 * this.level;
+    const targets = creeps.filter(c => !c.dead);
+    for (let i = 0; i < count; i++) {
+      const target = targets.length ? targets[Math.floor(Math.random() * targets.length)] : null;
+      const shot = new OrbitalFragment(this.source, target);
+      shot.position = this.position;
+      shot.motion = vFromAngle(this.angle + i * TWOPI / count, shot.speed);
+      shot.damage = this.damage / count;
+      globalThis.bullets.push(shot);
+    }
+    bullets = globalThis.bullets;
+    this.dead = true;
   }
 
   move() {
-    if (this.target.dead || this.age > 400) { this.dead = true; return; }
+    if (this.dead || this.moveDissipation()) return;
+    if (!this.target || this.target.dead) { this.scatter(); return; }
+    if (this.age > 400) { this.dissipate(); return; }
     this.age+=1;
     this.angle+=0.05;
 
@@ -652,16 +694,26 @@ class Pea extends Bullet {
 
     this.damage = source.power;
     this.speed = 5;
+    this.motion = vFromAngle(source.angle, this.speed);
+    this.lastTargetPosition = target ? target.position : vadd(this.position, vscale(this.motion, 30));
   }
 
   move() {
-    if (this.target.dead || this.age++ > 400) { this.dead = true; return; }
-    let delta = vdiff(this.target.position,this.position)
-    let motion = vnormalize(delta,this.speed);
-
-    this.position=vadd(this.position,motion);
-
-    if (this.distanceTo(this.target) < this.target.radius) this.hit(this.target);
+    if (this.dead || this.moveDissipation()) return;
+    if (this.age++ > 400) { this.dissipate(); return; }
+    if (this.target) {
+      this.lastTargetPosition = this.target.position;
+      if (this.target.dead) this.target = null;
+    }
+    const delta = vdiff(this.lastTargetPosition, this.position);
+    const distance = Math.hypot(delta.x, delta.y);
+    this.motion = distance > 0 ? vscale(delta, Math.min(this.speed, distance) / distance) : v2(0, 0);
+    this.position = vadd(this.position, this.motion);
+    if (this.target && this.distanceTo(this.target) <= this.target.radius) this.hit();
+    else if (!this.target && distance <= this.speed) {
+      this.motion = v2(0, 0);
+      this.dissipate();
+    }
   }
 
   draw() {
@@ -676,17 +728,19 @@ class Laser extends Pea {
     super(source,target);
     this.damage = source.power;
     this.speed = 10;
+    this.motion = vFromAngle(source.angle, this.speed);
   }
 
 
   move() {
+    if (!this.dead && !this.fadeTicks && (!this.target || this.target.dead)) this.dissipate(16);
     super.move();
-    this.speed= min(this.speed*1.5,30);
+    if (!this.fadeTicks && !this.dead) this.speed= min(this.speed*1.5,30);
   }
 
   draw() {
-    let delta = vdiff(this.target.position,this.position)
-    let motion = vnormalize(delta,10);
+    const length = Math.hypot(this.motion.x, this.motion.y);
+    const motion = length > 0 ? vscale(this.motion, 10 / length) : v2(0, -10);
     ctx.beginPath();
     ctx.moveTo(0,0);
     let {x,y} = vscale(motion,5);
@@ -702,11 +756,64 @@ class Rock extends Pea {
     super(source,target);
     this.damage = source.power;
     this.speed = 3;
+    this.motion = vFromAngle(source.angle, this.speed);
+    this.launchTicks = 0;
+    this.orphanTicks = 0;
+  }
+
+  get homingStrength() {
+    return this.launchTicks > 0 ? 0 : 0.12;
+  }
+
+  move() {
+    if (this.dead || this.moveDissipation()) return;
+    if (this.age++ > 400) { this.dissipate(); return; }
+    if (!this.target || this.target.dead) {
+      this.target = null;
+      for (const creep of creeps) {
+        if (!creep.dead && (!this.target || this.distanceTo(creep) < this.distanceTo(this.target))) this.target = creep;
+      }
+    }
+    if (this.target) this.orphanTicks = 0;
+    else if (++this.orphanTicks >= 45) { this.dissipate(); return; }
+
+    if (this.target && this.homingStrength > 0) {
+      const desired = vangle(vdiff(this.target.position, this.position));
+      const heading = vangle(this.motion);
+      const error = Math.atan2(Math.sin(desired - heading), Math.cos(desired - heading));
+      this.motion = vFromAngle(heading + error * this.homingStrength, this.speed);
+    }
+    if (this.launchTicks > 0) this.launchTicks--;
+    this.position = vadd(this.position, this.motion);
+    if (!this.launchTicks && this.target && this.distanceTo(this.target) <= this.target.radius) this.hit();
   }
 
   draw() {
     ctx.fillStyle="#afa";
     ctx.circle(0,0,5);
+    ctx.fill();
+  }
+}
+
+class OrbitalFragment extends Rock {
+  constructor(source, target) {
+    super(source, target);
+    this.launchDuration = 36 + Math.floor(Math.random() * 25);
+    this.launchTicks = this.launchDuration;
+  }
+
+  get homingStrength() {
+    const progress = 1 - this.launchTicks / this.launchDuration;
+    // Smoothly pick up directional steering as the radial launch finishes.
+    return 0.12 * progress * progress * (3 - 2 * progress);
+  }
+
+  draw() {
+    ctx.fillStyle = '#301838';
+    ctx.circle(0, 0, 3);
+    ctx.fill();
+    ctx.fillStyle = '#fff0ff';
+    ctx.circle(0, 0, 1.5);
     ctx.fill();
   }
 }
@@ -736,4 +843,5 @@ if (typeof module !== 'undefined' && module.exports) {
   globalThis.Pea = Pea;
   globalThis.Laser = Laser;
   globalThis.Rock = Rock;
+  globalThis.OrbitalFragment = OrbitalFragment;
 }

@@ -240,7 +240,10 @@ function saveState() {
       // Spiral-specific
       angle: b.angle,
       // Laser-specific
-      speed: b.speed
+      speed: b.speed,
+      motion: b.motion, fadeTicks: b.fadeTicks, fadeDuration: b.fadeDuration,
+      lastTargetPosition: b.target?.position || b.lastTargetPosition,
+      launchTicks: b.launchTicks, launchDuration: b.launchDuration, orphanTicks: b.orphanTicks, level: b.level
     })),
 
     // Hopper (pending creeps to spawn)
@@ -380,8 +383,8 @@ function loadState(stateData) {
     const source = globalThis.towers[bulletData.sourceIndex];
     const target = globalThis.creeps[bulletData.targetIndex];
 
-    if (!source || (!target && BulletClass !== globalThis.Woosh)) {
-      console.warn(`Skipping bullet with invalid source/target`);
+    if (!source) {
+      console.warn(`Skipping bullet with invalid source`);
       continue;
     }
 
@@ -393,6 +396,9 @@ function loadState(stateData) {
     if (bulletData.range !== undefined) bullet.range = bulletData.range;
     if (bulletData.angle !== undefined) bullet.angle = bulletData.angle;
     if (bulletData.speed !== undefined) bullet.speed = bulletData.speed;
+    for (const key of ['motion', 'fadeTicks', 'fadeDuration', 'lastTargetPosition', 'launchTicks', 'launchDuration', 'orphanTicks', 'level']) {
+      if (bulletData[key] !== undefined) bullet[key] = bulletData[key];
+    }
 
     globalThis.bullets.push(bullet);
   }

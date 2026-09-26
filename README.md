@@ -32,6 +32,8 @@ Open **http://localhost:8000**. Choose a map, then tap **Deploy defenses**. Foun
 
 Orbital can specialize again into **Railgun (+1000)** or **Executioner (+900)**. It cannot be built directly.
 
+Shots remain visible when their target dies. Sentry shots finish travelling to the enemy's last position and fade; Cannon shots turn toward another living enemy, or coast and fade when none remain; Pulse shots drift and dissipate. Orbital shots transform into `6 + 3 × level` small, bright-centered Orbital fragments that choose random living enemies. Each fragment launches radially with a randomized 36–60-tick phase that smoothly fades in directional homing. The burst shares the original shot's damage and uses its launch-time level. Without enemies, its fragments coast and fade. Wave preparation waits for all projectiles and active visual effects to finish.
+
 Every type can level up repeatedly. Foundation level 2 costs 40–65 credits; later levels become increasingly expensive. Each type has distinct damage, firing-rate and range curves, plus growth for its special effects. The level button shows its next price and largest stat gain. See [level curves and prices](plans/tower-levels.md).
 
 Armor resists physical shots; shields are weak to energy and piercing. Burning stops menders from regenerating. Splitters release runners. Guardians resist slows and cost three lives on escape.

@@ -296,15 +296,22 @@ function updatePersistenceCanvas() {
   ctx = savedCtx;
 }
 
+function updateCombatActivity() {
+  // Transformations append children; their first movement belongs to the next tick.
+  for (const shot of [...globalThis.bullets]) if (!shot.dead) shot.move();
+  bullets = globalThis.bullets = globalThis.bullets.filter(e => !e.dead);
+  for (const effect of particleSystems) effect.move();
+  particleSystems = globalThis.particleSystems = particleSystems.filter(p => p.isActive());
+}
+
 function mainGame_core() {
   if (gameMode !== mainGame) return;
   if (sendCooldown > 0) sendCooldown--;
   if (globalThis.betweenWaves) {
     globalThis.buildTicks--;
     if (globalThis.buildTicks <= 0) sendWave();
+    updateCombatActivity();
     updatePersistenceCanvas();
-    for (const p of particleSystems) p.move();
-    particleSystems = globalThis.particleSystems = particleSystems.filter(p => p.isActive());
     return;
   }
   angle=(angle+0.1)%TWOPI;
@@ -321,7 +328,8 @@ function mainGame_core() {
   spawnWaveCreeps();
   if (lives > 0) rewardClearedWaves();
 
-  if (creeps.length+globalThis.hopper.length+backlog.length  == 0 ) {
+  if (creeps.length+globalThis.hopper.length+backlog.length === 0 &&
+      !bullets.some(b => !b.dead) && !particleSystems.some(p => p.isActive())) {
     if (lives > 0) { nextWave(); return; }
   }
 
@@ -334,18 +342,10 @@ function mainGame_core() {
   for (let e of globalThis.towers) {
     e.move();
   }
-  for (let e of globalThis.bullets) {
-    e.move();
-  }
-  for (let p of globalThis.particleSystems) {
-    p.move();
-  }
+  updateCombatActivity();
 
   creeps = globalThis.creeps = globalThis.creeps.filter(e=>!e.dead);
   towers = globalThis.towers = globalThis.towers.filter(e=>!e.dead);
-  bullets = globalThis.bullets = globalThis.bullets.filter(e=>!e.dead);
-
-  particleSystems = globalThis.particleSystems = globalThis.particleSystems.filter(p=>p.isActive());
 
   if (gameMode != mainGame) return;
 
