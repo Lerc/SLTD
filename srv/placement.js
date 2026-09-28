@@ -1,6 +1,6 @@
 "use strict";
 
-// Drag is a single gesture. Tap mode has a separate, explicit confirmation cell.
+// Drag is a single gesture. Tap mode confirms the current preview cell.
 var placement = {mode: 'idle', info: null, cell: null, blocked: false};
 function cancelPlacement() {
   Object.assign(placement, {mode: 'idle', info: null, cell: null, blocked: false});
@@ -20,7 +20,7 @@ function validPlacementCell(cell) {
 }
 function previewPlacement(cell) {
   placement.cell = {...cell};
-  placement.blocked = money < placement.info.cost;
+  placement.blocked = (placement.mode === 'tap' && placement.blocked) || money < placement.info.cost;
 }
 function tapPlacement(cell) {
   if (placement.mode !== 'tap') return false;
@@ -47,6 +47,6 @@ function updatePlacement() {
   if (placement.mode === 'tap' && placement.cell && money < placement.info.cost) placement.blocked = true;
 }
 if (typeof module !== 'undefined' && module.exports) Object.assign(globalThis, {
-  placement, cancelPlacement, beginPlacement, validPlacementCell, tapPlacement,
+  placement, cancelPlacement, beginPlacement, validPlacementCell, previewPlacement, tapPlacement,
   dragPlacement, finishPlacementDrag, updatePlacement
 });

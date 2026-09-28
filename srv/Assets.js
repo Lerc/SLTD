@@ -5,6 +5,14 @@ var imageList = [
   "Creep2.png",
   "Creep3.png",
   "Creep4.png",
+  "creeps/Spikey.png",
+  "creeps/Mender.png",
+  "creeps/Splitter.png",
+  "creeps/Shieldbug.png",
+  "creeps/Skimmer.png",
+  "creeps/Capacitor.png",
+  "creeps/Bulwark.png",
+  "creeps/ShieldBubble.png",
   "Tower1.png",
   "Tower2.png",
   "Tower3.png",
@@ -25,19 +33,89 @@ var assetsPending = [];
 
 var Assets = {};
 
+// Two-cell atlases: stationary chassis on the left, independent weapon on the
+// right. Coordinates are fractions of a cell, measured at the mechanical pivot.
+var towerSpriteLayout = {
+  Incinerator: {pivot: [0.5, 0.625], muzzle: 0.09},
+  Ranger: {pivot: [0.5, 0.58], muzzle: 0.05},
+  Repeater: {pivot: [0.5, 0.735], muzzle: 0.04},
+  Mortar: {pivot: [0.5, 0.51], muzzle: 0.29, reach: 26},
+  Inferno: {pivot: [0.5, 0.58], muzzle: 0.06},
+  Firestorm: {pivot: [0.5, 0.637], muzzle: 0.10},
+  Tesla: {pivot: [0.5, 0.58], muzzle: 0.126},
+  Prism: {bodyPivot: [0.5, 0.553], pivot: [0.5, 0.716], muzzle: 0.045},
+  Railgun: {pivot: [0.5, 0.70], muzzle: 0.02},
+  Executioner: {pivot: [0.5, 0.58], muzzle: 0.02},
+  Cryo: {pivot: [0.5, 0.5], radial: true},
+  Quake: {pivot: [0.5, 0.5], radial: true}
+};
+imageList.push(...Object.keys(towerSpriteLayout).map(name => imageDetailsFromString('towers/' + name + '.png?v=brightness-1')));
+
 var audioContext = new AudioContext();
 
 function loadImage(url) {
   assetsPending.push(url);
 
   var result = new Image();
-  result.onload = e => assetsPending.splice(assetsPending.indexOf(url), 1);
+  result.onload = () => {
+    if (url.includes('/creeps/')) {
+      // Preserve full-resolution PNGs and cache compact drawing surfaces.
+      Assets[name.replace(/\.[^/.]+$/, '')] = prepareCreepSprite(result, name === 'ShieldBubble.png');
+    }
+    if (url.includes('/towers/')) prepareTowerSprites(result, name.replace(/\.[^/.]+$/, ''));
+    assetsPending.splice(assetsPending.indexOf(url), 1);
+  };
   result.src = url;
 
   let name = url.slice(url.lastIndexOf("/") + 1);
 
   Assets[name.replace(/\.[^/.]+$/, "")] = result;
   return result;
+}
+
+function prepareTowerSprites(image, name) {
+  const layout = towerSpriteLayout[name];
+  const cellWidth = image.width / 2, cellHeight = image.height;
+  for (const [frame, suffix] of [[0, 'Body'], [1, 'Turret']]) {
+    const source = document.createElement('canvas');
+    source.width = Math.round(cellWidth); source.height = cellHeight;
+    const sourceContext = source.getContext('2d');
+    sourceContext.drawImage(image, frame * cellWidth, 0, cellWidth, cellHeight, 0, 0, source.width, source.height);
+    const pixels = sourceContext.getImageData(0, 0, source.width, source.height).data;
+    let left = source.width, top = source.height, right = 0, bottom = 0;
+    for (let y = 0; y < source.height; y++) for (let x = 0; x < source.width; x++) {
+      if (pixels[(y * source.width + x) * 4 + 3] < 128) continue;
+      left = Math.min(left, x); right = Math.max(right, x);
+      top = Math.min(top, y); bottom = Math.max(bottom, y);
+    }
+    const pivot = frame ? layout.pivot : (layout.bodyPivot || [0.5, 0.5]);
+    const scale = !frame || layout.radial
+      ? (frame ? 46 : 78) / Math.max(right - left + 1, bottom - top + 1)
+      : (layout.reach || 50) / ((pivot[1] - layout.muzzle) * cellHeight);
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const context = canvas.getContext('2d');
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(source, 64 - pivot[0] * cellWidth * scale, 64 - pivot[1] * cellHeight * scale,
+      cellWidth * scale, cellHeight * scale);
+    // Source PNGs already match the original towers' body/weapon brightness.
+    Assets[name + suffix] = canvas;
+  }
+}
+
+function prepareCreepSprite(image, shield) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = shield ? 256 : 96;
+  const context = canvas.getContext('2d');
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  if (shield) {
+    // The translucent bubble needs less exposure than the flat body outlines.
+    context.globalCompositeOperation = 'source-atop';
+    context.fillStyle = 'rgba(0,0,0,0.78)';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  return canvas;
 }
 
 function imageDetailsFromString(s) {

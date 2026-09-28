@@ -61,7 +61,7 @@ test('Orbital loss produces a level-scaled radial fragment burst with random liv
     const fragments = bullets.filter(b => b instanceof OrbitalFragment);
     assert.equal(fragments.length, 6 + 3 * level);
     assert.ok(shot.dead);
-    assert.ok(fragments.every(b => b.launchTicks >= 36 && b.launchTicks <= 60));
+    assert.ok(fragments.every(b => b.launchTicks >= 50 && b.launchTicks <= 74));
     assert.ok(new Set(fragments.map(b => b.launchTicks)).size > 1);
     assert.equal(new Set(fragments.map(b => b.target)).size, 3);
     assert.ok(fragments.every(b => enemies.includes(b.target)));

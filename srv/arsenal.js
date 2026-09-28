@@ -9,19 +9,30 @@ class Specialist extends Tower {
       slowFactor:info.combat.behavior === 'slow' ? 0.48 : 0.7, chainCount:4, chainRange:160}, info.combat);
     this.tint = info.tint;
     this.icon = info.icon;
+    if (this.behavior === 'burn') this.firingMode = info.combat.firingMode || 'directional';
+    if (this.behavior === 'slow' || this.behavior === 'quake') this.firingMode = 'area';
   }
 
   fire() {
+    if (this.behavior === 'burn' && this.firingMode === 'directional') {
+      globalThis.bullets.push(new Flame(this));
+      bullets = globalThis.bullets;
+      this.cooldown = 1000 / (this.rate * Flame.packetsPerShot);
+      return;
+    }
     const targets = creeps.filter(c => !c.dead && this.distanceTo(c) < this.range);
     const hit = (c, amount, kind) => c.takeDamage(amount, kind, this);
-    const beam = (a, b) => combatEffect(a.position, this.tint, b.position);
+    // Effects are browser-only; damage and status timing also run headlessly.
+    const effect = (target = this.target, origin = this) => {
+      if (typeof towerFiringEffect === 'function') towerFiringEffect(this, target, origin);
+    };
     if (this.behavior === 'chain') {
       let current = this.target;
       const visited = new Set();
       for (let n = 0; current && n < this.chainCount; n++) {
         visited.add(current);
         hit(current, this.power * Math.pow(0.78, n), 'energy');
-        beam(n === 0 ? this : this.lastLink, current);
+        effect(current, n === 0 ? this : this.lastLink);
         this.lastLink = current;
         current = creeps.find(c => !c.dead && !visited.has(c) && c.distanceTo(current) < this.chainRange);
       }
@@ -32,15 +43,14 @@ class Specialist extends Tower {
         hit(c, this.power, this.behavior === 'burn' ? 'fire' : 'explosive');
         if (this.behavior === 'burn') c.applyBurn(this.burnDuration, this.burnPower, this);
       }
-      beam(this, this.target);
-      combatEffect(this.target.position, this.tint, null, this.splash);
+      effect();
     } else if (this.behavior === 'slow' || this.behavior === 'quake') {
       for (const c of targets) {
         hit(c, this.power, 'energy');
         c.applySlow(this.slowFactor, this.slowDuration);
-        if (this.behavior === 'quake') c.vulnerableTicks = 180;
+        if (this.behavior === 'quake') c.applyVulnerability(180);
       }
-      combatEffect(this.position, this.tint, null, this.range);
+      effect();
     } else {
       let power = this.power;
       if (this.behavior === 'focus') {
@@ -49,33 +59,30 @@ class Specialist extends Tower {
         power *= this.focus;
       }
       if (this.behavior === 'execute' && this.target.damage / this.target.hitPoints > 0.65) power *= 2;
+      effect();
       hit(this.target, power, this.damageKind || 'physical');
-      beam(this, this.target);
     }
     this.cooldown = 1000 / this.rate;
   }
 
+  get bulletsComeOutHere() {
+    if (this.firingMode === 'area') return v2(0, 0);
+    return vnormalize(vFromAngle(this.angle), this.constructor.muzzleDistance || 50);
+  }
+
   draw() {
-    ctx.drawSprite(Assets['Tower' + (this.icon === 5 ? 2 : this.icon + 1)]);
-    ctx.strokeStyle = this.tint;
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    for (let i = 0; i <= 6; i++) {
-      const a = i * Math.PI / 3;
-      const x = Math.cos(a) * 39, y = Math.sin(a) * 39;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    ctx.rotate(this.angle);
-    ctx.fillStyle = this.tint;
-    // All turret art faces up locally; angle zero is north, clockwise positive.
-    ctx.fillRect(-6, -51, 12, 43);
-    ctx.fillRect(-13, -10, 26, 18);
+    const name = this.constructor.name;
+    ctx.drawSprite(Assets[name + 'Body'] || null);
+    ctx.save();
+    // Directional weapons face north in the atlas. Area emitters stay centered.
+    if (this.firingMode !== 'area') ctx.rotate(this.angle);
+    ctx.drawSprite(Assets[name + 'Turret'] || null);
+    ctx.restore();
   }
 }
 class Ranger extends Specialist {}
 class Repeater extends Specialist {}
-class Mortar extends Specialist {}
+class Mortar extends Specialist { static muzzleDistance = 26; }
 class Incinerator extends Specialist {}
 class Inferno extends Specialist {}
 class Firestorm extends Specialist {}
@@ -90,14 +97,14 @@ var towerInfo = [
   {type: Tower, name: 'Sentry', cost: 100, buildable: true, icon: 0, desc: 'Reliable single-target fire', upgrades: ['Ranger', 'Repeater']},
   {type: Stubby, name: 'Cannon', cost: 180, buildable: true, icon: 1, desc: 'Heavy hits at close range', upgrades: ['Mortar', 'Star']},
   {type: Zappy, name: 'Pulse', cost: 220, buildable: true, icon: 2, desc: 'Rapid energy fire • breaks armor', upgrades: ['Tesla', 'Prism']},
-  {type: Incinerator, name: 'Incinerator', cost: 190, buildable: true, icon: 5, tint: '#401008', desc: 'Burning splash • stops regeneration', upgrades: ['Inferno', 'Firestorm'], combat: {range: 230, rate: 30, power: 7, behavior: 'burn', splash: 95}},
+  {type: Incinerator, name: 'Incinerator', cost: 190, buildable: true, icon: 5, tint: '#401008', desc: 'Travelling flames • stops regeneration', upgrades: ['Inferno', 'Firestorm'], combat: {range: 230, rate: 30, power: 7, behavior: 'burn', splash: 95}},
   {type: Thumper, name: 'Nova', cost: 260, buildable: true, icon: 4, desc: 'Area pulse • handles swarms', upgrades: ['Cryo', 'Quake']},
   {type: Ranger, name: 'Ranger', cost: 420, icon: 0, tint: '#184060', desc: 'Long-range armor-piercing shots', combat: {range: 420, rate: 30, power: 15, damageKind: 'piercing'}},
-  {type: Repeater, name: 'Repeater', cost: 480, icon: 0, tint: '#403008', desc: 'Rapid fire • shreds runners', combat: {range: 270, rate: 130, power: 5}},
+  {type: Repeater, name: 'Repeater', cost: 480, icon: 0, tint: '#403008', desc: 'Rapid fire • shreds runners', combat: {range: 270, rate: 65, power: 10}},
   {type: Mortar, name: 'Mortar', cost: 630, icon: 1, tint: '#402008', desc: 'Explosive shells • 120 splash radius', combat: {range: 330, rate: 16, power: 28, behavior: 'splash', splash: 120}},
   {type: Star, name: 'Orbital', cost: 900, icon: 3, tint: '#381840', desc: 'Long-range spirals • cannot fire up close', upgrades: ['Railgun', 'Executioner']},
   {type: Inferno, name: 'Inferno', cost: 570, icon: 5, tint: '#502008', desc: 'Intense lingering burns • short range', combat: {range: 245, rate: 35, power: 12, behavior: 'burn', splash: 100, burnPower:0.45, burnDuration:240}},
-  {type: Firestorm, name: 'Firestorm', cost: 660, icon: 5, tint: '#482018', desc: 'Wide burning blasts • area denial', combat: {range: 320, rate: 22, power: 18, behavior: 'burn', splash: 165, burnPower:0.22, burnDuration:210}},
+  {type: Firestorm, name: 'Firestorm', cost: 660, icon: 5, tint: '#482018', desc: 'Wide burning blasts • area denial', combat: {range: 320, rate: 22, power: 18, behavior: 'burn', firingMode: 'point', splash: 165, burnPower:0.22, burnDuration:210}},
   {type: Tesla, name: 'Tesla', cost: 720, icon: 2, tint: '#103840', desc: 'Lightning chains through 4 enemies', combat: {range: 310, rate: 30, power: 16, behavior: 'chain'}},
   {type: Prism, name: 'Prism', cost: 720, icon: 2, tint: '#381040', desc: 'Damage ramps to 4× on one target', combat: {range: 360, rate: 70, power: 4, behavior: 'focus', damageKind: 'energy'}},
   {type: Railgun, name: 'Railgun', cost: 1000, icon: 3, tint: '#204038', desc: 'Huge armor-piercing hits • no blind spot', combat: {range: 640, rate: 12, power: 85, damageKind: 'piercing'}},

@@ -93,6 +93,7 @@ function makeCommands(host) {
       out('Game State Summary:');
       out(`  Lives: ${G.lives}`);
       out(`  Money: $${G.money}`);
+      out(`  Score: ${G.score}`);
       out(`  Wave: ${G.waveCounter} (difficulty: ${G.difficulty.toFixed(2)})`);
       out(`  Ticker: ${G.ticker}, WaveAge: ${G.waveAge}`);
       out(`  Creeps: ${G.creeps.length}`);

@@ -4,6 +4,7 @@ window.onload = init;
 
 let lastTime = performance.now();
 let tickRemainder = 0;
+let guideBackdropCached = false;
 
 function init() {
   window.outputCanvas = document.querySelector('#main');
@@ -14,12 +15,17 @@ function init() {
   const resize = () => {
     const rect = document.getElementById('viewport').getBoundingClientRect();
     const scale = Math.min(rect.width / OutputWidth, rect.height / OutputHeight);
+    // Use spare height without shrinking the board or its touch targets.
+    uiScoreHeader = rect.height - OutputHeight * scale >= 72 * globalScaleFactor * scale ? 72 : 0;
+    const headerHeight = uiScoreHeader * globalScaleFactor * scale;
     const shell = document.getElementById('game-shell');
     shell.style.width = OutputWidth * scale + 'px';
-    shell.style.height = OutputHeight * scale + 'px';
+    shell.style.height = OutputHeight * scale + headerHeight + 'px';
+    outputCanvas.style.top = headerHeight + 'px';
+    outputCanvas.style.height = OutputHeight * scale + 'px';
     const density = Math.min(window.devicePixelRatio || 1, 3);
     const width = Math.round(OutputWidth * scale * density);
-    const height = Math.round(OutputHeight * scale * density);
+    const height = Math.round((OutputHeight * scale + headerHeight) * density);
     // Assigning either dimension clears the canvas, even at the same size.
     // The observer's initial callback must not erase an already cached frame.
     if (interfaceCanvas.width !== width || interfaceCanvas.height !== height) {
@@ -77,6 +83,10 @@ function update() {
   if (typeof gameControl !== 'undefined') ticks += gameControl.takeTickCredit(200);
 
   ticker += ticks;
+  const holdBackdrop = paused && uiModal() === 'guide';
+  // The guide pauses the world. Keep its last displayed frame until it closes.
+  // Screenshots still render afresh because WebGL clears its drawing buffer.
+  const drawBackdrop = !holdBackdrop || !guideBackdropCached || pendingScreenshot;
 
   try {
     for (let i = 0; i < ticks; i++) {
@@ -84,13 +94,14 @@ function update() {
       Input.flushKeysDown();
     }
 
-    if (gameMode.draw) gameMode.draw();
+    if (drawBackdrop && gameMode.draw) gameMode.draw();
   } catch(e) {
     running=false;
     throw e;
   }
 
-  glowFrame(frameCanvas);
+  if (drawBackdrop) glowFrame(frameCanvas);
+  guideBackdropCached = holdBackdrop;
   drawUI(thisTime);
 
   // Must run in the same frame as glowFrame: the WebGL context has no
@@ -104,7 +115,8 @@ function update() {
       capture.width = interfaceCanvas.width;
       capture.height = interfaceCanvas.height;
       const captureCtx = capture.getContext('2d');
-      captureCtx.drawImage(outputCanvas, 0, 0, capture.width, capture.height);
+      const header = uiScoreHeader / (1848 + uiScoreHeader) * capture.height;
+      captureCtx.drawImage(outputCanvas, 0, header, capture.width, capture.height - header);
       captureCtx.drawImage(interfaceCanvas, 0, 0);
       request.resolve(capture.toDataURL('image/png'));
     } catch (e) {

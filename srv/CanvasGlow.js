@@ -119,6 +119,7 @@ uniform sampler2D uOriginal;
 uniform sampler2D uBloom;
 uniform float uIntensity;
 uniform float uExposure;
+uniform float uPreserveAlpha;
 
 // ACES filmic tone mapping
 vec3 acesFilm(vec3 x) {
@@ -131,7 +132,8 @@ vec3 acesFilm(vec3 x) {
 }
 
 void main() {
-    vec3 original = texture2D(uOriginal, vTexCoord).rgb;
+    vec4 source = texture2D(uOriginal, vTexCoord);
+    vec3 original = source.rgb;
     vec3 bloom = texture2D(uBloom, vTexCoord).rgb;
     
     // Combine original with bloom
@@ -146,7 +148,11 @@ void main() {
     // Gamma correction
     mapped = pow(mapped, vec3(1.0 / 2.2));
     
-    gl_FragColor = vec4(mapped, 1.0);
+    // Canvas expects premultiplied output. Preserve opaque sprite interiors,
+    // with enough alpha around them to carry the shader's colored glow.
+    float alpha = uPreserveAlpha > 0.5
+        ? max(source.a, max(mapped.r, max(mapped.g, mapped.b))) : 1.0;
+    gl_FragColor = vec4(mapped, alpha);
 }
 `;
 
@@ -264,7 +270,7 @@ function initGlow(outputCanvas, canvas2d) {
  * Render the glow effect
  * @param {HTMLCanvasElement} canvas2d - Source 2D canvas to apply glow to
  */
-function glowFrame(canvas2d) {
+function glowFrame(canvas2d, preserveAlpha = false) {
     if (!gl) {
         throw new Error('Call initGlow() first');
     }
@@ -272,8 +278,10 @@ function glowFrame(canvas2d) {
     // Upload source canvas to texture (flip Y for canvas->WebGL coordinate conversion)
     gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, preserveAlpha);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas2d);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     
     // Bind quad buffer for all passes
     gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
@@ -366,6 +374,7 @@ function glowFrame(canvas2d) {
     
     compositeProgram.uIntensity = settings.bloom;
     compositeProgram.uExposure = settings.exposure;
+    compositeProgram.uPreserveAlpha = preserveAlpha ? 1 : 0;
     
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }

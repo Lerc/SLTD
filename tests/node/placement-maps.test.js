@@ -37,6 +37,39 @@ beginPlacement(foundation,'drag'); dragPlacement(v2(3,2)); finishPlacementDrag(v
 assert.equal(placement.mode,'idle'); assert.equal(towers.length,0);
 console.log('PASS tap confirmation, invalid/occupied tiles, drag completion and insufficient-funds cancellation');
 
+const pngMaps = [
+  ['knotwork', 73, [5,-1], [2,16], 2],
+  ['zigzag', 76, [9,-1], [9,16], 0],
+  ['coil', 67, [-1,5], [-1,7], 0],
+  ['longbow', 41, [11,9], [-1,1], 0],
+  ['serpentine', 72, [9,-1], [1,16], 0],
+  ['cascade', 64, [9,16], [11,1], 0],
+  ['sawtooth', 74, [-1,14], [11,1], 0],
+  ['interlace', 77, [-1,1], [11,5], 6]
+];
+assert.equal(mapCatalog.length, 11, 'Original three maps plus all eight PNG patterns');
+for (const [i, [id, tiles, entry, exit, crossings]] of pngMaps.entries()) {
+  const map = mapCatalog.find(m => m.id === id);
+  assert.equal(map.source, `BaseMedia/Maps/map${i+1}.png`);
+  assert.equal(map.cells.join('').split('.').length - 1, tiles, 'PNG road tile count');
+  assert.deepEqual(map.path[0], v2(...entry), 'PNG entrance');
+  assert.deepEqual(map.path.at(-1), v2(...exit), 'PNG exit');
+  assert.equal(map.path.length, tiles + crossings + 2, 'Crossings are visited twice');
+  const visited = new Set();
+  for (let j = 1; j < map.path.length - 1; j++) {
+    const p = map.path[j], key = p.x + ',' + p.y;
+    if (visited.has(key)) {
+      const a = map.path[j-1], b = map.path[j+1];
+      assert.ok(a.x === b.x || a.y === b.y, 'Second crossing pass continues straight');
+      const first = map.path.findIndex(q => q.x === p.x && q.y === p.y);
+      const before = map.path[first-1], after = map.path[first+1];
+      assert.ok(before.x === after.x || before.y === after.y, 'First crossing pass continues straight');
+      assert.notEqual(a.x === b.x, before.x === after.x, 'Crossing passes use different axes');
+    }
+    visited.add(key);
+  }
+}
+
 for (const map of mapCatalog) {
   startGame(map.id);
   assert.equal(selectedMapId,map.id);
@@ -58,7 +91,10 @@ for (const map of mapCatalog) {
     assert.deepEqual(levelMap.path.at(-1),v2(1,16),'Exit is bottom left');
     assert.ok(levelMap.path.length>50,'Complex route retains all the inner bends');
   }
-  assert.equal(levelMap.path.at(-1).y,16,'Route exits the bottom');
+  for (const p of [levelMap.path[0], levelMap.path.at(-1)]) {
+    assert.ok(p.x===-1 || p.x===11 || p.y===-1 || p.y===16, 'Route starts and ends off the board');
+  }
+  for (const p of levelMap.path.slice(1,-1)) assert.equal(levelMap.at(p).char,'.','Route stays on road tiles');
   const cell=map.cells.flatMap((row,y)=>[...row].flatMap((c,x)=>c==='#'?[v2(x,y)]:[]))[0];
   buyTower(foundation,cell.x,cell.y);
   const state=game.saveState(); startGame('foundry'); game.loadState(state);

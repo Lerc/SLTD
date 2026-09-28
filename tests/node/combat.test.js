@@ -79,7 +79,10 @@ test('specialized weapons apply chaining, splash, burn, vulnerability, and focus
     game.reset(); fund();
     const tower = buildTree(branch);
     const first = enemy(BigBall, 380, 240), second = enemy(BigBall, 400, 240);
-    tower.target = first; tower.fire();
+    tower.target = first;
+    tower.angle = vangle(vdiff(first.position, tower.position));
+    tower.fire();
+    if (branch === 'Incinerator') for (let tick = 0; tick < 30; tick++) bullets.forEach(b => b.move());
     assert.ok(first.damage > 0, branch);
     if (branch !== 'Prism') assert.ok(second.damage > 0, branch);
     if (branch === 'Incinerator') assert.ok(first.burnTicks > 0);
@@ -88,15 +91,35 @@ test('specialized weapons apply chaining, splash, burn, vulnerability, and focus
     if (branch === 'Prism') { const before = first.damage; tower.fire(); assert.ok(first.damage - before > before); }
   }
 });
+test('Firestorm burns an area around its target at its original blast cadence', () => {
+  fund(); const tower = buildTree('Firestorm');
+  const target = enemy(BigBall, tower.x + 220, tower.y);
+  const nearby = enemy(BigBall, target.x, target.y + 150);
+  const outside = enemy(BigBall, target.x, target.y + tower.splash + 1);
+  tower.target = target;
+  tower.fire();
+  assert.equal(tower.firingMode, 'point');
+  assert.equal(bullets.length, 0, 'Firestorm creates a targeted blast, not flame packets');
+  for (const creep of [target, nearby]) {
+    assert.equal(creep.damage, tower.power);
+    assert.equal(creep.burnTicks, tower.burnDuration);
+    assert.equal(creep.burnPower, tower.burnPower);
+  }
+  assert.equal(outside.damage, 0); assert.equal(outside.burnTicks, 0);
+  assert.equal(tower.cooldown, 1000 / tower.rate);
+});
+
 test('preparation, early launch, wave reward, pause, game over, and restart are consistent', () => {
   assert.equal(hopper.length, 0); const before = money;
-  assert.equal(sendWave(), true); assert.equal(money, before + 15);
+  assert.equal(sendWave(), true); assert.equal(money, before, 'No time bonus before a base reward has accumulated');
   assert.equal(sendWave(), false); assert.equal(hopper.length, wavePlan(1).count);
   globalThis.paused = true; game.tick(10); assert.equal(creeps.length, 0);
   globalThis.paused = false; game.tick(); assert.equal(creeps.length, 1);
   globalThis.creeps = []; globalThis.hopper = []; const balance = money;
-  game.tick(); assert.equal(waveCounter, 2); assert.equal(money, balance + wavePlan(1).reward);
-  assert.equal(betweenWaves, true);
+  const timeBonus = Math.ceil((buildTicks - 1) / 60);
+  game.tick(); assert.equal(money, balance + wavePlan(1).reward + timeBonus);
+  game.tick(waveBonusPauseTicks); assert.equal(waveCounter, 2);
+  assert.equal(betweenWaves, false);
   game.tick(sendCooldown);
   sendWave(); globalThis.lives = 0; game.tick(); assert.equal(gameMode, gameOver);
   const state = game.saveState(); game.tick(100); assert.equal(waveAge, state.waveAge);
@@ -104,7 +127,7 @@ test('preparation, early launch, wave reward, pause, game over, and restart are 
 });
 test('save/load preserves upgrade investment, targeting, statuses, and continued simulation', () => {
   fund(); const tower = upgradeTower(build(), 'Ranger'); tower.targetMode = 'strong';
-  sendWave(); game.tick(100);
+  tower.cooldown = 1000; sendWave(); game.tick(100);
   creeps[0].applySlow(.5, 100);
   const state = game.saveState(); game.loadState(state);
   assert.equal(towers[0].constructor.name, 'Ranger');

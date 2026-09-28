@@ -34,6 +34,8 @@ globalThis.Assets = {
   Creep2: null,
   Creep3: null,
   Creep4: null,
+  Spikey: null, Mender: null, Splitter: null, Shieldbug: null,
+  Skimmer: null, Capacitor: null, Bulwark: null, ShieldBubble: null,
   Tower1: null,
   Tower2: null,
   Tower3: null,
@@ -137,6 +139,7 @@ function getState() {
   return {
     lives: globalThis.lives,
     money: globalThis.money,
+    score: globalThis.score,
     wave: globalThis.waveCounter,
     difficulty: globalThis.difficulty,
     creeps: globalThis.creeps.map(c => ({
@@ -173,11 +176,15 @@ function saveState() {
     // Basic game state
     lives: globalThis.lives,
     money: globalThis.money,
+    score: globalThis.score,
     waveCounter: globalThis.waveCounter,
     difficulty: globalThis.difficulty,
     ticker: globalThis.ticker,
     waveAge: globalThis.waveAge,
     activeWaves: globalThis.activeWaves.map(wave => ({...wave})),
+    waveCountdownTotal: globalThis.waveCountdownTotal,
+    waveClearBase: globalThis.waveClearBase,
+    waveClearPayout: globalThis.waveClearPayout ? {...globalThis.waveClearPayout} : null,
     sendCooldown: globalThis.sendCooldown,
     releaseRate: globalThis.releaseRate,
     gameAcceleration: globalThis.gameAcceleration,
@@ -205,7 +212,7 @@ function saveState() {
       radius: c.radius,
       value: c.value,
       slowTicks: c.slowTicks, slowFactor: c.slowFactor, burnTicks: c.burnTicks, burnPower: c.burnPower,
-      shield: c.shield, vulnerableTicks: c.vulnerableTicks,
+      shield: c.shield, shieldRechargeTicks: c.shieldRechargeTicks, vulnerableTicks: c.vulnerableTicks,
       burnSourceIndex: globalThis.towers.indexOf(c.burnSource)
     })),
 
@@ -243,12 +250,17 @@ function saveState() {
       speed: b.speed,
       motion: b.motion, fadeTicks: b.fadeTicks, fadeDuration: b.fadeDuration,
       lastTargetPosition: b.target?.position || b.lastTargetPosition,
-      launchTicks: b.launchTicks, launchDuration: b.launchDuration, orphanTicks: b.orphanTicks, level: b.level
+      launchTicks: b.launchTicks, launchDuration: b.launchDuration, orphanTicks: b.orphanTicks, level: b.level,
+      // Flames keep travelling after their original target has gone.
+      ...(b instanceof Flame ? {distance: b.distance, radius: b.radius,
+        burnPower: b.burnPower, burnDuration: b.burnDuration,
+        hitEnemyIndices: [...b.hitEnemies].map(c => globalThis.creeps.indexOf(c)).filter(i => i >= 0)} : {})
     })),
 
     // Hopper (pending creeps to spawn)
     hopper: globalThis.hopper.map(c => ({
-      type: c.constructor.name, waveNumber: c.waveNumber, hitPoints: c.hitPoints, shield: c.shield
+      type: c.constructor.name, waveNumber: c.waveNumber, hitPoints: c.hitPoints, shield: c.shield,
+      shieldRechargeTicks: c.shieldRechargeTicks
     })),
 
     // Backlog
@@ -273,6 +285,7 @@ function loadState(stateData) {
   // Restore basic game state
   globalThis.lives = stateData.lives;
   globalThis.money = stateData.money;
+  globalThis.score = stateData.score ?? 0;
   globalThis.waveCounter = stateData.waveCounter;
   globalThis.difficulty = stateData.difficulty;
   globalThis.ticker = stateData.ticker || 0;
@@ -313,7 +326,7 @@ function loadState(stateData) {
 
     const creep = new CreepClass();
     creep.waveNumber = creepData.waveNumber ?? globalThis.waveCounter;
-    for (const key of ['slowTicks', 'slowFactor', 'burnTicks', 'burnPower', 'shield', 'vulnerableTicks']) {
+    for (const key of ['slowTicks', 'slowFactor', 'burnTicks', 'burnPower', 'shield', 'shieldRechargeTicks', 'vulnerableTicks']) {
       if (creepData[key] !== undefined) creep[key] = creepData[key];
     }
     creep.x = creepData.x;
@@ -399,6 +412,12 @@ function loadState(stateData) {
     for (const key of ['motion', 'fadeTicks', 'fadeDuration', 'lastTargetPosition', 'launchTicks', 'launchDuration', 'orphanTicks', 'level']) {
       if (bulletData[key] !== undefined) bullet[key] = bulletData[key];
     }
+    if (bullet instanceof Flame) {
+      for (const key of ['distance', 'radius', 'burnPower', 'burnDuration']) {
+        if (bulletData[key] !== undefined) bullet[key] = bulletData[key];
+      }
+      bullet.hitEnemies = new Set((bulletData.hitEnemyIndices || []).map(i => globalThis.creeps[i]).filter(Boolean));
+    }
 
     globalThis.bullets.push(bullet);
   }
@@ -411,6 +430,7 @@ function loadState(stateData) {
       creep.waveNumber = hopperData.waveNumber ?? globalThis.waveCounter;
       if (hopperData.hitPoints !== undefined) creep.hitPoints = hopperData.hitPoints;
       if (hopperData.shield !== undefined) creep.shield = hopperData.shield;
+      if (hopperData.shieldRechargeTicks !== undefined) creep.shieldRechargeTicks = hopperData.shieldRechargeTicks;
       globalThis.hopper.push(creep);
     }
   }
@@ -444,6 +464,7 @@ function loadState(stateData) {
     'gameOver': globalThis.gameOver
   };
   globalThis.gameMode = gameModeMap[stateData.gameMode] || globalThis.mainGame;
+  globalThis.restoreWaveCountdown(stateData);
 
   console.log(`State loaded: ${globalThis.creeps.length} creeps, ${globalThis.towers.length} towers, ${globalThis.bullets.length} bullets`);
 }
@@ -532,6 +553,7 @@ module.exports = {
   // Direct access to game state (read-only recommended)
   get lives() { return globalThis.lives; },
   get money() { return globalThis.money; },
+  get score() { return globalThis.score; },
   get wave() { return globalThis.waveCounter; },
   get creeps() { return globalThis.creeps; },
   get towers() { return globalThis.towers; },

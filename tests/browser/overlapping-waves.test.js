@@ -6,7 +6,7 @@ uiActivate(send());
 for(let i=0;i<179;i++) mainGame_core();
 check(send().disabled,'Send remains locked until three game-seconds');
 mainGame_core();
-check(!send().disabled&&send().label==='2'&&send().sub==='+$10','Send offers wave two and its bonus after three seconds');
+check(!send().disabled&&send().label==='2'&&send().sub==='+$'+waveSendBonus(),'Send offers wave two and the remaining-time bonus after three seconds');
 for(let wave=2;wave<=4;wave++) {
   const b=send();
   await gameControl.tapCanvas(b.x+b.w/2,b.y+b.h/2);

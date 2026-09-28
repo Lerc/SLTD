@@ -38,7 +38,7 @@ check(selectedTower.targetMode === 'strong', 'Target priority changes');
 check(!uiControls().some(b=>b.id==='close-tower'),'No close button consumes panel space');
 await tap('level-up'); check(selectedTower.level===2&&money===180,'Affordable level improves the existing tower'); fixed('leveled');
 money+=500;
-await tap('upgrade-Ranger');
+await tap('upgrade-Ranger');await tap('confirm-upgrade');
 check(towers[0].constructor.name === 'Ranger' && money === 260, 'Upgrade charges the increased cost');
 check(selectedTower.level===2,'Branch retains level investment');
 check(selectedTower.targetMode === 'strong', 'Upgrade retains priority'); fixed('upgraded');

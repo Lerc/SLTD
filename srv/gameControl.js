@@ -74,7 +74,8 @@
   const frame = () => new Promise(r => requestAnimationFrame(r));
 
   async function tapCanvas(x, y) {
-    sendMouse('mousemove', x, y);
+    // A tap has no preceding hover (notably on touchscreens). Tests for mouse
+    // previews dispatch pointermove explicitly before clicking.
     sendMouse('mousedown', x, y);
     sendMouse('mouseup', x, y);
     await frame();
@@ -154,7 +155,7 @@
 
   function saveState() {
     return {
-      lives, money, waveCounter, difficulty, ticker, waveAge,
+      lives, money, score, waveCounter, difficulty, ticker, waveAge,
       mapId: selectedMapId, map: activeMapCells, mapPath: activeMapPath,
       towers: towers.map(t => ({
         type: t.constructor.name,
@@ -174,6 +175,7 @@
     }
     globalThis.lives = state.lives;
     globalThis.money = state.money;
+    globalThis.score = state.score ?? 0;
     globalThis.waveCounter = state.waveCounter;
     globalThis.difficulty = state.difficulty;
     globalThis.selectedTower = null;

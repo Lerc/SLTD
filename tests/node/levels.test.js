@@ -47,7 +47,8 @@ assert.equal(bullets[0].range,oldRange,'Save preserves pre-level area-pulse rang
 for(const type of ['Incinerator','Inferno','Firestorm','Cryo','Tesla','Thumper']){
   reset();const tower=buildType(type);for(let i=0;i<5;i++)levelUpTower(tower);
   const targets=Array.from({length:8},(_,i)=>{const c=new BigBall();c.hitPoints=1e6;c.slowResistance=0;c.position=vadd(tower.position,v2(55+i*3,0));return c;});
-  creeps=targets;tower.target=targets[0];tower.fire();
+  creeps=targets;tower.target=targets[0];tower.angle=Math.PI/2;tower.fire();
+  if(tower.firingMode==='directional')bullets[0].move();
   if(tower.behavior==='burn'){assert.equal(targets[0].burnPower,tower.burnPower);assert.equal(targets[0].burnTicks,tower.burnDuration);}
   if(type==='Cryo')assert.equal(targets[0].slowFactor,tower.slowFactor);
   if(type==='Tesla')assert.equal(targets.filter(c=>c.damage>0).length,tower.chainCount);

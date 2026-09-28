@@ -16,6 +16,10 @@ function initInput() {
   document.addEventListener('keydown', event => { held[event.keyCode] = true; wentDown[event.keyCode] = true; });
   document.addEventListener('keyup', event => { held[event.keyCode] = false; });
   const position = event => screenToCanvas(v2(event.clientX, event.clientY));
+  canvas.addEventListener('wheel', event => {
+    const scale = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? uiMapList.h : 1080 / canvas.getBoundingClientRect().width;
+    if (uiScrollMaps(position(event), event.deltaY * scale)) event.preventDefault();
+  }, {passive:false});
   const cancel = () => { pointer = null; held[133] = false; cancelUIInput(); };
   canvas.addEventListener('pointerdown', event => {
     if (pointer !== null || event.button !== 0) return;
@@ -29,7 +33,8 @@ function initInput() {
   canvas.addEventListener('pointermove', event => {
     if (pointer !== null && pointer !== event.pointerId) return;
     const pos = position(event); setMousePos(pos);
-    if (pointer !== null) { event.preventDefault(); pressMove(pos); }
+    if (pointer !== null) event.preventDefault();
+    pressMove(pos);
   });
   canvas.addEventListener('pointerup', event => {
     if (pointer !== event.pointerId) return;

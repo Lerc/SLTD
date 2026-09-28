@@ -20,6 +20,36 @@ var OutputHeight=924;
 var cellSize = 96;
 var lives = 20;
 var money = 0;
+var score = 0;
+var highScores = Object.create(null);
+
+function highScoreRecordForMap(mapId) {
+  if (highScores[mapId] === undefined) {
+    let saved = null;
+    try { saved = JSON.parse(globalThis.localStorage?.getItem('sltd.highScore.' + mapId) ?? 'null'); } catch (_) {}
+    // Older records store only the score, with no level information.
+    const points = typeof saved === 'number' ? saved : saved?.score;
+    const validScore = Number.isSafeInteger(points) && points > 0;
+    highScores[mapId] = {
+      score: validScore ? points : 0,
+      level: validScore && Number.isSafeInteger(saved?.level) && saved.level > 0 ? saved.level : null
+    };
+  }
+  return highScores[mapId];
+}
+
+function highScoreForMap(mapId) {
+  return highScoreRecordForMap(mapId).score;
+}
+
+function awardKillScore(creep) {
+  // A creep's level is its originating wave, even while later waves overlap.
+  score = globalThis.score = score + creep.constructor.value * Math.max(1, creep.waveNumber || 1);
+  if (score <= highScoreForMap(selectedMapId)) return;
+  const record = {score, level: waveCounter};
+  highScores[selectedMapId] = record;
+  try { globalThis.localStorage?.setItem('sltd.highScore.' + selectedMapId, JSON.stringify(record)); } catch (_) {}
+}
 
 var canvasMouseX=0;
 var canvasMouseY=0;
@@ -33,6 +63,9 @@ var selectedTower = null;
 var paused = false;
 var betweenWaves = true;
 var buildTicks = 900;
+var waveCountdownTotal = 900;
+var waveClearBase = 0;
+var waveClearPayout = null;
 var selectedBuild = null;
 
 var x=350;
@@ -89,7 +122,12 @@ function pressStart(pos) {
 }
 function pressMove(pos) {
   dragPos = pos;
-  if (typeof pressMoveUI === 'function') pressMoveUI(pos);
+  if (typeof pressMoveUI === 'function' && pressMoveUI(pos)) return;
+  if (gameMode !== mainGame || placement.mode !== 'tap') return;
+  if (typeof uiModal === 'function' && uiModal()) return;
+  if (pos.y < mapTop || pos.y >= mapTop + 1536) return;
+  setMousePos(pos);
+  previewPlacement(mouseCell);
 }
 function pressEnd(pos) {
   if (typeof pressEndUI === 'function' && pressEndUI(pos)) return;
@@ -143,13 +181,19 @@ function generateWave(num) {
   difficulty = globalThis.difficulty = waveDifficulty(num);
   releaseRate = globalThis.releaseRate = plan.interval;
   waveAge = globalThis.waveAge = 0;
-  activeWaves.push({number:num, age:0, interval:plan.interval});
+  const formation = [];
   for (const Kind of plan.kinds) {
     const creep = new Kind();
     creep.waveNumber = num;
-    globalThis.hopper.push(creep);
+    formation.push(creep);
   }
+  const duration = waveDuration(formation, plan.interval);
+  activeWaves.push({number:num, age:0, interval:plan.interval, duration});
+  globalThis.hopper.push(...formation);
   hopper = globalThis.hopper;
+  waveClearBase = globalThis.waveClearBase = waveClearBase + plan.reward;
+  waveCountdownTotal = globalThis.waveCountdownTotal = duration + 600;
+  buildTicks = globalThis.buildTicks = waveCountdownTotal;
 }
 
 // Game lifecycle
@@ -159,9 +203,12 @@ function startGame(mapId = selectedMapId) {
   activeMapCells = globalThis.activeMapCells = chosenMap.cells;
   activeMapPath = globalThis.activeMapPath = chosenMap.path || null;
   money = globalThis.money = 320;
+  score = globalThis.score = 0;
   towers = globalThis.towers = [];
   creeps = globalThis.creeps = [];
   particleSystems = globalThis.particleSystems = [];
+  if (typeof emberSystem !== 'undefined') emberSystem.reset();
+  if (typeof burningEmberSystem !== 'undefined') burningEmberSystem.reset();
   bullets = globalThis.bullets = [];
   hopper = globalThis.hopper = [];
   backlog = globalThis.backlog = [];
@@ -180,6 +227,9 @@ function startGame(mapId = selectedMapId) {
   paused = globalThis.paused = false;
   betweenWaves = globalThis.betweenWaves = true;
   buildTicks = globalThis.buildTicks = 900;
+  waveCountdownTotal = globalThis.waveCountdownTotal = 900;
+  waveClearBase = globalThis.waveClearBase = 0;
+  waveClearPayout = globalThis.waveClearPayout = null;
   gameViewTransform = null;
   if (typeof persistenceCtx !== 'undefined') persistenceCtx.clearRect(0, 0, OutputWidth, OutputHeight);
   if (typeof initUI !== 'undefined') initUI();
@@ -192,11 +242,21 @@ function startGame(mapId = selectedMapId) {
   if (typeof updateUI === 'function') updateUI();
 }
 
+function abandonGame() {
+  cancelPlacement();
+  selectedTower = globalThis.selectedTower = null;
+  paused = globalThis.paused = false;
+  gameMode = globalThis.gameMode = titleScreen;
+  if (typeof initUI === 'function') initUI();
+  if (typeof uiOpenMaps === 'function') uiOpenMaps();
+}
+
 function nextWave() {
   waveCounter = globalThis.waveCounter = waveCounter + 1;
   difficulty = globalThis.difficulty = waveDifficulty(waveCounter);
   betweenWaves = globalThis.betweenWaves = true;
   buildTicks = globalThis.buildTicks = 600;
+  waveCountdownTotal = globalThis.waveCountdownTotal = 600;
 }
 
 // Game modes
@@ -307,8 +367,8 @@ function updateCombatActivity() {
 function mainGame_core() {
   if (gameMode !== mainGame) return;
   if (sendCooldown > 0) sendCooldown--;
+  tickWaveCountdown();
   if (globalThis.betweenWaves) {
-    globalThis.buildTicks--;
     if (globalThis.buildTicks <= 0) sendWave();
     updateCombatActivity();
     updatePersistenceCanvas();
@@ -326,11 +386,10 @@ function mainGame_core() {
     }
   }
   spawnWaveCreeps();
-  if (lives > 0) rewardClearedWaves();
 
   if (creeps.length+globalThis.hopper.length+backlog.length === 0 &&
       !bullets.some(b => !b.dead) && !particleSystems.some(p => p.isActive())) {
-    if (lives > 0) { nextWave(); return; }
+    if (lives > 0 && !activeWaves.length && !waveClearBase && !waveClearPayout) { nextWave(); return; }
   }
 
   for (let e of globalThis.creeps) {
@@ -353,6 +412,9 @@ function mainGame_core() {
     taps=0;
     draggingTower=false;
     gameMode = globalThis.gameMode = gameOver;
+  } else {
+    rewardClearedWaves();
+    if (buildTicks <= 0 && !waveClearPayout) sendWave();
   }
 
   // Update persistence canvas every tick for consistent visuals

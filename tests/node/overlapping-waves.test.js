@@ -11,8 +11,9 @@ paused=false; game.tick();
 assert.equal(canSendWave(),true,'Send unlocks at exactly three seconds');
 const firstQueued=hopper.filter(c=>c.waveNumber===1).map(c=>c.hitPoints);
 const before=money;
+const earlyBonus=waveSendBonus();
 assert.equal(sendWave(),true);
-assert.equal(money,before+10,'Combat sends receive the full preparation bonus');
+assert.equal(money,before+earlyBonus,'Combat sends receive the remaining-duration bonus');
 assert.equal(waveCounter,2); assert.equal(waveAge,0);
 assert.equal(activeWaves[0].age,180,'An overlap never resets the older wave clock');
 game.tick();
@@ -30,26 +31,31 @@ assert.deepEqual(hopper.map(c=>[c.waveNumber,c.hitPoints,c.shield]),state.hopper
 assert.deepEqual(creeps.map(c=>c.waveNumber),state.creeps.map(c=>c.waveNumber));
 assert.equal(canSendWave(),false,'Reload cannot bypass the cooldown');
 
-// A newer wave can clear before an older one, and earns exactly one reward.
+// A newer wave clearing never pays while older formations remain.
 creeps=creeps.filter(c=>c.waveNumber!==2);
 hopper=hopper.filter(c=>c.waveNumber!==2);
 backlog=backlog.filter(c=>c.waveNumber!==2);
 const balance=money; game.tick();
-assert.equal(money,balance+wavePlan(2).reward);
+assert.equal(money,balance);
 assert.equal(betweenWaves,false);
-game.tick(); assert.equal(money,balance+wavePlan(2).reward,'No duplicate clear reward');
-const pendingReward=activeWaves.reduce((sum,w)=>sum+wavePlan(w.number).reward,0);
+game.tick(); assert.equal(money,balance,'No partial clear reward');
+const pendingReward=waveClearBase;
+assert.equal(pendingReward,[1,2,3,4,5,6].reduce((sum,n)=>sum+wavePlan(n).reward,0));
 const lastBalance=money;
+const timeBonus=Math.ceil((buildTicks-1)/60);
 creeps=[]; hopper=[]; backlog=[]; game.tick();
-assert.equal(money,lastBalance+pendingReward);
+assert.equal(money,lastBalance+pendingReward+timeBonus);
+assert.equal(waveClearBase,0);
 assert.equal(activeWaves.length,0);
-assert.equal(betweenWaves,true);
-assert.equal(waveCounter,7,'Preparation resumes at the next unsent wave');
-assert.equal(buildTicks,600);
-assert.equal(canSendWave(),false,'A fast clear cannot bypass the launch cooldown');
+assert.equal(betweenWaves,false,'The countdown drains during the bonus presentation');
+game.tick(waveBonusPauseTicks);
+assert.equal(betweenWaves,false);
+assert.equal(waveCounter,7,'The next wave starts when the payout presentation ends');
+assert.ok(buildTicks>600,'The new wave has its own duration');
+assert.equal(canSendWave(),false,'Automatic launches restart the launch cooldown');
 assert.equal(sendWave(),false);
 game.tick(sendCooldown);
-assert.equal(canSendWave(),true,'The cooldown also expires during preparation');
+assert.equal(canSendWave(),true,'The new launch cooldown expires normally');
 
 startGame('foundry'); waveCounter=7; sendWave();
 const parent=hopper.find(c=>c instanceof Splitter);
@@ -61,4 +67,4 @@ assert.ok(backlog.every(c=>c.waveNumber===7&&Math.abs(c.hitPoints-Zipper.hitPoin
 const splitState=JSON.parse(JSON.stringify(game.saveState()));
 game.loadState(splitState);
 assert.ok(backlog.every(c=>c.waveNumber===7&&Math.abs(c.hitPoints-Zipper.hitPoints*parentScale)<1e-10));
-console.log('PASS three-second gate, six concurrent waves, independent spawning/rewards, splitters and overlapping saves');
+console.log('PASS three-second gate, six concurrent waves, combined clear reward, splitters and overlapping saves');

@@ -1,0 +1,5 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Edit this transparent PNG game sprite. Keep the exact outer four-lobed black silhouette, pale mint outline, position, dimensions, and transparent background unchanged. Change ONLY the central medical plus symbol: replace the outlined hollow plus with one SOLID pale mint-green plus, using the existing outer boundary of that plus. Fill the entire plus interior with the same pale mint as its outline. Crisp flat solid color, no hollow center, no gradients, no textures, no bloom. It must remain visible when the entire sprite is scaled to 26 pixels. Preserve opaque black surrounding the cross and real alpha transparency outside the creature.",
+  "source": "/home/lerc/.codex/generated_images/01a0aac9-b5b1-7bd0-b5de-c2f79157ea44/exec-cb24e3ef-cc91-4827-a2b3-e84b2065c836.png"
+}
