@@ -31,7 +31,9 @@ try {
     const paint=black.getContext('2d'); paint.fillStyle='#000'; paint.fillRect(0,0,320,320); paint.drawImage(portrait,0,0);
     const portraitEnergy=energy(pixels(black));
     const raw=canvas(); ctx=raw.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,raw.width,raw.height);
-    ctx.translate(160,160); ctx.scale(2.25,2.25); guideSpecimen(entry.info).draw();
+    const specimen=guideSpecimen(entry.info);
+    ctx.translate(160,160); ctx.scale(2.25,2.25);
+    ctx.translate(-specimen.x,-specimen.y); specimen.drawMain();
     glowFrame(raw);
     const gameEnergy=energy(capture().getContext('2d').getImageData(0,0,320,320).data);
     for(let channel=0;channel<3;channel++) check(Math.abs(portraitEnergy[channel]-gameEnergy[channel])<=Math.max(100,gameEnergy[channel]*.03),
@@ -39,5 +41,16 @@ try {
     ctx=previous;
   }
 } finally {ctx=previous; glowFrame(frameCanvas);}
+const bodyWidth = Type => {
+  const picture=guidePortraits.get(Type.name), data=pixels(picture);
+  let left=picture.width, right=-1;
+  for(let y=0;y<picture.height;y++) for(let x=0;x<picture.width;x++) {
+    if(data[(y*picture.width+x)*4+3]<250) continue;
+    left=Math.min(left,x); right=Math.max(right,x);
+  }
+  return right-left+1;
+};
+check(Math.abs(bodyWidth(Zipper)/bodyWidth(Basic)-.5)<.03,'Runner renders at half the Scout size');
+check(Math.abs(bodyWidth(BigBall)/bodyWidth(Ball)-2)<.1,'Guardian renders at twice the Armour size');
 check(JSON.stringify([money,lives,score,towers,creeps,hopper,backlog,buildTicks])===beforeState,'Shader previews leave simulation untouched');
 wslog({result:'PASS',portraits:guidePortraits.size,gameplayShader:true,transparentGlow:true,backdropPreserved:true});

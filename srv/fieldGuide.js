@@ -425,7 +425,10 @@ function guideRenderPortrait(preview, picture) {
   }
   const paint = guidePortraitSource.getContext('2d'), previous = ctx;
   paint.clearRect(0, 0, guidePortraitSource.width, guidePortraitSource.height);
-  paint.save(); paint.translate(160,160); paint.scale(2.25,2.25);
+  // draw() omits the entity scale normally applied by drawMain(). Keep that
+  // scale here while centering the specimen independently of its world position.
+  const scale = 2.25 * preview.scale;
+  paint.save(); paint.translate(160,160); paint.scale(scale,scale);
   try {
     ctx = paint;
     preview.draw();
