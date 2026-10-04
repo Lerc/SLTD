@@ -1,0 +1,37 @@
+{
+  "type": "Capacitor",
+  "state": {
+    "angle": 0,
+    "scale": 0.975,
+    "radius": 40,
+    "hitPoints": 28,
+    "damage": 9.8,
+    "shield": 16.8,
+    "shieldRatio": 1.2,
+    "shieldFlash": 0,
+    "shieldHitPoints": 0,
+    "hitFlash": 0,
+    "slowTicks": 0,
+    "slowFactor": 1,
+    "burnTicks": 0,
+    "burnPower": 0,
+    "vulnerableTicks": 0,
+    "armor": 0,
+    "regeneration": 0,
+    "shieldRechargeTicks": 0
+  },
+  "size": 384,
+  "zoom": 3,
+  "difficulty": 1,
+  "background": "#030708",
+  "bars": true,
+  "glow": true,
+  "maxShield": 33.6,
+  "nativeScale": 0.5,
+  "glowSettings": {
+    "threshold": 0,
+    "bloom": 1,
+    "blurLevel": 2,
+    "exposure": 0.7
+  }
+}

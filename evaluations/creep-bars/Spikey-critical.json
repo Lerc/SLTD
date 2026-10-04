@@ -1,0 +1,37 @@
+{
+  "type": "Spikey",
+  "state": {
+    "angle": 0,
+    "scale": 0.75,
+    "radius": 55,
+    "hitPoints": 50,
+    "damage": 45,
+    "shield": 0,
+    "shieldRatio": 0,
+    "shieldFlash": 0,
+    "shieldHitPoints": 0,
+    "hitFlash": 0,
+    "slowTicks": 0,
+    "slowFactor": 1,
+    "burnTicks": 0,
+    "burnPower": 0,
+    "vulnerableTicks": 0,
+    "armor": 0,
+    "regeneration": 0,
+    "shieldRechargeTicks": 0
+  },
+  "size": 384,
+  "zoom": 3,
+  "difficulty": 1,
+  "background": "#030708",
+  "bars": true,
+  "glow": true,
+  "maxShield": 0,
+  "nativeScale": 0.5,
+  "glowSettings": {
+    "threshold": 0,
+    "bloom": 1,
+    "blurLevel": 2,
+    "exposure": 0.7
+  }
+}

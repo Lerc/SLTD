@@ -21,7 +21,7 @@ for (const creep of creeps) for (let tick = 0; tick < 31; tick++) creep.move();
 check(creeps.every(creep => creep.shieldFlash === 0), 'Shield impact brightness fades to normal');
 await gameControl.screenshot('energy-shield-faded');
 const capacitor = new Capacitor(); capacitor.speed = 0;
-capacitor.applySlow(.5, 300);
+capacitor.applySlow(.5, capacitor.shieldRechargeDelay + 120);
 for (let i = 0; i <= capacitor.shieldRechargeDelay; i++) capacitor.move();
 check(capacitor.shield > 0 && capacitor.slowTicks > 0, 'Returning shields preserve existing debuffs');
 check(capacitor.applyBurn(100, 1) === false, 'Returning shields reject new debuffs');

@@ -2,8 +2,8 @@
 // Exported image workflow. Requires Node.js 20.9+ and: npm install sharp@^0.35.4
 // Usage: node workflow.mjs photo.jpg other.png --out ./output --integer_n5 320
 import sharp from 'sharp';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { basename, extname, join } from 'node:path';
+import { mkdir, writeFile, rename, rm, stat } from 'node:fs/promises';
+import { basename, dirname, extname, join } from 'node:path';
 const createEngine = function createEngine() {
   const arrays = ['Uint8Array', 'Uint8ClampedArray', 'Int8Array', 'Uint16Array', 'Int16Array', 'Uint32Array', 'Int32Array', 'Float32Array', 'Float64Array', 'BigInt64Array', 'BigUint64Array'];
   const types = ['image', 'color', 'string', 'integer', 'float', 'typedArray', ...arrays, 'any'];
@@ -73,6 +73,27 @@ const createEngine = function createEngine() {
   }
   const kernelTypes = ['xy', 'x', 'y', 'xy mirrored', 'x mirrored', 'y mirrored'];
   const alphaModes = ['replace', 'multiply', 'replace (grey × alpha)', 'multiply (grey × alpha)'];
+  // Command-line options of exported scripts; CLI parameter names cannot reuse them.
+  const reservedOptions = ['out', 'help', 'force-overwrite'];
+  // Output filename templates. The numbered form is the original naming; a sole Output starts with the source name.
+  const filenameTokens = ['name', 'stem', 'ext', 'index', 'id', 'type'], numberedTemplate = '{index}-{stem}-{id}.{type}', sourceTemplate = '{name}';
+  function checkFilenameTemplate(template) {
+    if (typeof template !== 'string' || !template.trim()) throw Error('The filename template cannot be empty');
+    for (const [, token] of template.matchAll(/\{([^}]*)\}/g)) if (!filenameTokens.includes(token)) throw Error(`Unknown filename token {${token}}; use ${filenameTokens.map(t => `{${t}}`).join(' ')}`);
+  }
+  // Render a template for one result: file is the source file name ('' without one), index is 0-based.
+  function outputFilename(template, { file = '', index = 0, id = '', image = true }) {
+    checkFilenameTemplate(template);
+    const type = image ? 'png' : 'json', name = file || `data.${type}`, dot = name.lastIndexOf('.');
+    const stem = dot > 0 ? name.slice(0, dot) : name, ext = dot > 0 ? name.slice(dot + 1) : '';
+    const values = { name, stem, ext, index: String(index + 1).padStart(3, '0'), id: String(id).replace(/[^a-zA-Z0-9_-]/g, '_'), type };
+    let result = template.trim().replace(/\{(\w+)\}/g, (_, token) => values[token]);
+    // Data results are always JSON, whatever extension the template produced.
+    if (!image && !/\.json$/i.test(result)) result = result.replace(/\.[^./\\]*$/, '') + '.json';
+    const parts = result.split(/[\\/]+/);
+    if (/^[\\/]/.test(result) || /^[A-Za-z]:/.test(result) || parts.some(part => !part || part === '.' || part === '..')) throw Error(`The filename "${result}" must be a relative path without empty, . or .. parts`);
+    return parts.join('/');
+  }
   const blendModes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'add', 'subtract', 'difference'];
   const catalog = {
     image: { title: 'Batch image', category: 'Inputs', icon: '▧', description: 'An image from your input batch', inputs: [], outputs: [p('image', 'image'), p('filename', 'string')] },
@@ -105,8 +126,8 @@ const createEngine = function createEngine() {
     expression: { title: 'Expression', category: 'Data & logic', icon: '=', description: 'A JavaScript expression of a and b; errors give 0', inputs: [{ ...p('a', 'any', null, true), optional: true }, { ...p('b', 'any', null, true), optional: true }, p('expression', 'string', 'a * b')], outputs: [p('value', 'float'), p('error', 'string')] },
     concat: { title: 'Join strings', category: 'Data & logic', icon: '≋', description: 'Combine two strings', inputs: [p('a', 'string', ''), p('b', 'string', '')], outputs: [p('value', 'string')] },
     custom: { title: 'JavaScript function', category: 'Data & logic', icon: 'ƒ', description: 'Your own function with a typed interface', inputs: [p('image', 'image', null, true), p('amount', 'float', 1)], outputs: [p('image', 'image')] },
-    display: { title: 'Output', category: 'Outputs', icon: '▣', description: 'Preview an image or data; exported scripts save it', inputs: [p('result', 'any', null, true)], outputs: [] },
-    view: { title: 'View', category: 'Outputs', icon: '◉', description: 'Preview an image or data; exported scripts skip it', inputs: [p('result', 'any', null, true)], outputs: [] },
+    display: { title: 'Output', category: 'Outputs', icon: '▣', description: 'Preview an image or data; saved as the filename template', inputs: [p('result', 'any', null, true), { ...p('filename', 'string', numberedTemplate), template: true }], outputs: [] },
+    view: { title: 'View', category: 'Outputs', icon: '◉', description: 'Preview an image or data and pass it on unchanged; exported scripts skip the preview', inputs: [p('result', 'any', null, true)], outputs: [p('result', 'any')] },
   };
   function schema(node) {
     const base = catalog[node.kind];
@@ -121,7 +142,8 @@ const createEngine = function createEngine() {
     return { id, kind, title: catalog[kind].title, x, y, config: structuredClone(config), params: Object.fromEntries(catalog[kind].inputs.map(v => [v.name, { mode: v.wire ? 'wire' : 'value', value: v.value }])) };
   }
   // `to` is an input port or a type name; colors connect to fillable image inputs.
-  const compatible = (from, to) => { const type = to?.type ?? to; return type === 'any' || from === type || (from === 'integer' && type === 'float') || (arrays.includes(from) && type === 'typedArray') || (from === 'color' && type === 'image' && !!to?.fill); };
+  // An 'any' output (such as a View passing its input on) connects anywhere; its value is checked when the input receives it.
+  const compatible = (from, to) => { const type = to?.type ?? to; return type === 'any' || from === 'any' || from === type || (from === 'integer' && type === 'float') || (arrays.includes(from) && type === 'typedArray') || (from === 'color' && type === 'image' && !!to?.fill); };
   function cast(value, type) {
     if (type === 'string') return String(value);
     if (type === 'color') {
@@ -236,7 +258,7 @@ const createEngine = function createEngine() {
       if (!Number.isFinite(node.x) || !Number.isFinite(node.y) || typeof node.title !== 'string' || !node.config || !node.params) throw Error('Invalid node data');
       if (['string', 'integer', 'float', 'array'].includes(node.kind)) {
         const name = node.config.variable;
-        if (typeof name !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]*$/.test(name) || ['out', 'help'].includes(name) || variables.has(name)) throw Error('CLI parameter names must be unique and cannot be out or help');
+        if (typeof name !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]*$/.test(name) || reservedOptions.includes(name) || variables.has(name)) throw Error(`CLI parameter names must be unique and cannot be ${reservedOptions.join(', ')}`);
         variables.add(name);
       }
       if (node.kind === 'array' && !arrays.includes(node.config.arrayType)) throw Error('Select a concrete typed array element type');
@@ -252,6 +274,7 @@ const createEngine = function createEngine() {
       for (const port of spec.inputs) {
         const param = node.params[port.name];
         if (!['wire', 'value'].includes(param?.mode)) throw Error(`Invalid parameter ${port.name}`);
+        if (param.mode === 'value' && port.template) try { checkFilenameTemplate(param.value); } catch (e) { throw Error(`${node.title}.${port.name}: ${e.message}`); }
         if (param.mode === 'value' && port.options && !port.options.includes(param.value)) throw Error(`${node.title}.${port.name}: choose one of ${port.options.join(', ')}`);
         if (param.mode === 'value' && isExpression(param.value, localType(port))) try { checkLocal(param.value, localType(port)); } catch (e) { throw Error(`${node.title}.${port.name}: ${e.message}`); }
       }
@@ -292,6 +315,7 @@ const createEngine = function createEngine() {
     return validate(next);
   }
   // Output ('display') and View nodes end a workflow; only Outputs are saved by exported scripts.
+  // A View also passes its input on, so it can sit mid-chain; it is then evaluated like any upstream node.
   const terminalKinds = ['display', 'view'];
   function reachableNodes(graph, kinds = terminalKinds) {
     const ids = new Set();
@@ -582,7 +606,7 @@ const createEngine = function createEngine() {
       try {
         if (node.kind === 'image') output = { image: structuredClone(context.image), filename: context.filename || 'input.png' };
         else if (['string', 'integer', 'float', 'array'].includes(node.kind)) output = { value: cast(context.variables?.[node.config.variable] ?? node.config.value, spec.outputs[0].type) };
-        else if (terminalKinds.includes(node.kind)) output = { result: args.result };
+        else if (terminalKinds.includes(node.kind)) output = { result: args.result, filename: args.filename };
         else if (node.kind === 'custom') {
           output = await new Function(...spec.inputs.map(p => p.name), '"use strict";\n' + node.config.code)(...spec.inputs.map(p => args[p.name]));
         } else output = transform(node.kind, args);
@@ -596,9 +620,9 @@ const createEngine = function createEngine() {
     const kinds = context.outputKinds || terminalKinds, displays = graph.nodes.filter(n => kinds.includes(n.kind));
     if (!displays.length) throw Error(kinds.includes('view') ? 'Add an Output or View node to finish your workflow' : 'Add an Output node to finish your workflow');
     for (const node of displays) await visit(node.id);
-    return { results, timings, outputs: displays.map(n => ({ id: n.id, kind: n.kind, title: n.title, value: results.get(n.id).result })) };
+    return { results, timings, outputs: displays.map(n => ({ id: n.id, kind: n.kind, title: n.title, value: results.get(n.id).result, filename: results.get(n.id).filename })) };
   }
-  return { catalog, arrays, types, upgrade, localType, kernelTypes, expandKernel, colorSpaces: colorSpaceNames, convertColor, parseColor, cssColor, schema, makeNode, compatible, cast, isExpression, checkLocal, evaluateExpression, validate, connect, reachableNodes, evaluate };
+  return { catalog, arrays, types, reservedOptions, filenameTokens, numberedTemplate, sourceTemplate, checkFilenameTemplate, outputFilename, upgrade, localType, kernelTypes, expandKernel, colorSpaces: colorSpaceNames, convertColor, parseColor, cssColor, schema, makeNode, compatible, cast, isExpression, checkLocal, evaluateExpression, validate, connect, reachableNodes, evaluate };
 };
 const graph = {
   "version": 1,
@@ -621,8 +645,8 @@ const graph = {
       "id": "n8",
       "kind": "composite",
       "title": "Composite",
-      "x": 263.60815102229697,
-      "y": -499.5117062891869,
+      "x": 80.18634900543097,
+      "y": -635.379724997078,
       "config": {
         "value": 1,
         "variable": "composite_n8",
@@ -662,6 +686,10 @@ const graph = {
         "result": {
           "mode": "wire",
           "value": null
+        },
+        "filename": {
+          "mode": "value",
+          "value": "{stem}.{type}"
         }
       }
     },
@@ -796,6 +824,296 @@ const graph = {
           "value": null
         }
       }
+    },
+    {
+      "id": "n6",
+      "kind": "splitChannels",
+      "title": "Split channels",
+      "x": -2159.366921250419,
+      "y": -179.3914147058161,
+      "config": {
+        "value": 1,
+        "variable": "splitChannels_n6",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n7",
+      "kind": "view",
+      "title": "View",
+      "x": -1378.0016934487014,
+      "y": 52.86727382458827,
+      "config": {
+        "value": 1,
+        "variable": "view_n7",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n11",
+      "kind": "kernel",
+      "title": "Kernel filter",
+      "x": -1781.8070648202922,
+      "y": 150.5824438730603,
+      "config": {
+        "value": 1,
+        "variable": "kernel_n11",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "kernel": {
+          "mode": "value",
+          "value": "[1,1,1,1,1,1,1,1,1]"
+        },
+        "type": {
+          "mode": "value",
+          "value": "xy mirrored"
+        },
+        "divisor": {
+          "mode": "value",
+          "value": "1"
+        },
+        "offset": {
+          "mode": "value",
+          "value": 0
+        }
+      }
+    },
+    {
+      "id": "n12",
+      "kind": "composite",
+      "title": "Composite",
+      "x": -995.0293510255186,
+      "y": -149.1967732074368,
+      "config": {
+        "value": 1,
+        "variable": "composite_n12",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "a": {
+          "mode": "wire",
+          "value": "#000000"
+        },
+        "b": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mask": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mode": {
+          "mode": "value",
+          "value": "difference"
+        }
+      }
+    },
+    {
+      "id": "n13",
+      "kind": "view",
+      "title": "View",
+      "x": -706.3585475838121,
+      "y": -162.73354269782416,
+      "config": {
+        "value": 1,
+        "variable": "view_n13",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n16",
+      "kind": "composite",
+      "title": "Composite",
+      "x": 97.85675943591184,
+      "y": -187.0409780296547,
+      "config": {
+        "value": 1,
+        "variable": "composite_n16",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "a": {
+          "mode": "wire",
+          "value": "#000000"
+        },
+        "b": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mask": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mode": {
+          "mode": "value",
+          "value": "multiply"
+        }
+      }
+    },
+    {
+      "id": "n17",
+      "kind": "makeColor",
+      "title": "Color from values",
+      "x": -210.2348718510663,
+      "y": -263.0574892660689,
+      "config": {
+        "value": 1,
+        "variable": "makeColor_n17",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "space": {
+          "mode": "value",
+          "value": "srgb"
+        },
+        "c1": {
+          "mode": "value",
+          "value": "0"
+        },
+        "c2": {
+          "mode": "value",
+          "value": "0"
+        },
+        "c3": {
+          "mode": "value",
+          "value": 0
+        },
+        "alpha": {
+          "mode": "value",
+          "value": 1
+        }
+      },
+      "compact": true
+    },
+    {
+      "id": "n18",
+      "kind": "view",
+      "title": "View",
+      "x": 444.9027219615404,
+      "y": -213.35902517062914,
+      "config": {
+        "value": 1,
+        "variable": "view_n18",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n19",
+      "kind": "invert",
+      "title": "Invert",
+      "x": -211.6983412552264,
+      "y": -114.04554873838283,
+      "config": {
+        "value": 1,
+        "variable": "invert_n19",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n20",
+      "kind": "setAlpha",
+      "title": "Alpha channel",
+      "x": -224.8220200405203,
+      "y": 82.68356267723007,
+      "config": {
+        "value": 1,
+        "variable": "setAlpha_n20",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "alpha": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mode": {
+          "mode": "value",
+          "value": "replace"
+        }
+      }
+    },
+    {
+      "id": "n21",
+      "kind": "threshold",
+      "title": "Threshold",
+      "x": -692.0620516814389,
+      "y": 144.6347422239677,
+      "config": {
+        "value": 1,
+        "variable": "threshold_n21",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "low": {
+          "mode": "value",
+          "value": 128
+        },
+        "high": {
+          "mode": "value",
+          "value": 255
+        }
+      },
+      "compact": true
+    },
+    {
+      "id": "n22",
+      "kind": "view",
+      "title": "View",
+      "x": 370.3659964101584,
+      "y": -628.9135758967419,
+      "config": {
+        "value": 1,
+        "variable": "view_n22",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        }
+      }
     }
   ],
   "edges": [
@@ -818,12 +1136,6 @@ const graph = {
       "input": "a"
     },
     {
-      "from": "n8",
-      "output": "image",
-      "to": "n9",
-      "input": "result"
-    },
-    {
       "from": "n1",
       "output": "image",
       "to": "n10",
@@ -840,20 +1152,121 @@ const graph = {
       "output": "image",
       "to": "n5",
       "input": "result"
+    },
+    {
+      "from": "n15",
+      "output": "image",
+      "to": "n6",
+      "input": "image"
+    },
+    {
+      "from": "n6",
+      "output": "alpha",
+      "to": "n11",
+      "input": "image"
+    },
+    {
+      "from": "n11",
+      "output": "image",
+      "to": "n7",
+      "input": "result"
+    },
+    {
+      "from": "n6",
+      "output": "alpha",
+      "to": "n12",
+      "input": "a"
+    },
+    {
+      "from": "n12",
+      "output": "image",
+      "to": "n13",
+      "input": "result"
+    },
+    {
+      "from": "n7",
+      "output": "result",
+      "to": "n12",
+      "input": "b"
+    },
+    {
+      "from": "n16",
+      "output": "image",
+      "to": "n18",
+      "input": "result"
+    },
+    {
+      "from": "n20",
+      "output": "image",
+      "to": "n19",
+      "input": "image"
+    },
+    {
+      "from": "n19",
+      "output": "image",
+      "to": "n16",
+      "input": "mask"
+    },
+    {
+      "from": "n17",
+      "output": "color",
+      "to": "n16",
+      "input": "b"
+    },
+    {
+      "from": "n18",
+      "output": "result",
+      "to": "n9",
+      "input": "result"
+    },
+    {
+      "from": "n13",
+      "output": "result",
+      "to": "n21",
+      "input": "image"
+    },
+    {
+      "from": "n21",
+      "output": "image",
+      "to": "n20",
+      "input": "image"
+    },
+    {
+      "from": "n21",
+      "output": "image",
+      "to": "n20",
+      "input": "alpha"
+    },
+    {
+      "from": "n8",
+      "output": "image",
+      "to": "n22",
+      "input": "result"
+    },
+    {
+      "from": "n22",
+      "output": "result",
+      "to": "n16",
+      "input": "a"
     }
   ]
 };
 const engine = createEngine();
 async function main() {
 const args = process.argv.slice(2), files = [], variables = {};
-let out = './output', positional = false;
+let out = './output', positional = false, forceOverwrite = false;
 const variableNames = new Set(graph.nodes.filter(n => ['string', 'integer', 'float', 'array'].includes(n.kind)).map(n => n.config.variable));
+const outputs = graph.nodes.filter(n => n.kind === 'display');
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--' && !positional) { positional = true; continue; }
   if (!positional && args[i] === '--help') {
-    console.log('Usage: node workflow.mjs [images…] --out ./output [--parameter value]\nParameters: ' + [...variableNames].map(n => '--' + n).join(', '));
+    console.log('Usage: node workflow.mjs [images…] --out ./output [--force-overwrite] [--parameter value]\n' +
+      '  Each Output node saves one file per input, named by its filename template: ' + outputs.map(n => n.title + ' → ' + (n.params.filename?.mode === 'value' ? n.params.filename.value : '(wired)')).join(', ') + '\n' +
+      '  --force-overwrite  allow results to replace the input images themselves\n' +
+      'Parameters: ' + [...variableNames].map(n => '--' + n).join(', '));
     return;
   }
+  if (!positional && args[i] === '--force-overwrite') { forceOverwrite = true; continue; }
   if (!positional && args[i].startsWith('--')) {
     const key = args[i].slice(2);
     if (key !== 'out' && !variableNames.has(key)) throw Error('Unknown option: --' + key);
@@ -863,13 +1276,28 @@ for (let i = 0; i < args.length; i++) {
   } else files.push(args[i]);
 }
 // View nodes only preview in the editor; the script evaluates and saves Output nodes.
-if (!graph.nodes.some(n => n.kind === 'display')) throw Error('This workflow has no Output nodes, so there is nothing to save. View nodes only preview in the editor.');
+if (!outputs.length) throw Error('This workflow has no Output nodes, so there is nothing to save. View nodes only preview in the editor.');
 if (!files.length && engine.reachableNodes(graph, ['display']).some(n => n.kind === 'image')) {
   throw Error('Provide one or more image paths. Use --help for usage.');
 }
+const inputs = files.length ? files : [null];
+// Check every destination a fixed template can produce before processing anything, so a refused run changes nothing.
+const planned = new Map();
+for (const [index, file] of inputs.entries()) for (const node of outputs) {
+  if (node.params.filename?.mode !== 'value') continue;
+  for (const image of [true, false]) {
+    const dest = join(out, engine.outputFilename(node.params.filename.value, { file: file ? basename(file) : '', index, id: node.id, image }));
+    if (!forceOverwrite) for (const source of files) if (await sameFile(dest, source)) throw Error('Refusing to overwrite the source image ' + source + ' (' + node.title + ' saves ' + dest + '). Choose a different --out folder or filename template, or pass --force-overwrite to replace the originals.');
+    const key = dest + (image ? '' : '#data'), other = planned.get(key);
+    if (image && other && other !== node.id + ':' + index) throw Error('Two results would be saved as ' + dest + '; include {name}, {stem} or {index}, and {id} for several Outputs, in the filename templates');
+    if (image) planned.set(key, node.id + ':' + index);
+  }
+}
+sharp.cache(false);
 await mkdir(out, { recursive: true });
 let failed = false;
-for (const [index, file] of (files.length ? files : [null]).entries()) {
+const written = new Set();
+for (const [index, file] of inputs.entries()) {
   try {
     let image;
     if (file) {
@@ -878,21 +1306,40 @@ for (const [index, file] of (files.length ? files : [null]).entries()) {
     }
     const result = await engine.evaluate(graph, { image, filename: file ? basename(file) : '', variables, outputKinds: ['display'] });
     for (const output of result.outputs) {
-      const stem = file ? basename(file, extname(file)) : 'data';
-      const name = String(index + 1).padStart(3, '0') + '-' + stem + '-' + output.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const value = output.value;
-      if (value?.data instanceof Uint8ClampedArray && Number.isInteger(value.width) && Number.isInteger(value.height)) {
-        const dest = join(out, name + '.png');
-        await sharp(Buffer.from(value.data), { raw: { width: value.width, height: value.height, channels: 4 } }).png().toFile(dest);
-        console.log(dest);
+      const value = output.value, isImage = value?.data instanceof Uint8ClampedArray && Number.isInteger(value.width) && Number.isInteger(value.height);
+      const dest = join(out, engine.outputFilename(output.filename, { file: file ? basename(file) : '', index, id: output.id, image: isImage }));
+      // Wired templates are only known now, so check them again here.
+      if (written.has(dest)) throw Error('Two results would be saved as ' + dest + '; make the filename templates distinct');
+      if (!forceOverwrite) for (const source of files) if (await sameFile(dest, source)) throw Error('Refusing to overwrite the source image ' + source + '; pass --force-overwrite to replace it');
+      written.add(dest);
+      await mkdir(dirname(dest), { recursive: true });
+      if (isImage) {
+        const encoded = sharp(Buffer.from(value.data), { raw: { width: value.width, height: value.height, channels: 4 } });
+        await replaceFile(dest, temp => encodeAs(encoded, extname(dest)).toFile(temp));
       } else {
-        const dest = join(out, name + '.json');
-        await writeFile(dest, JSON.stringify(value, (_, v) => typeof v === 'bigint' ? String(v) : ArrayBuffer.isView(v) ? Array.from(v) : v, 2));
-        console.log(dest);
+        await replaceFile(dest, temp => writeFile(temp, JSON.stringify(value, (_, v) => typeof v === 'bigint' ? String(v) : ArrayBuffer.isView(v) ? Array.from(v) : v, 2)));
       }
+      console.log(dest);
     }
   } catch (error) { failed = true; console.error((file || 'workflow') + ': ' + error.message); }
 }
 if (failed) process.exitCode = 1;
+}
+// True when both paths name the same existing file (hard links and symlinks included).
+async function sameFile(a, b) {
+  try { const [x, y] = await Promise.all([stat(a), stat(b)]); return x.dev === y.dev && x.ino === y.ino; }
+  catch { return false; }
+}
+// Encode in the format the file extension implies, so a name like photo.jpg holds JPEG data.
+function encodeAs(image, extension) {
+  const format = { '.png': 'png', '.jpg': 'jpeg', '.jpeg': 'jpeg', '.webp': 'webp', '.avif': 'avif', '.tif': 'tiff', '.tiff': 'tiff', '.gif': 'gif' }[extension.toLowerCase()];
+  if (!format) throw Error('Cannot save an image as ' + (extension || 'a file without an extension') + '; give the filename template one of .png, .jpg, .jpeg, .webp, .avif, .tif, .tiff, .gif');
+  return format === 'jpeg' ? image.jpeg({ quality: 92 }) : image[format]();
+}
+// Write beside the destination, then rename over it, so a failed encode never leaves a damaged or missing original.
+async function replaceFile(dest, write) {
+  const temp = join(dirname(dest), '.' + basename(dest) + '.' + process.pid + '.tmp');
+  try { await write(temp); await rename(temp, dest); }
+  finally { await rm(temp, { force: true }); }
 }
 await main().catch(error => { console.error(error.message); process.exitCode = 1; });

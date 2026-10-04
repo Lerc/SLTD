@@ -44,7 +44,7 @@ def main():
     parser.add_argument('--list-types', action='store_true')
     parser.add_argument('--state', default='{}', help='JSON object or @path/to/state.json (visual property overrides)')
     parser.add_argument('-o', '--output', type=Path, default=Path('creep.png'))
-    parser.add_argument('--size', type=int, default=320, help='square PNG size in pixels (default: 320)')
+    parser.add_argument('--size', type=int, default=384, help='square PNG size in pixels (default: 384)')
     parser.add_argument('--zoom', type=finite_positive, default=3, help='enlargement AFTER glow, 1 = native game pixels (default: 3)')
     parser.add_argument('--difficulty', type=finite_positive, default=1, help='health/shield scaling before state overrides')
     parser.add_argument('--background', default='#030708', help='background input color, #RRGGBB, before glow')

@@ -1,9 +1,10 @@
+const pageFor = Type => guideEntries().findIndex(entry=>entry.info?.type===Type);
 // Deterministic regression: preserve the fading trace and use every browser frame.
 const check=(value,message)=>{if(!value) throw Error(message);};
 const savedPage=uiGuidePage;
 const failures=[];
 try {
-  uiGuidePage=13; guideTraces.clear(); guideSyncLayout(1000);
+  uiGuidePage=pageFor(Tower); guideTraces.clear(); guideSyncLayout(1000);
   const bounds=guideLayout.bounds, {left,top,width,height}=bounds;
   check(guideTraceDelay([left,top],bounds)===0,'Top-left starts without delay');
   check(guideTraceDelay([left+width,top+height],bounds)===400,'Bottom-right starts after 400 ms');
@@ -36,7 +37,7 @@ try {
   check(guideAnimationFrame(6000)==='settled','Rendering settles after the complete effect');
   if(failures.length) throw Error(failures.join('; '));
   // Exercise the real UI cache: fade frames must composite, then clear fully.
-  startGame('foundry');paused=true;guideOpen();uiGuidePage=13;
+  startGame('foundry');paused=true;guideOpen();uiGuidePage=pageFor(Tower);
   guideSyncLayout(1000);uiDrawSignature='';uiLastFrame=1000;uiSlide=0;
   const original=uiDrawGuide;
   let staticDraws=0;

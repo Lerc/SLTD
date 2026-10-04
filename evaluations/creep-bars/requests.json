@@ -1,0 +1,520 @@
+[
+  {
+    "name": "Basic",
+    "type": "Basic",
+    "state": {
+      "damage": 3.5
+    },
+    "label": "Basic",
+    "caption": "Health 65%"
+  },
+  {
+    "name": "Basic-critical",
+    "type": "Basic",
+    "state": {
+      "damage": 9.0
+    },
+    "label": "Basic",
+    "caption": "Health 10%"
+  },
+  {
+    "name": "Zipper",
+    "type": "Zipper",
+    "state": {
+      "damage": 1.0499999999999998
+    },
+    "label": "Zipper",
+    "caption": "Health 65%"
+  },
+  {
+    "name": "Zipper-critical",
+    "type": "Zipper",
+    "state": {
+      "damage": 2.7
+    },
+    "label": "Zipper",
+    "caption": "Health 10%"
+  },
+  {
+    "name": "Flyer",
+    "type": "Flyer",
+    "state": {
+      "damage": 5.25,
+      "boostCharge": 0.65
+    },
+    "label": "Flyer",
+    "caption": "Health 65% | Energy 65%"
+  },
+  {
+    "name": "Flyer-critical",
+    "type": "Flyer",
+    "state": {
+      "damage": 13.5,
+      "boostCharge": 0.1
+    },
+    "label": "Flyer",
+    "caption": "Health 10% | Energy 10%"
+  },
+  {
+    "name": "states/Flyer-full",
+    "type": "Flyer",
+    "state": {
+      "damage": 5.25,
+      "boostCharge": 1
+    },
+    "label": "Flyer / full",
+    "caption": "Health 65% | Energy 100%"
+  },
+  {
+    "name": "states/Flyer-half",
+    "type": "Flyer",
+    "state": {
+      "damage": 5.25,
+      "boostCharge": 0.5
+    },
+    "label": "Flyer / half",
+    "caption": "Health 65% | Energy 50%"
+  },
+  {
+    "name": "states/Flyer-low",
+    "type": "Flyer",
+    "state": {
+      "damage": 5.25,
+      "boostCharge": 0.1
+    },
+    "label": "Flyer / low",
+    "caption": "Health 65% | Energy 10%"
+  },
+  {
+    "name": "states/Flyer-empty",
+    "type": "Flyer",
+    "state": {
+      "damage": 5.25,
+      "boostCharge": 0
+    },
+    "label": "Flyer / empty",
+    "caption": "Health 65% | Energy 0%"
+  },
+  {
+    "name": "Ball",
+    "type": "Ball",
+    "state": {
+      "damage": 10.5
+    },
+    "label": "Ball",
+    "caption": "Health 65%"
+  },
+  {
+    "name": "Ball-critical",
+    "type": "Ball",
+    "state": {
+      "damage": 27.0
+    },
+    "label": "Ball",
+    "caption": "Health 10%"
+  },
+  {
+    "name": "BigBall",
+    "type": "BigBall",
+    "state": {
+      "damage": 62.99999999999999
+    },
+    "label": "BigBall",
+    "caption": "Health 65%"
+  },
+  {
+    "name": "BigBall-critical",
+    "type": "BigBall",
+    "state": {
+      "damage": 162.0
+    },
+    "label": "BigBall",
+    "caption": "Health 10%"
+  },
+  {
+    "name": "Spikey",
+    "type": "Spikey",
+    "state": {
+      "damage": 17.5
+    },
+    "label": "Spikey",
+    "caption": "Health 65%"
+  },
+  {
+    "name": "Spikey-critical",
+    "type": "Spikey",
+    "state": {
+      "damage": 45.0
+    },
+    "label": "Spikey",
+    "caption": "Health 10%"
+  },
+  {
+    "name": "Mender",
+    "type": "Mender",
+    "state": {
+      "damage": 11.2
+    },
+    "label": "Mender",
+    "caption": "Health 65%"
+  },
+  {
+    "name": "Mender-critical",
+    "type": "Mender",
+    "state": {
+      "damage": 28.8
+    },
+    "label": "Mender",
+    "caption": "Health 10%"
+  },
+  {
+    "name": "Splitter",
+    "type": "Splitter",
+    "state": {
+      "damage": 14.7
+    },
+    "label": "Splitter",
+    "caption": "Health 65%"
+  },
+  {
+    "name": "Splitter-critical",
+    "type": "Splitter",
+    "state": {
+      "damage": 37.800000000000004
+    },
+    "label": "Splitter",
+    "caption": "Health 10%"
+  },
+  {
+    "name": "Shieldbug",
+    "type": "Shieldbug",
+    "state": {
+      "damage": 8.399999999999999,
+      "shield": 12.480000000000002
+    },
+    "label": "Shieldbug",
+    "caption": "Health 65% | Shield 65%"
+  },
+  {
+    "name": "Shieldbug-critical",
+    "type": "Shieldbug",
+    "state": {
+      "damage": 21.6,
+      "shield": 1.9200000000000004
+    },
+    "label": "Shieldbug",
+    "caption": "Health 10% | Shield 10%"
+  },
+  {
+    "name": "states/Shieldbug-full",
+    "type": "Shieldbug",
+    "state": {
+      "damage": 8.399999999999999,
+      "shield": 19.200000000000003
+    },
+    "label": "Shieldbug / full",
+    "caption": "Health 65% | Shield 100%"
+  },
+  {
+    "name": "states/Shieldbug-half",
+    "type": "Shieldbug",
+    "state": {
+      "damage": 8.399999999999999,
+      "shield": 9.600000000000001
+    },
+    "label": "Shieldbug / half",
+    "caption": "Health 65% | Shield 50%"
+  },
+  {
+    "name": "states/Shieldbug-low",
+    "type": "Shieldbug",
+    "state": {
+      "damage": 8.399999999999999,
+      "shield": 1.9200000000000004
+    },
+    "label": "Shieldbug / low",
+    "caption": "Health 65% | Shield 10%"
+  },
+  {
+    "name": "states/Shieldbug-empty",
+    "type": "Shieldbug",
+    "state": {
+      "damage": 8.399999999999999,
+      "shield": 0.0
+    },
+    "label": "Shieldbug / empty",
+    "caption": "Health 65% | Shield 0%"
+  },
+  {
+    "name": "Skimmer",
+    "type": "Skimmer",
+    "state": {
+      "damage": 4.199999999999999,
+      "shield": 5.8500000000000005
+    },
+    "label": "Skimmer",
+    "caption": "Health 65% | Shield 65%"
+  },
+  {
+    "name": "Skimmer-critical",
+    "type": "Skimmer",
+    "state": {
+      "damage": 10.8,
+      "shield": 0.9
+    },
+    "label": "Skimmer",
+    "caption": "Health 10% | Shield 10%"
+  },
+  {
+    "name": "states/Skimmer-full",
+    "type": "Skimmer",
+    "state": {
+      "damage": 4.199999999999999,
+      "shield": 9
+    },
+    "label": "Skimmer / full",
+    "caption": "Health 65% | Shield 100%"
+  },
+  {
+    "name": "states/Skimmer-half",
+    "type": "Skimmer",
+    "state": {
+      "damage": 4.199999999999999,
+      "shield": 4.5
+    },
+    "label": "Skimmer / half",
+    "caption": "Health 65% | Shield 50%"
+  },
+  {
+    "name": "states/Skimmer-low",
+    "type": "Skimmer",
+    "state": {
+      "damage": 4.199999999999999,
+      "shield": 0.9
+    },
+    "label": "Skimmer / low",
+    "caption": "Health 65% | Shield 10%"
+  },
+  {
+    "name": "states/Skimmer-empty",
+    "type": "Skimmer",
+    "state": {
+      "damage": 4.199999999999999,
+      "shield": 0
+    },
+    "label": "Skimmer / empty",
+    "caption": "Health 65% | Shield 0%"
+  },
+  {
+    "name": "Capacitor",
+    "type": "Capacitor",
+    "state": {
+      "damage": 9.799999999999999,
+      "shield": 21.840000000000003
+    },
+    "label": "Capacitor",
+    "caption": "Health 65% | Shield 65%"
+  },
+  {
+    "name": "Capacitor-critical",
+    "type": "Capacitor",
+    "state": {
+      "damage": 25.2,
+      "shield": 3.3600000000000003
+    },
+    "label": "Capacitor",
+    "caption": "Health 10% | Shield 10%"
+  },
+  {
+    "name": "states/Capacitor-full",
+    "type": "Capacitor",
+    "state": {
+      "damage": 9.799999999999999,
+      "shield": 33.6
+    },
+    "label": "Capacitor / full",
+    "caption": "Health 65% | Shield 100%"
+  },
+  {
+    "name": "states/Capacitor-half",
+    "type": "Capacitor",
+    "state": {
+      "damage": 9.799999999999999,
+      "shield": 16.8
+    },
+    "label": "Capacitor / half",
+    "caption": "Health 65% | Shield 50%"
+  },
+  {
+    "name": "states/Capacitor-low",
+    "type": "Capacitor",
+    "state": {
+      "damage": 9.799999999999999,
+      "shield": 3.3600000000000003
+    },
+    "label": "Capacitor / low",
+    "caption": "Health 65% | Shield 10%"
+  },
+  {
+    "name": "states/Capacitor-empty",
+    "type": "Capacitor",
+    "state": {
+      "damage": 9.799999999999999,
+      "shield": 0.0
+    },
+    "label": "Capacitor / empty",
+    "caption": "Health 65% | Shield 0%"
+  },
+  {
+    "name": "Bulwark",
+    "type": "Bulwark",
+    "state": {
+      "damage": 21.0,
+      "shield": 15.600000000000001
+    },
+    "label": "Bulwark",
+    "caption": "Health 65% | Shield 65%"
+  },
+  {
+    "name": "Bulwark-critical",
+    "type": "Bulwark",
+    "state": {
+      "damage": 54.0,
+      "shield": 2.4000000000000004
+    },
+    "label": "Bulwark",
+    "caption": "Health 10% | Shield 10%"
+  },
+  {
+    "name": "states/Bulwark-full",
+    "type": "Bulwark",
+    "state": {
+      "damage": 21.0,
+      "shield": 24
+    },
+    "label": "Bulwark / full",
+    "caption": "Health 65% | Shield 100%"
+  },
+  {
+    "name": "states/Bulwark-half",
+    "type": "Bulwark",
+    "state": {
+      "damage": 21.0,
+      "shield": 12.0
+    },
+    "label": "Bulwark / half",
+    "caption": "Health 65% | Shield 50%"
+  },
+  {
+    "name": "states/Bulwark-low",
+    "type": "Bulwark",
+    "state": {
+      "damage": 21.0,
+      "shield": 2.4000000000000004
+    },
+    "label": "Bulwark / low",
+    "caption": "Health 65% | Shield 10%"
+  },
+  {
+    "name": "states/Bulwark-empty",
+    "type": "Bulwark",
+    "state": {
+      "damage": 21.0,
+      "shield": 0
+    },
+    "label": "Bulwark / empty",
+    "caption": "Health 65% | Shield 0%"
+  },
+  {
+    "name": "effects/Shieldbug-impact",
+    "type": "Shieldbug",
+    "state": {
+      "damage": 8.399999999999999,
+      "shield": 6.720000000000001,
+      "shieldFlash": 1,
+      "shieldHitPoints": 15.360000000000003
+    },
+    "label": "Shieldbug / impact",
+    "caption": "Health 65% | Shield 35% / lost trace"
+  },
+  {
+    "name": "effects/Skimmer-impact",
+    "type": "Skimmer",
+    "state": {
+      "damage": 4.199999999999999,
+      "shield": 3.15,
+      "shieldFlash": 1,
+      "shieldHitPoints": 7.2
+    },
+    "label": "Skimmer / impact",
+    "caption": "Health 65% | Shield 35% / lost trace"
+  },
+  {
+    "name": "effects/Capacitor-impact",
+    "type": "Capacitor",
+    "state": {
+      "damage": 9.799999999999999,
+      "shield": 11.76,
+      "shieldFlash": 1,
+      "shieldHitPoints": 26.880000000000003
+    },
+    "label": "Capacitor / impact",
+    "caption": "Health 65% | Shield 35% / lost trace"
+  },
+  {
+    "name": "effects/Bulwark-impact",
+    "type": "Bulwark",
+    "state": {
+      "damage": 21.0,
+      "shield": 8.399999999999999,
+      "shieldFlash": 1,
+      "shieldHitPoints": 19.200000000000003
+    },
+    "label": "Bulwark / impact",
+    "caption": "Health 65% | Shield 35% / lost trace"
+  },
+  {
+    "name": "effects/Capacitor-charging",
+    "type": "Capacitor",
+    "state": {
+      "shield": 16.8,
+      "shieldRechargeTicks": 0,
+      "damage": 9.8
+    },
+    "label": "Capacitor / charging",
+    "caption": "Health 65% | Shield 50% / arcs"
+  },
+  {
+    "name": "effects/Flyer-full-boost",
+    "type": "Flyer",
+    "state": {
+      "boostCharge": 1,
+      "boostTicks": 120,
+      "damage": 5.25
+    },
+    "label": "Flyer / full boost",
+    "caption": "Health 65% | Energy 100% / exhaust"
+  },
+  {
+    "name": "effects/Flyer-half-boost",
+    "type": "Flyer",
+    "state": {
+      "boostCharge": 0.5,
+      "boostTicks": 60,
+      "damage": 5.25
+    },
+    "label": "Flyer / half boost",
+    "caption": "Health 65% | Energy 50% / exhaust"
+  },
+  {
+    "name": "effects/Flyer-low-boost",
+    "type": "Flyer",
+    "state": {
+      "boostCharge": 0.1,
+      "boostTicks": 12,
+      "damage": 5.25
+    },
+    "label": "Flyer / low boost",
+    "caption": "Health 65% | Energy 10% / exhaust"
+  }
+]

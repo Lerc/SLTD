@@ -64,12 +64,35 @@ test('even a fractional shield blocks all new debuffs and their refreshes', () =
   assert.equal(c.shieldRechargeTicks, c.shieldRechargeDelay - 1);
 });
 
+test('Capacitors wait ten seconds, restart the delay after hits, and charge to capacity', () => {
+  const c = enemy(Capacitor);
+  assert.equal(c.shield, 0);
+  assert.equal(c.shieldRechargeDelay, 600);
+  advance(c, c.shieldRechargeDelay);
+  assert.equal(c.shield, 0, 'No shield during the full ten-second delay');
+  c.move();
+  assert.ok(c.shield > 0 && c.shield < c.maxShield);
+  c.takeDamage(1);
+  const shield = c.shield;
+  advance(c, c.shieldRechargeDelay - 1);
+  assert.equal(c.shield, shield);
+  c.takeDamage(0.1, 'piercing');
+  advance(c, c.shieldRechargeDelay);
+  assert.equal(c.shield, shield, 'A later hit restarts the full delay');
+  c.move();
+  assert.ok(c.shield > shield);
+  advance(c, 400);
+  assert.equal(c.shield, c.maxShield);
+});
+
 test('a naturally charging shield does not cleanse an existing chill or vulnerability', () => {
   const c = enemy(Capacitor);
-  c.applySlow(.5, 300); c.applyVulnerability(300);
+  const duration = c.shieldRechargeDelay + 120;
+  c.applySlow(.5, duration); c.applyVulnerability(duration);
   advance(c, c.shieldRechargeDelay + 1);
   assert.ok(c.shield > 0);
-  assert.equal(c.slowTicks, 209); assert.equal(c.vulnerableTicks, 209);
+  assert.equal(c.slowTicks, duration - c.shieldRechargeDelay - 1);
+  assert.equal(c.vulnerableTicks, duration - c.shieldRechargeDelay - 1);
   assert.equal(c.slowFactor, .5);
   assert.equal(c.applySlow(.1, 500), false);
   const burning = enemy(Capacitor); burning.applyBurn(120, .01);

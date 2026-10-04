@@ -38,6 +38,37 @@ test('Cannon shots retarget living creeps and still deal physical damage', () =>
   assert.ok(other.damage > 0);
 });
 
+test('Cannon direction oscillates twice per second within twenty degrees without heading drift', () => {
+  const {tower, target} = scene(Stubby);
+  target.position = vadd(tower.position, v2(10000, 0));
+  const shot = new Rock(tower, target);
+  // Hold steering constant to measure the oscillation independently of homing.
+  Object.defineProperty(shot, 'homingStrength', {value:0});
+  const angles=[];
+  for (let tick=0;tick<90;tick++) {
+    shot.move();
+    const delta=vangle(shot.motion)-tower.angle;
+    angles.push(Math.atan2(Math.sin(delta),Math.cos(delta))*180/Math.PI);
+    assert.ok(Math.abs(Math.hypot(shot.motion.x,shot.motion.y)-shot.speed)<1e-10,'Speed stays constant');
+  }
+  assert.ok(Math.max(...angles)>19.8 && Math.max(...angles)<=20);
+  assert.ok(Math.min(...angles)<-19.8 && Math.min(...angles)>=-20);
+  for (let i=0;i<60;i++) assert.ok(Math.abs(angles[i]-angles[i+30])<1e-10,'Heading repeats every 30 ticks');
+  for (const tick of [15,30,45,60,75,90]) assert.ok(Math.abs(angles[tick-1])<1e-10,'Returns to the underlying heading each half-cycle');
+});
+
+test('Cannon save/load preserves oscillation phase and the next homing movement', () => {
+  const {tower,target}=scene(Stubby);
+  const shot=new Rock(tower,target); bullets.push(shot);
+  for(let i=0;i<11;i++) shot.move();
+  const state=game.saveState();
+  shot.move();
+  const expected={position:shot.position,motion:shot.motion,age:shot.age};
+  game.loadState(state);
+  const restored=bullets[0]; restored.move();
+  assert.deepEqual({position:restored.position,motion:restored.motion,age:restored.age},expected);
+});
+
 test('Pulse shots drift and fade rather than snapping to another enemy', () => {
   const {tower, target} = scene(Zappy);
   const shot = new Laser(tower, target); shot.move();

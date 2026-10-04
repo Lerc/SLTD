@@ -1,3 +1,4 @@
+const pageFor = Type => guideEntries().findIndex(entry=>entry.info?.type===Type);
 // Run through browser-bridge; exercises the real display and pointer controls.
 const check = (condition, message) => { if (!condition) throw new Error(message); };
 const tap = async id => {
@@ -6,8 +7,24 @@ const tap = async id => {
   await gameControl.tapCanvas(b.x+b.w/2,b.y+b.h/2);
 };
 gameMode=globalThis.gameMode=titleScreen;paused=false;initUI();
+check(uiControls().find(b=>b.id==='guide').label==='Tactical archive','Front menu uses archive label');
+const fullscreen=uiControls().find(b=>b.id==='fullscreen');
+check(fullscreen && fullscreen.y+fullscreen.h<=1848,'Front menu has a visible fullscreen button');
+const root=document.documentElement, originalFullscreen=Object.getOwnPropertyDescriptor(root,'requestFullscreen');
+let fullscreenRequests=0;
+try {
+  Object.defineProperty(root,'requestFullscreen',{configurable:true,value:()=>{fullscreenRequests++;return Promise.resolve();}});
+  await tap('fullscreen');
+  check(fullscreenRequests===1 && uiModal()==='welcome','Fullscreen button calls browser API without leaving the front menu');
+} finally {
+  if(originalFullscreen) Object.defineProperty(root,'requestFullscreen',originalFullscreen);
+  else delete root.requestFullscreen;
+}
 await tap('guide');
 check(uiModal()==='guide' && gameMode===titleScreen && !paused,'Launch screen opens the guide without starting a game');
+check(guideEntries()[uiGuidePage].info.type===Tower,'Archive opens on Towers');
+check(uiControls().filter(b=>b.id.startsWith('guide-tab-')).map(b=>b.label).join('/')==='Towers/Creeps/Operations','Tabs use the requested order');
+check([...new Set(guideEntries().map(e=>e.kind))].join('/')==='tower/creep/controls','Dossier navigation follows tab order');
 await tap('guide-tab-tower');
 document.dispatchEvent(new KeyboardEvent('keydown',{code:'ArrowRight'}));
 check(guideEntries()[uiGuidePage].info.type===Stubby,'Launch guide supports keyboard paging');
@@ -17,6 +34,7 @@ await tap('guide');
 document.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape'}));
 check(uiModal()==='welcome','Escape returns to the launch screen');
 startGame('foundry'); paused=true; uiOverlay='pause';
+check(uiControls().find(b=>b.id==='guide').label==='Tactical archive','Pause menu uses archive label');
 const before=JSON.stringify([money,lives,score,towers,creeps,hopper,backlog,buildTicks]);
 await tap('guide');
 check(uiOverlay==='guide' && paused, 'Guide opens paused');
@@ -28,7 +46,9 @@ await tap('guide-tab-tower'); check(entries[uiGuidePage].info===towerInfo[0],'To
 check(uiControls().filter(b=>b.id.startsWith('guide-link-')).every(b=>b.sub==='UPGRADE' && !b.label.includes('→')),'Upgrade slots have a separate heading above the tower name');
 await tap('guide-link-Ranger'); check(entries[uiGuidePage].info.type===Ranger,'Upgrade link opens Ranger');
 await tap('guide-link-Tower'); check(entries[uiGuidePage].info.type===Tower,'Parent link returns to Sentry');
-await tap('guide-tab-controls'); await tap('guide-prev'); check(uiGuidePage===entries.length-1,'Previous wraps');
+await tap('guide-tab-controls'); check(uiGuidePage===entries.length-1,'Operations is last');
+await tap('guide-next'); check(uiGuidePage===0,'Operations wraps to Towers');
+await tap('guide-prev'); check(uiGuidePage===entries.length-1,'Previous wraps');
 await tap('guide-next'); check(uiGuidePage===0,'Next wraps');
 document.dispatchEvent(new KeyboardEvent('keydown',{code:'ArrowRight'}));
 check(uiGuidePage===1,'Keyboard changes dossier');
@@ -67,20 +87,20 @@ for(let page=0;page<entries.length;page++) {
   }
 }
 // Geometry, not text or selected-tab colors, owns each one-shot outline trace.
-guideOpen(); uiGuidePage=13; guideSyncLayout(1000);
+guideOpen(); uiGuidePage=pageFor(Tower); guideSyncLayout(1000);
 const scheduledAt=(id,time)=>Math.abs(guideTraces.get(id).startedAt-time-guideTraceDelay(guideTraces.get(id).points[0],guideLayout.bounds))<1e-9;
 const initial=new Map([...guideTraces].map(([id,trace])=>[id,trace.startedAt]));
 check(guideAnimationFrame(2400)==='settled','Opening trace finishes');
-uiGuidePage=14; guideSyncLayout(2500); // Sentry -> Cannon: same panel arrangement.
+uiGuidePage=pageFor(Stubby); guideSyncLayout(2500); // Sentry -> Cannon: same panel arrangement.
 check([...guideTraces].every(([id,trace])=>trace.startedAt===initial.get(id)),'Different text, image and data do not replay outlines');
 check(guideAnimationFrame(2500)==='settled','Same layout remains still');
-uiGuidePage=18; guideSyncLayout(2700); // Ranger: two upgrade slots become one parent slot.
+uiGuidePage=pageFor(Ranger); guideSyncLayout(2700); // Ranger: two upgrade slots become one parent slot.
 check(guideTraces.get('frame').startedAt===initial.get('frame'),'Outer frame does not restart');
 check(guideTraces.get('graph').startedAt===initial.get('graph'),'Unchanged graph panel does not restart');
 check(scheduledAt('title',2700) && scheduledAt('branch-0',2700),'Only resized panels restart');
 check(!guideTraces.has('branch-1'),'Removed panel has no stale trace');
 check(guideAnimationFrame(4100)==='settled','Layout transition also settles');
-uiGuidePage=1; guideSyncLayout(4200);
+uiGuidePage=pageFor(Basic); guideSyncLayout(4200);
 check(guideTraces.get('frame').startedAt===initial.get('frame'),'Category switch keeps frame still');
 check(scheduledAt('strengths',4200),'New content panels trace once');
 const trace=guideTraces.get('strengths');

@@ -1,0 +1,37 @@
+{
+  "type": "Bulwark",
+  "state": {
+    "angle": 0,
+    "scale": 0.85,
+    "radius": 45,
+    "hitPoints": 60,
+    "damage": 54,
+    "shield": 2.4000000000000004,
+    "shieldRatio": 0.4,
+    "shieldFlash": 0,
+    "shieldHitPoints": 0,
+    "hitFlash": 0,
+    "slowTicks": 0,
+    "slowFactor": 1,
+    "burnTicks": 0,
+    "burnPower": 0,
+    "vulnerableTicks": 0,
+    "armor": 0.45,
+    "regeneration": 0,
+    "shieldRechargeTicks": 0
+  },
+  "size": 384,
+  "zoom": 3,
+  "difficulty": 1,
+  "background": "#030708",
+  "bars": true,
+  "glow": true,
+  "maxShield": 24,
+  "nativeScale": 0.5,
+  "glowSettings": {
+    "threshold": 0,
+    "bloom": 1,
+    "blurLevel": 2,
+    "exposure": 0.7
+  }
+}

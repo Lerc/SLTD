@@ -4,7 +4,7 @@
 var uiOverlay = '';
 var uiMapChoice = 'foundry';
 var uiMapScroll = 0;
-const uiMapList = {x:60, y:350, w:960, h:1180, stride:330};
+const uiMapList = {x:60, y:60, w:960, h:1470, stride:330};
 var uiGuidePage = 0;
 var uiSlide = 0;
 var uiPanelTower = null;
@@ -93,9 +93,11 @@ function uiScrollMaps(pos, delta) {
 // The same button records drive drawing and hit testing, including animation.
 function uiControls() {
   const modal = uiModal();
-  if (modal === 'welcome' || modal === 'gameOver') {
+  if (modal === 'gameOver') return [uiButton('welcome', 180, 1040, 720, 160, 'Fair enough.')];
+  if (modal === 'welcome') {
     return [uiButton('start', 180, 1040, 720, 160, 'Choose map', '', {disabled: assetsPending.length > 0}),
-      ...(modal === 'welcome' ? [uiButton('guide', 180, 1220, 720, 156, 'Field guide', '', {disabled: assetsPending.length > 0})] : [])];
+      uiButton('guide', 180, 1220, 720, 156, 'Tactical archive', '', {disabled: assetsPending.length > 0}),
+      uiButton('fullscreen', 180, 1400, 720, 156, 'Fullscreen')];
   }
   if (modal === 'maps') return [
     ...mapCatalog.map((map, i) => uiButton('map-' + map.id, uiMapList.x, uiMapList.y + i * uiMapList.stride - uiMapScroll, uiMapList.w, 320, map.name, '', {map, selected: uiMapChoice === map.id}))
@@ -106,7 +108,7 @@ function uiControls() {
   if (modal === 'pause') return [
     uiButton('resume', 180, 650, 720, 156, 'Resume'),
     uiButton('plan', 180, 824, 720, 156, 'Inspect defenses', 'Keep time paused'),
-    uiButton('guide', 180, 998, 720, 156, 'Field guide'),
+    uiButton('guide', 180, 998, 720, 156, 'Tactical archive'),
     uiButton('fullscreen', 180, 1172, 720, 156, 'Fullscreen'),
     uiButton('restart', 180, 1346, 720, 156, 'Restart'),
     uiButton('abandon', 180, 1520, 720, 156, 'Abandon game')
@@ -159,6 +161,7 @@ function uiActivate(button) {
   else if (id === 'deploy') startGame(uiMapChoice);
   else if (id === 'restart') startGame(selectedMapId);
   else if (id === 'abandon') abandonGame();
+  else if (id === 'welcome') { abandonGame(); uiOverlay = ''; }
   else if (id.startsWith('map-')) uiMapChoice = id.slice(4);
   else if (id === 'pause') {
     if (paused) { paused = false; uiOverlay = ''; }
@@ -452,8 +455,6 @@ function drawUI(now = performance.now()) {
   if (modal) {
     c.fillStyle = '#071114ed'; c.fillRect(0, -uiScoreHeader, g.width, g.height + uiScoreHeader);
     if (modal === 'maps') {
-      uiText(c, 'Choose your ground', 90, 180, 70, uiColors.mint);
-      uiText(c, mapCatalog.length + ' routes · Drag to browse', 90, 270, 38, uiColors.muted);
       const limit = uiMapScrollLimit();
       if (limit > 0) {
         const thumb = uiMapList.h * uiMapList.h / (uiMapList.h + limit);
@@ -467,9 +468,17 @@ function drawUI(now = performance.now()) {
       uiText(c, 'Paused', 180, 420, 84, uiColors.mint);
       uiWrap(c, 'Wave ' + waveCounter + ' · ' + wavePlan(waveCounter).hint, 180, 525, 720, 36, 48);
     } else {
-      uiText(c, modal === 'welcome' ? 'SLTD' : 'Defense breached', 180, 510, modal === 'welcome' ? 110 : 67, uiColors.mint);
-      uiWrap(c, modal === 'welcome' ? 'Five foundations. Branches and levels.' : 'Reached wave ' + waveCounter + ' · Score ' + score.toLocaleString() + '.', 180, 660, 720, 43, 62);
-      uiWrap(c, modal === 'welcome' ? 'Choose a map, or explore the field guide before you deploy.' : 'Choose a map, then build your defense. Pause for the field guide.', 180, 810, 720, 37, 56);
+      let title= ['SLTD',180,510,110,uiColors.mint];
+      let subtitle = ['Just a Simple Little Tower Defense', 180, 660, 720, 43, 62];
+      let message = ['You probably know how this works, Try the tactical archive if you want to know about the towers and creeps',180,810,720,37,56];
+      if (modal !== 'welcome') {
+        title = ['Defense breached', 180, 510, 67, uiColors.mint];
+        subtitle = ['Reached wave ' + waveCounter + ' · Score ' + score.toLocaleString() + '.', 180, 660, 720, 43, 62];
+        message = ["You haven't played for too long yet, so you can totally have another go ", 180, 810, 720, 37, 56];
+      }
+      uiText(c,...title);
+      uiWrap(c,...subtitle);
+      uiWrap(c,...message);
     }
     for (const button of uiControls()) uiDrawButton(c, button);
   }

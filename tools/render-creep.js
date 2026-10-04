@@ -22,7 +22,8 @@ window.onload = async function() {
     const initialShieldFraction = creep.maxShield > 0 ? creep.shield / creep.maxShield : 0;
     const fields = ['angle', 'scale', 'radius', 'hitPoints', 'damage', 'shield', 'shieldRatio',
       'shieldFlash', 'shieldHitPoints', 'hitFlash', 'slowTicks', 'slowFactor', 'burnTicks',
-      'burnPower', 'vulnerableTicks', 'armor', 'regeneration', 'brood', 'slowResistance'];
+      'burnPower', 'vulnerableTicks', 'armor', 'regeneration', 'brood', 'slowResistance',
+      'shieldRechargeTicks', 'boostCharge', 'boostTicks'];
     for (const [key, value] of Object.entries(request.state)) {
       if (!fields.includes(key)) throw new Error('Unknown visual state field: ' + key);
       const boolean = key === 'brood' || key === 'slowResistance';
@@ -31,7 +32,7 @@ window.onload = async function() {
       }
       if (!boolean && key !== 'angle' && value < 0) throw new Error(key + ' cannot be negative');
       if (['scale', 'radius', 'hitPoints'].includes(key) && value === 0) throw new Error(key + ' must be positive');
-      if (['shieldFlash', 'slowFactor', 'armor'].includes(key) && value > 1) throw new Error(key + ' must be between 0 and 1');
+      if (['shieldFlash', 'slowFactor', 'armor', 'boostCharge'].includes(key) && value > 1) throw new Error(key + ' must be between 0 and 1');
       creep[key] = value;
     }
     // Changing capacity without explicitly setting charge keeps its initial fraction.
@@ -45,7 +46,9 @@ window.onload = async function() {
     // bloom so changing output zoom cannot change the apparent glow strength.
     const crop = request.size / request.zoom;
     if (crop > Math.min(OutputWidth, OutputHeight)) throw new Error('Crop exceeds game framebuffer; increase --zoom or reduce --size');
-    const bodyRadius = Math.max(creep.image.width / 2, creep.image.height / 2, creep.radius + 21, 62);
+    const indicatorRadius = request.bars && (creep.damage > 0 || creep.maxShield > 0 || creep instanceof Flyer)
+      ? -creep.healthBarY + 10 : 0;
+    const bodyRadius = Math.max(creep.image.width / 2, creep.image.height / 2, creep.radius + 42, indicatorRadius, 62);
     const extent = bodyRadius * creep.scale * globalScaleFactor;
     if (extent + 10 > crop / 2) throw new Error('Creep would be clipped; increase --size or reduce --zoom');
     creep.x = OutputWidth / 2 / globalScaleFactor;

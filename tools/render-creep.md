@@ -15,6 +15,9 @@ python3 tools/render-creep.py Capacitor \
 python3 tools/render-creep.py Bulwark \
   --state '{"shield":0,"damage":25,"angle":0.785398}' \
   -o /tmp/bulwark-exposed.png
+python3 tools/render-creep.py Flyer \
+  --state '{"damage":5,"boostCharge":0.5,"boostTicks":60}' \
+  -o /tmp/flyer-boosting.png --metadata /tmp/flyer-boosting.json
 ```
 
 `--state @path/to/state.json` accepts a JSON file containing the same property
@@ -29,6 +32,9 @@ A positive tick count means that status is active.
 | `shieldFlash` | Shield-hit brightness, 0–1; 1 is a fresh impact |
 | `shieldHitPoints` | Shield points immediately before impact, for the fading lost-points trace |
 | `shieldRatio`, `hitPoints` | Capacity is `shieldRatio × hitPoints` |
+| `shieldRechargeTicks` | Remaining wait before recharge; 0 shows Capacitor charging arcs when its shield is not full |
+| `boostCharge` | Flyer energy bank, 0–1 |
+| `boostTicks` | Remaining Flyer burst ticks; positive values show boost exhaust |
 | `damage` | Health damage already taken |
 | `slowTicks`, `slowFactor` | Chill duration and movement multiplier |
 | `burnTicks`, `burnPower` | Burning duration and damage per tick |
@@ -44,7 +50,9 @@ wrong image. When changing health/capacity without specifying `shield`, shielded
 types start full; Capacitors retain their uncharged default. `shieldHitPoints`
 defaults to current charge when a flash is requested without a previous value.
 
-Images default to **320×320**, at **3× native game pixels**, on a dark background.
+Images default to **384×384**, at **3× native game pixels**, on a dark background.
+This frame accommodates the enlarged Mender and Capacitor with bars above their
+bodies and effects. The clipping check includes visible indicator bounds.
 The script loads the real entry point and sprites, initializes the actual game
 renderer, draws exactly one creep and its indicators, then applies the live glow
 settings. It crops and enlarges **after** glow, so zoom does not exaggerate bloom.
@@ -56,7 +64,7 @@ Useful options:
   crops fail with a message to increase size or reduce zoom.
 - `--zoom 1`: native game pixel size, with no enlargement.
 - `--difficulty 3`: scale health and shield capacity before applying state values.
-- `--no-bars`: hide health/shield points indicators.
+- `--no-bars`: hide health/shield/energy indicators. Health bars normally appear only after damage; set positive `damage` to evaluate them.
 - `--no-glow`: inspect the raw drawing before bloom and tone mapping.
 - `--background '#000000'`: change the background color **before** glow. The
   game's glow renderer produces an opaque image; transparent export is not used.

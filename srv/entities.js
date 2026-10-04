@@ -110,6 +110,8 @@ class Creep extends Entity {
   // Capacity follows restored/scaled health, including queued overlapping waves.
   get maxShield() { return this.hitPoints * this.shieldRatio; }
 
+  get movementSpeed() { return this.speed; }
+
   canReceiveDebuff() { return !this.dead && this.shield <= 0; }
 
   distanceTraveled() {
@@ -158,7 +160,7 @@ class Creep extends Entity {
     this.travel = 1 - (vlength(delta)/1000);
 
     let turn = this.turn + (this.timeout/2000) // get tighter turning over time.
-    this.motion= vnormalize(vadd(vnormalize(delta,turn),this.motion),this.speed * speedFactor);
+    this.motion= vnormalize(vadd(vnormalize(delta,turn),this.motion),this.movementSpeed * speedFactor);
 
     this.x+=this.motion.x;
     this.y+=this.motion.y;
@@ -270,36 +272,43 @@ class Creep extends Entity {
     c.restore();
   }
 
+  get healthBarY() {
+    const body = Math.max(this.image?.width || 0, this.image?.height || 0) / 2;
+    const shield = this.maxShield > 0 ? Math.max(58, this.radius + 21) + 24 : 0;
+    return -Math.max(this.radius, body, shield) - 10;
+  }
+
   drawHealthBar () {
     if (this.damage > 0 || this.maxShield > 0) {
       ctx.save();
       ctx.translate(this.x,this.y);
       ctx.scale(this.scale,this.scale);
 
-      let r=this.radius;
+      const r = Math.max(this.radius, 32);
+      const y = this.healthBarY;
       if (this.damage > 0) {
         ctx.fillStyle="#080";
-        ctx.fillRect(-r,-r,2*r,4);
+        ctx.fillRect(-r,y,2*r,5);
         let p = Math.min(1, this.damage/this.hitPoints);
         ctx.fillStyle="#800";
-        ctx.fillRect(r,-r,-2*r*p,4);
+        ctx.fillRect(r,y,-2*r*p,5);
       }
       if (this.maxShield > 0) {
         const flash = this.shieldFlash * this.shieldFlash;
         const remaining = Math.min(1, this.shield / this.maxShield);
-        ctx.fillStyle = '#08101a'; ctx.fillRect(-r, -r - 9, 2 * r, 3);
+        ctx.fillStyle = '#0c1822'; ctx.fillRect(-r, y - 10, 2 * r, 4);
         if (flash > 0) {
           // Keep a fading trace of the points just lost, even on a shield break.
           const previous = Math.min(1, this.shieldHitPoints / this.maxShield);
           ctx.globalAlpha = flash;
           ctx.fillStyle = '#507888';
-          ctx.fillRect(-r + 2 * r * remaining, -r - 9, 2 * r * Math.max(0, previous - remaining), 3 + flash * 2);
+          ctx.fillRect(-r + 2 * r * remaining, y - 10, 2 * r * Math.max(0, previous - remaining), 4 + flash * 2);
           ctx.strokeStyle = '#285878'; ctx.lineWidth = 2;
-          ctx.strokeRect(-r - 1, -r - 10, 2 * r + 2, 7);
+          ctx.strokeRect(-r - 1, y - 11, 2 * r + 2, 10);
           ctx.globalAlpha = 1;
         }
-        ctx.fillStyle = `rgb(${16 + flash * 116},${40 + flash * 128},${56 + flash * 134})`;
-        ctx.fillRect(-r, -r - 9, 2 * r * remaining, 3 + flash * 4);
+        ctx.fillStyle = `rgb(${32 + flash * 100},${80 + flash * 88},${112 + flash * 78})`;
+        ctx.fillRect(-r, y - 10, 2 * r * remaining, 4 + flash * 4);
       }
 
 
@@ -334,6 +343,8 @@ class Zipper extends Creep {
 class Flyer extends Creep {
   static value=2;
   static hitPoints=15;
+  static boostRechargeDuration = 900;
+  static boostDuration = 120;
   constructor (options) {
     super(options);
     this.speed = 2.5;
@@ -341,6 +352,64 @@ class Flyer extends Creep {
     this.scale = 0.5;
     this.radius = 60;
     this.image = Assets.Creep4;
+    this.boostCharge = 0;
+    this.boostTicks = 0;
+  }
+
+  get movementSpeed() {
+    return this.speed * (1 + (this.boostTicks > 0 ? 2 * this.boostCharge : 0));
+  }
+
+  takeDamage(amount, kind = 'physical', source = null) {
+    const dealt = super.takeDamage(amount, kind, source);
+    if (dealt > 0 && !this.dead && this.boostTicks === 0 && this.boostCharge > 0) {
+      this.boostTicks = Flyer.boostDuration;
+    }
+    return dealt;
+  }
+
+  move() {
+    if (this.dead) return;
+    // Burn damage in super.move() can trigger a boost for this same movement.
+    super.move();
+    if (this.dead) return;
+    if (this.boostTicks > 0) {
+      // Spend the charge present at impact evenly over the remaining burst.
+      this.boostCharge -= this.boostCharge / this.boostTicks;
+      if (--this.boostTicks === 0) this.boostCharge = 0;
+    } else {
+      this.boostCharge = Math.min(1, this.boostCharge + 1 / Flyer.boostRechargeDuration);
+      if (this.boostCharge > 1 - 1e-12) this.boostCharge = 1;
+    }
+  }
+
+  draw() {
+    super.draw();
+    if (this.boostTicks <= 0) return;
+    ctx.save();
+    ctx.strokeStyle = '#805030';
+    ctx.lineWidth = 4;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(side * 22, 30);
+      ctx.lineTo(side * 28, 40 + 45 * this.boostCharge);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  drawHealthBar() {
+    super.drawHealthBar();
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.scale(this.scale, this.scale);
+    const r = Math.max(this.radius, 32);
+    const y = this.healthBarY - 10;
+    ctx.fillStyle = '#181008';
+    ctx.fillRect(-r, y, r * 2, 4);
+    ctx.fillStyle = this.boostTicks > 0 ? '#a06830' : '#806030';
+    ctx.fillRect(-r, y, r * 2 * this.boostCharge, 4);
+    ctx.restore();
   }
 }
 
@@ -401,7 +470,7 @@ class Mender extends Creep {
   static value = 14;
   constructor(options) {
     super(options); this.speed = 1.5; this.regeneration = 0.0008;
-    this.image = Assets.Mender; this.scale = 0.55;
+    this.image = Assets.Mender; this.scale = 1.1;
   }
 }
 class Shieldbug extends Creep {
@@ -438,9 +507,44 @@ class Capacitor extends Creep {
   constructor(options) {
     super(options); this.speed = 1.65; this.turn = 0.1;
     this.shieldRatio = 1.2;
-    this.shieldRechargeDelay = 90; this.shieldRechargeRate = 0.003;
+    this.shieldRechargeDelay = 600; this.shieldRechargeRate = 0.03;
     this.shieldRechargeTicks = this.shieldRechargeDelay;
-    this.image = Assets.Capacitor; this.scale = 0.65; this.radius = 40;
+    this.image = Assets.Capacitor; this.scale = 0.975; this.radius = 40;
+  }
+
+  drawShield(c) {
+    super.drawShield(c);
+    if (this.dead || this.shieldRechargeTicks > 0 || this.shield >= this.maxShield) return;
+    // Derive animation from shield growth so it pauses and survives saves.
+    const ticks = this.shield / this.maxShield / this.shieldRechargeRate;
+    const phase = ticks * TWOPI / 60;
+    const pulse = (1 + Math.sin(ticks * TWOPI / 20)) / 2;
+    const r = Math.max(58, this.radius + 21) + 6;
+    c.save();
+    c.rotate(-this.angle);
+    c.globalCompositeOperation = 'lighter';
+    c.globalAlpha = 0.65 + pulse * 0.35;
+    c.fillStyle = '#e8d8ff';
+    c.lineWidth = 3;
+    c.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      c.save();
+      c.rotate(phase + i * TWOPI / 3);
+      const tail = -1.15;
+      const trail = c.createLinearGradient(r * Math.cos(tail), r * Math.sin(tail), r, 0);
+      trail.addColorStop(0, 'rgba(176,144,208,0)');
+      trail.addColorStop(0.55, 'rgba(176,144,208,0.35)');
+      trail.addColorStop(1, 'rgba(176,144,208,0.9)');
+      c.strokeStyle = trail;
+      c.beginPath();
+      c.arc(0, 0, r, tail, 0);
+      c.stroke();
+      c.beginPath();
+      c.arc(r, 0, 3 + pulse, 0, TWOPI);
+      c.fill();
+      c.restore();
+    }
+    c.restore();
   }
 }
 class Splitter extends Creep {
@@ -944,8 +1048,14 @@ class Rock extends Pea {
     return this.launchTicks > 0 ? 0 : 0.12;
   }
 
+  get directionOscillation() {
+    // Two cycles per game-second (60 ticks), with a twenty-degree amplitude.
+    return Math.sin(this.age * TWOPI / 30) * Math.PI / 9;
+  }
+
   move() {
     if (this.dead || this.moveDissipation()) return;
+    const previousOscillation = this.directionOscillation;
     if (this.age++ > 400) { this.dissipate(); return; }
     if (!this.target || this.target.dead) {
       this.target = null;
@@ -956,12 +1066,16 @@ class Rock extends Pea {
     if (this.target) this.orphanTicks = 0;
     else if (++this.orphanTicks >= 45) { this.dissipate(); return; }
 
+    // Steer the underlying heading, so last tick's wobble cannot accumulate
+    // into the homing turn. Age and motion already preserve this across saves.
+    if (previousOscillation) this.motion = vFromAngle(vangle(this.motion) - previousOscillation, this.speed);
     if (this.target && this.homingStrength > 0) {
       const desired = vangle(vdiff(this.target.position, this.position));
       const heading = vangle(this.motion);
       const error = Math.atan2(Math.sin(desired - heading), Math.cos(desired - heading));
       this.motion = vFromAngle(heading + error * this.homingStrength, this.speed);
     }
+    if (this.directionOscillation) this.motion = vFromAngle(vangle(this.motion) + this.directionOscillation, this.speed);
     if (this.launchTicks > 0) this.launchTicks--;
     this.position = vadd(this.position, this.motion);
     if (!this.launchTicks && this.target && this.distanceTo(this.target) <= this.target.radius) this.hit();
@@ -986,6 +1100,8 @@ class OrbitalFragment extends Rock {
     // Smoothly pick up directional steering as the radial launch finishes.
     return Math.min(0.12, 0.12 * progress * progress * (3 - 2 * progress));
   }
+
+  get directionOscillation() { return 0; }
 
   draw() {
     ctx.fillStyle = '#301838';

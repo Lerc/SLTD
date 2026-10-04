@@ -1,8 +1,9 @@
+const pageFor = Type => guideEntries().findIndex(entry=>entry.info?.type===Type);
 // Real page changes plus deterministic pixel checks for the diagonal reveal.
 const check=(value,message)=>{if(!value)throw Error(message);};
 const originalRandom=Math.random;
 try {
-  startGame('foundry');paused=true;guideOpen();uiGuidePage=13;uiLastFrame=1000;uiSlide=0;uiDrawSignature='';
+  startGame('foundry');paused=true;guideOpen();uiGuidePage=pageFor(Tower);uiLastFrame=1000;uiSlide=0;uiDrawSignature='';
   drawUI(1000);drawUI(2500);
   Math.random=()=>.5;
   guideActivate('guide-next',2501);drawUI(2501);
@@ -80,5 +81,5 @@ try {
   paint(1000+guideWipeDuration,true);check(pixel(24,168)==='0,0,255','No old content or glow remains at 150 ms');
   wslog({result:'PASS',direction:'top-right to bottom-left',duration:guideWipeDuration,maxDelay:guideWipeMaxDelay,deadline:500,evenlySpaced:true,shuffled:true,fillBeforeClear:true,softExit:true,leadDuration:guideWipeLeadDuration,whiteEdgePixels:1,rapidPaging:true});
 } finally {
-  Math.random=originalRandom;guideOpen();uiGuidePage=13;uiDrawSignature='';uiLastFrame=performance.now();
+  Math.random=originalRandom;guideOpen();uiGuidePage=pageFor(Tower);uiDrawSignature='';uiLastFrame=performance.now();
 }

@@ -1,0 +1,39 @@
+{
+  "type": "Flyer",
+  "state": {
+    "angle": 0,
+    "scale": 0.5,
+    "radius": 60,
+    "hitPoints": 15,
+    "damage": 5.25,
+    "shield": 0,
+    "shieldRatio": 0,
+    "shieldFlash": 0,
+    "shieldHitPoints": 0,
+    "hitFlash": 0,
+    "slowTicks": 0,
+    "slowFactor": 1,
+    "burnTicks": 0,
+    "burnPower": 0,
+    "vulnerableTicks": 0,
+    "armor": 0,
+    "regeneration": 0,
+    "shieldRechargeTicks": 0,
+    "boostCharge": 0.5,
+    "boostTicks": 0
+  },
+  "size": 384,
+  "zoom": 3,
+  "difficulty": 1,
+  "background": "#030708",
+  "bars": true,
+  "glow": true,
+  "maxShield": 0,
+  "nativeScale": 0.5,
+  "glowSettings": {
+    "threshold": 0,
+    "bloom": 1,
+    "blurLevel": 2,
+    "exposure": 0.7
+  }
+}

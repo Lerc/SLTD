@@ -10,10 +10,10 @@ const guideCreeps = [
   {type: Mender, name: 'Mender', role: 'Regenerating infantry', strength: 'Recovers 4.8% of maximum health per second while it is not burning.', weakness: 'Burning stops regeneration. Incinerator and Inferno keep it from recovering between your defenses.'},
   {type: Splitter, name: 'Splitter', role: 'Brood carrier', strength: 'Releases two fast Runners when defeated. A kill near the exit can still cost lives.', weakness: 'No armor or shields. Splash, Nova pulses and Tesla chains clean up the released runners.'},
   {type: Skimmer, name: 'Skimmer', role: 'Shielded sprinter', strength: 'Fast, with a shield worth 75% of base health. Recharges after 2 seconds and blocks new slows while shielded.', weakness: 'Fragile beneath the bubble. Break the shield with energy, then slow it; piercing reaches health directly.'},
-  {type: Capacitor, name: 'Capacitor', role: 'Charging shield unit', strength: 'After 1.5 seconds without damage, charges a shield up to 120% of base health. Charged shields block new debuffs.', weakness: 'Enters with no shield. Early hits and sustained burns prevent charging. Energy or piercing handles a charged unit.'},
+  {type: Capacitor, name: 'Capacitor', role: 'Charging shield unit', strength: 'After 10 seconds without damage, charges a shield up to 120% of base health. Charged shields block new debuffs.', weakness: 'Enters with no shield. Early hits and sustained burns prevent charging. Energy or piercing handles a charged unit.'},
   {type: Spikey, name: 'Spikey', role: 'Durable infantry', strength: 'Five times a Scout’s base health. Can soak up weak shots while other creeps advance.', weakness: 'Slow and unarmored. Heavy hits and focused fire work well; slows increase time under fire.'},
   {type: Bulwark, name: 'Bulwark', role: 'Armored shield escort', strength: 'Combines 45% physical armor with a shield worth 40% of base health. Recharges after 4 seconds.', weakness: 'Very slow. Energy bypasses armor and strips shields; Ranger and Railgun bypass both defenses.'},
-  {type: Flyer, name: 'Flyer', role: 'Light mobile infantry', strength: 'Faster and tougher than a Scout. Can exploit short gaps in your coverage.', weakness: 'Follows the route and can be hit by every tower. No armor or shield; rapid fire and slows are effective.'}
+  {type: Flyer, name: 'Flyer', role: 'Light mobile infantry', strength: 'Charges an energy bank over 15 seconds. Damage spends it in a 2-second speed burst: up to 3 times normal speed, fading as the bank drains.', weakness: 'Enters with an empty bank. Slows reduce boosted speed too. It has the soul of a spathi, so it is quite good at running away.'},
 ];
 const guideInk = {cyan:'#73ecff', blue:'#74acff', pink:'#ff8fab', amber:'#ffcf79', green:'#99edb4', violet:'#c5a0ff', dim:'#8aaeb9', line:'#244956', frame:'#397384', selected:'#123c4d'};
 const guideStats = [
@@ -61,8 +61,8 @@ function guideSpecimen(info) {
 }
 
 function guideEntries() {
-  return [{kind:'controls', name:'Operations'}, ...guideCreeps.map(info=>({kind:'creep', info, name:info.name})),
-    ...towerInfo.map(info=>({kind:'tower', info, name:info.name}))];
+  return [...towerInfo.map(info=>({kind:'tower', info, name:info.name})),
+    ...guideCreeps.map(info=>({kind:'creep', info, name:info.name})), {kind:'controls', name:'Operations'}];
 }
 function guideOpen() {
   uiGuidePage = 0;
@@ -113,9 +113,9 @@ function guideGeometry(entry) {
   const panels=[guidePolygon('archive',[[48,172],[80,140],[760,140],[794,170],[1006,170],[1032,196],[1032,210],[48,210]]),
     guidePolygon('counter',[[48,210],[288,210],[198,306],[80,306],[48,274]])];
   const buttons=[
-    guideButtonShape(guidePolygon('guide-tab-controls',[[288,210],[570,210],[426,366],[144,366]]),'Operations','',{selected:entry.kind==='controls',textX:354}),
+    guideButtonShape(guidePolygon('guide-tab-tower',[[288,210],[570,210],[426,366],[144,366]]),'Towers','',{selected:entry.kind==='tower',textX:354}),
     guideButtonShape(guidePolygon('guide-tab-creep',[[570,210],[852,210],[708,366],[426,366]]),'Creeps','',{selected:entry.kind==='creep',textX:636}),
-    guideButtonShape(guidePolygon('guide-tab-tower',[[852,210],[1032,210],[1032,332],[998,366],[708,366]]),'Towers','',{selected:entry.kind==='tower',textX:890}),
+    guideButtonShape(guidePolygon('guide-tab-controls',[[852,210],[1032,210],[1032,332],[998,366],[708,366]]),'Operations','',{selected:entry.kind==='controls',textX:890}),
     guideButtonShape(guidePolygon('guide-prev',[[206,1608],[390,1608],[258,1764],[74,1764]]),'‹'),
     guideButtonShape(guidePolygon('guide-close',[[412,1608],[668,1608],[800,1764],[280,1764]]),'Back','',{textX:540}),
     guideButtonShape(guidePolygon('guide-next',[[690,1608],[874,1608],[1006,1764],[822,1764]]),'›')
@@ -543,7 +543,7 @@ function uiDrawGuide(c, now=performance.now()) {
   c.restore();
   for(const panel of panels) guideDrawShape(c,panel);
   uiText(c,'TACTICAL ARCHIVE',82,179,27,guideInk.dim);
-  uiText(c,gameMode===mainGame ? '● SIM PAUSED' : '● FIELD GUIDE',990,143,26,guideInk.green,'right');
+  uiText(c,gameMode===mainGame ? '● SIM PAUSED' : '● ARCHIVE',990,143,26,guideInk.green,'right');
   const group=entries.filter(e=>e.kind===entry.kind),index=group.findIndex(e=>e.name===entry.name)+1;
   uiText(c,String(index).padStart(2,'0')+' / '+String(group.length).padStart(2,'0'),84,266,28,guideInk.dim);
   uiText(c,entry.name,74,418,49,uiColors.text);

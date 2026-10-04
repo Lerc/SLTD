@@ -213,6 +213,7 @@ function saveState() {
       value: c.value,
       slowTicks: c.slowTicks, slowFactor: c.slowFactor, burnTicks: c.burnTicks, burnPower: c.burnPower,
       shield: c.shield, shieldRechargeTicks: c.shieldRechargeTicks, vulnerableTicks: c.vulnerableTicks,
+      boostCharge: c.boostCharge, boostTicks: c.boostTicks,
       burnSourceIndex: globalThis.towers.indexOf(c.burnSource)
     })),
 
@@ -260,7 +261,7 @@ function saveState() {
     // Hopper (pending creeps to spawn)
     hopper: globalThis.hopper.map(c => ({
       type: c.constructor.name, waveNumber: c.waveNumber, hitPoints: c.hitPoints, shield: c.shield,
-      shieldRechargeTicks: c.shieldRechargeTicks
+      shieldRechargeTicks: c.shieldRechargeTicks, boostCharge: c.boostCharge, boostTicks: c.boostTicks
     })),
 
     // Backlog
@@ -326,7 +327,7 @@ function loadState(stateData) {
 
     const creep = new CreepClass();
     creep.waveNumber = creepData.waveNumber ?? globalThis.waveCounter;
-    for (const key of ['slowTicks', 'slowFactor', 'burnTicks', 'burnPower', 'shield', 'shieldRechargeTicks', 'vulnerableTicks']) {
+    for (const key of ['slowTicks', 'slowFactor', 'burnTicks', 'burnPower', 'shield', 'shieldRechargeTicks', 'vulnerableTicks', 'boostCharge', 'boostTicks']) {
       if (creepData[key] !== undefined) creep[key] = creepData[key];
     }
     creep.x = creepData.x;
@@ -431,6 +432,9 @@ function loadState(stateData) {
       if (hopperData.hitPoints !== undefined) creep.hitPoints = hopperData.hitPoints;
       if (hopperData.shield !== undefined) creep.shield = hopperData.shield;
       if (hopperData.shieldRechargeTicks !== undefined) creep.shieldRechargeTicks = hopperData.shieldRechargeTicks;
+      for (const key of ['boostCharge', 'boostTicks']) {
+        if (hopperData[key] !== undefined) creep[key] = hopperData[key];
+      }
       globalThis.hopper.push(creep);
     }
   }
