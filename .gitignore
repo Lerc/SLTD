@@ -1,6 +1,11 @@
 # Test state files
 srv/*.json
 srv/*_state*.json
+/states/
+/test.json
+
+# Regenerable tower workflow output; game assets live in srv/images/towers
+/BaseMedia/towers/output/
 
 # Evaluation generated files
 evaluations/**/evaluation.log

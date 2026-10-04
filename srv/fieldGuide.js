@@ -2,17 +2,17 @@
 
 // Browser-only dossiers. Preview objects never enter the simulation collections.
 const guideCreeps = [
-  {type: Basic, name: 'Scout', role: 'Standard infantry', strength: 'Arrives in groups and tests gaps in your coverage.', weakness: 'Low health, no armor and no shield. Sentries along bends make short work of it.'},
-  {type: Zipper, name: 'Runner', role: 'Fast assault', strength: 'Twice the speed of a Scout. Can slip past slow-firing weapons.', weakness: 'Extremely fragile. Repeater and Pulse catch runners; Cryo gives other towers more time.'},
-  {type: Ball, name: 'Armor', role: 'Armored escort', strength: 'Armor absorbs 60% of physical damage, blunting Sentry and Cannon hits.', weakness: 'Slow moving. Energy, fire, explosives and piercing bypass its armor. Use Pulse or Ranger.'},
-  {type: Shieldbug, name: 'Shieldbug', role: 'Shielded infantry', strength: 'A shield adds 80% of base health and blocks new debuffs. Recharges after 3 seconds without damage.', weakness: 'Energy deals double damage to shields. Piercing bypasses them. Keep firing to interrupt recharge.'},
-  {type: BigBall, name: 'Guardian', role: 'Heavy command unit', strength: 'Huge health pool, 35% physical armor and half-strength slows. Costs 3 lives if it escapes.', weakness: 'Very slow. Focus strong targets with Prism or Railgun; burning and vulnerability help wear it down.'},
-  {type: Mender, name: 'Mender', role: 'Regenerating infantry', strength: 'Recovers 4.8% of maximum health per second while it is not burning.', weakness: 'Burning stops regeneration. Incinerator and Inferno keep it from recovering between your defenses.'},
-  {type: Splitter, name: 'Splitter', role: 'Brood carrier', strength: 'Releases two fast Runners when defeated. A kill near the exit can still cost lives.', weakness: 'No armor or shields. Splash, Nova pulses and Tesla chains clean up the released runners.'},
-  {type: Skimmer, name: 'Skimmer', role: 'Shielded sprinter', strength: 'Fast, with a shield worth 75% of base health. Recharges after 2 seconds and blocks new slows while shielded.', weakness: 'Fragile beneath the bubble. Break the shield with energy, then slow it; piercing reaches health directly.'},
-  {type: Capacitor, name: 'Capacitor', role: 'Charging shield unit', strength: 'After 10 seconds without damage, charges a shield up to 120% of base health. Charged shields block new debuffs.', weakness: 'Enters with no shield. Early hits and sustained burns prevent charging. Energy or piercing handles a charged unit.'},
+  {type: Basic, name: 'Scout', role: 'Bog standard unit', strength: 'No frills, just your average creep.', weakness: 'Low health, no armor and no shield. If these give you trouble, reassess your life choices.'},
+  {type: Zipper, name: 'Runner', role: 'Fast assault', strength: 'Small and speedy.', weakness: 'Extremely fragile. It might die if you look at it too hard.'},
+  {type: Ball, name: 'Armor', role: 'Armored escort', strength: 'Armored against physical damage.', weakness: 'Slow moving. Energy, fire, explosives and piercing bypass its armor.'},
+  {type: Shieldbug, name: 'Shieldbug', role: 'Shielded infantry', strength: 'Has an energy shield that absorbs damage and prevents debuffs. Recharges after 3 seconds without damage.', weakness: 'Energy deals double damage to shields. Piercing bypasses shields and reaches health directly.'},
+  {type: BigBall, name: 'Guardian', role: 'Heavy command unit', strength: 'Huge health pool, 35% physical armor and half-strength slows. Costs 3 lives if it escapes.', weakness: 'Very slow. Burning and vulnerability help wear it down.'},
+  {type: Mender, name: 'Mender', role: 'Regenerating infantry', strength: 'Slowly heals over time.', weakness: 'Healing stops while burning. Other damage does not stop its regeneration.'},
+  {type: Splitter, name: 'Splitter', role: 'Brood carrier', strength: 'Releases two fast Runners when defeated.', weakness: 'No armor or shields.'},
+  {type: Skimmer, name: 'Skimmer', role: 'Shielded sprinter', strength: 'Fast with an energy shield. Cannot be slowed while the shield is active.', weakness: 'Fragile beneath the bubble. Piercing can kill it without popping the shield.'},
+  {type: Capacitor, name: 'Capacitor', role: 'Charging shield unit', strength: 'After 10 seconds without damage, charges a hardy shield.', weakness: 'Enters unshielded. Keep hitting it to interrupt charging; piercing can kill it through an active shield.'},
   {type: Spikey, name: 'Spikey', role: 'Durable infantry', strength: 'Five times a Scout’s base health. Can soak up weak shots while other creeps advance.', weakness: 'Slow and unarmored. Heavy hits and focused fire work well; slows increase time under fire.'},
-  {type: Bulwark, name: 'Bulwark', role: 'Armored shield escort', strength: 'Combines 45% physical armor with a shield worth 40% of base health. Recharges after 4 seconds.', weakness: 'Very slow. Energy bypasses armor and strips shields; Ranger and Railgun bypass both defenses.'},
+  {type: Bulwark, name: 'Bulwark', role: 'Armored shield escort', strength: 'Energy shield and armor! Must be costing someone a pretty penny.', weakness: 'Very slow. Energy strips its shield; piercing bypasses both shield and armor.'},
   {type: Flyer, name: 'Flyer', role: 'Light mobile infantry', strength: 'Charges an energy bank over 15 seconds. Damage spends it in a 2-second speed burst: up to 3 times normal speed, fading as the bank drains.', weakness: 'Enters with an empty bank. Slows reduce boosted speed too. It has the soul of a spathi, so it is quite good at running away.'},
 ];
 const guideInk = {cyan:'#73ecff', blue:'#74acff', pink:'#ff8fab', amber:'#ffcf79', green:'#99edb4', violet:'#c5a0ff', dim:'#8aaeb9', line:'#244956', frame:'#397384', selected:'#123c4d'};
@@ -500,8 +500,9 @@ function guideDrawTower(c, entry) {
   if(!guideTurretAnimating(entry)) guidePortrait(c,entry,838,679,270);
   const kind=row.tower.damageKind || (['burn'].includes(row.tower.behavior) ? 'fire' : ['chain','slow','quake'].includes(row.tower.behavior) || info.type===Zappy ? 'energy' : info.type===Thumper || row.tower.behavior==='splash' ? 'explosive' : 'physical');
   uiText(c,kind.toUpperCase()+' DAMAGE',82,618,33,guideInk.amber);
-  const detail=info.type===Star ? 'Blind spot shrinks with levels. Branch to Railgun or Executioner for close targets.' : row.tower.behavior==='focus' ? 'Graph shows base hits. Sustained fire ramps damage up to 4×.' : row.tower.behavior==='execute' ? 'Graph shows base hits. Deals 2× damage below 35% health.' : row.tower.behavior==='chain' ? 'Each jump deals 78% of the previous hit. Graph shows the first hit.' : row.tower.behavior==='quake' ? 'Also inflicts +35% damage taken for 3 seconds on unshielded targets.' : info.upgrades ? 'Choose a branch above. Your level carries through the upgrade.' : 'Final branch. Keep leveling to improve this weapon’s strengths.';
-  uiWrap(c,detail,82,676,500,31,42);
+  const detailY=uiWrap(c,info.desc,82,676,500,31,42);
+  const detail=info.type===Star ? 'Slow projectiles; levels shrink its blind spot.' : row.tower.behavior==='focus' ? 'Graph shows base damage; sustained fire reaches 4×.' : row.tower.behavior==='execute' ? 'Double damage below 35% health.' : row.tower.behavior==='chain' ? 'Each jump deals 78% of the previous hit.' : row.tower.behavior==='quake' ? '+35% damage taken for 3 seconds on unshielded targets.' : '';
+  if(detail) uiWrap(c,detail,82,detailY+4,500,25,32);
   guideGraph(c,info);
 }
 function guideDrawCreep(c, entry) {
@@ -524,10 +525,10 @@ function guideDrawCreep(c, entry) {
 }
 function guideDrawOperations(c) {
   const sections=[
-    ['01 / DEPLOY','Tap a tower in the build strip, then tap a tile twice to build. Or drag a tower onto a tile. Invalid tiles cancel placement.'],
-    ['02 / DEVELOP','Tap a placed tower to choose branches, buy levels or change targeting. Levels carry through branches. Sell twice to confirm a 70% refund.'],
+    ['01 / DEPLOY','Tap a tower in the build strip, then tap a tile twice to build. Or drag a tower onto a tile.'],
+    ['02 / DEVELOP','Level up towers or upgrade them to a new type. Levels carry through upgrades. Sell twice to confirm a 70% refund.'],
     ['03 / TARGET','First aims closest to the exit. Strong picks the most health. Near picks the nearest enemy. Mix weapons to cover each other’s weaknesses.'],
-    ['04 / CONTROL','Send unlocks 3 seconds after launch; its bonus matches the seconds left. Clear without leaks for the full reward. Inspect and build while paused.']
+    ['04 / CONTROL','Send waves early for bonus money. Clear all active and queued creeps to collect the wave bonus. Any escape wipes the accumulated bonus.'],
   ];
   sections.forEach(([label,text],i)=>{ const y=548+i*256;uiText(c,label,82,y+36,29,guideInk.cyan);uiWrap(c,text,82,y+96,884,35,45); });
 }
@@ -547,8 +548,15 @@ function uiDrawGuide(c, now=performance.now()) {
   const group=entries.filter(e=>e.kind===entry.kind),index=group.findIndex(e=>e.name===entry.name)+1;
   uiText(c,String(index).padStart(2,'0')+' / '+String(group.length).padStart(2,'0'),84,266,28,guideInk.dim);
   uiText(c,entry.name,74,418,49,uiColors.text);
-  uiWrap(c,entry.kind==='controls' ? 'Build. Adapt. Hold the line.' : entry.kind==='creep' ? entry.info.role : entry.info.desc,
-    74,476,entry.kind==='tower' ? (entry.info.upgrades ? 510 : 644) : 884,30,37);
+  if(entry.kind==='tower') {
+    if(entry.info.upgrades) {
+      const text='Can be converted into a more powerful tower';
+      c.font='500 30px system-ui, sans-serif';
+      const size=Math.min(30,Math.floor(30*510/c.measureText(text).width));
+      uiText(c,text,74,476,size,uiColors.muted);
+    }
+  } else uiWrap(c,entry.kind==='controls' ? 'Build. Adapt. Hold the line.' : entry.info.role,
+    74,476,884,30,37);
   if(entry.kind==='tower') guideDrawTower(c,entry);
   else if(entry.kind==='creep') guideDrawCreep(c,entry);
   else guideDrawOperations(c);
