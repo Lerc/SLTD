@@ -500,9 +500,7 @@ function guideDrawTower(c, entry) {
   if(!guideTurretAnimating(entry)) guidePortrait(c,entry,838,679,270);
   const kind=row.tower.damageKind || (['burn'].includes(row.tower.behavior) ? 'fire' : ['chain','slow','quake'].includes(row.tower.behavior) || info.type===Zappy ? 'energy' : info.type===Thumper || row.tower.behavior==='splash' ? 'explosive' : 'physical');
   uiText(c,kind.toUpperCase()+' DAMAGE',82,618,33,guideInk.amber);
-  const detailY=uiWrap(c,info.desc,82,676,500,31,42);
-  const detail=info.type===Star ? 'Slow projectiles; levels shrink its blind spot.' : row.tower.behavior==='focus' ? 'Graph shows base damage; sustained fire reaches 4×.' : row.tower.behavior==='execute' ? 'Double damage below 35% health.' : row.tower.behavior==='chain' ? 'Each jump deals 78% of the previous hit.' : row.tower.behavior==='quake' ? '+35% damage taken for 3 seconds on unshielded targets.' : '';
-  if(detail) uiWrap(c,detail,82,detailY+4,500,25,32);
+  uiWrap(c,info.desc,82,676,500,36,44);
   guideGraph(c,info);
 }
 function guideDrawCreep(c, entry) {
@@ -521,7 +519,6 @@ function guideDrawCreep(c, entry) {
   uiWrap(c,info.strength,82,1094,884,35,48);
   uiText(c,'WEAKNESSES / COUNTERS',82,1304,29,guideInk.green);
   uiWrap(c,info.weakness,82,1366,884,35,48);
-  uiText(c,'Health and shields scale with the wave.',82,1592,27,guideInk.dim);
 }
 function guideDrawOperations(c) {
   const sections=[

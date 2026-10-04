@@ -94,23 +94,23 @@ class Cryo extends Specialist {}
 class Quake extends Specialist {}
 
 var towerInfo = [
-  {type: Tower, name: 'Sentry', cost: 100, buildable: true, icon: 0, desc: 'Reliable single-target fire', upgrades: ['Ranger', 'Repeater']},
-  {type: Stubby, name: 'Cannon', cost: 180, buildable: true, icon: 1, desc: 'Heavy hits at close range', upgrades: ['Mortar', 'Star']},
-  {type: Zappy, name: 'Pulse', cost: 220, buildable: true, icon: 2, desc: 'Rapid energy fire • breaks armor', upgrades: ['Tesla', 'Prism']},
-  {type: Incinerator, name: 'Incinerator', cost: 190, buildable: true, icon: 5, tint: '#401008', desc: 'Travelling flames • stops regeneration', upgrades: ['Inferno', 'Firestorm'], combat: {range: 230, rate: 30, power: 7, behavior: 'burn', splash: 95}},
-  {type: Thumper, name: 'Nova', cost: 260, buildable: true, icon: 4, desc: 'Area pulse • handles swarms', upgrades: ['Cryo', 'Quake']},
-  {type: Ranger, name: 'Ranger', cost: 420, icon: 0, tint: '#184060', desc: 'Long-range armor-piercing shots', combat: {range: 420, rate: 30, power: 15, damageKind: 'piercing'}},
-  {type: Repeater, name: 'Repeater', cost: 480, icon: 0, tint: '#403008', desc: 'Rapid fire • shreds runners', combat: {range: 270, rate: 65, power: 10}},
-  {type: Mortar, name: 'Mortar', cost: 630, icon: 1, tint: '#402008', desc: 'Explosive shells • 120 splash radius', combat: {range: 330, rate: 16, power: 28, behavior: 'splash', splash: 120}},
-  {type: Star, name: 'Orbital', cost: 900, icon: 3, tint: '#381840', desc: 'Long-range spirals • cannot fire up close', upgrades: ['Railgun', 'Executioner']},
-  {type: Inferno, name: 'Inferno', cost: 570, icon: 5, tint: '#502008', desc: 'Intense lingering burns • short range', combat: {range: 245, rate: 35, power: 12, behavior: 'burn', splash: 100, burnPower:0.45, burnDuration:240}},
-  {type: Firestorm, name: 'Firestorm', cost: 660, icon: 5, tint: '#482018', desc: 'Wide burning blasts • area denial', combat: {range: 320, rate: 22, power: 18, behavior: 'burn', firingMode: 'point', splash: 165, burnPower:0.22, burnDuration:210}},
-  {type: Tesla, name: 'Tesla', cost: 720, icon: 2, tint: '#103840', desc: 'Lightning chains through 4 enemies', combat: {range: 310, rate: 30, power: 16, behavior: 'chain'}},
-  {type: Prism, name: 'Prism', cost: 720, icon: 2, tint: '#381040', desc: 'Damage ramps to 4× on one target', combat: {range: 360, rate: 70, power: 4, behavior: 'focus', damageKind: 'energy'}},
-  {type: Railgun, name: 'Railgun', cost: 1000, icon: 3, tint: '#204038', desc: 'Huge armor-piercing hits • no blind spot', combat: {range: 640, rate: 12, power: 85, damageKind: 'piercing'}},
-  {type: Executioner, name: 'Executioner', cost: 900, icon: 3, tint: '#401820', desc: 'Double damage below 35% health', combat: {range: 540, rate: 24, power: 36, behavior: 'execute', damageKind: 'energy'}},
-  {type: Cryo, name: 'Cryo', cost: 540, icon: 4, tint: '#103848', desc: 'Frost field • slows groups by 52%', combat: {range: 225, rate: 18, power: 5, behavior: 'slow'}},
-  {type: Quake, name: 'Quake', cost: 660, icon: 4, tint: '#403018', desc: 'Slows groups • makes them take +35% damage', combat: {range: 200, rate: 14, power: 24, behavior: 'quake'}}
+  {type: Tower, name: 'Sentry', cost: 100, buildable: true, icon: 0, desc: 'Shoots one creep at a time. No frills, just gets on with it.', upgrades: ['Ranger', 'Repeater']},
+  {type: Stubby, name: 'Cannon', cost: 180, buildable: true, icon: 1, desc: 'Hits hard, but likes its creeps close. Subtlety costs extra.', upgrades: ['Mortar', 'Star']},
+  {type: Zappy, name: 'Pulse', cost: 220, buildable: true, icon: 2, desc: 'Fires quick bursts of energy. Armor won\'t save them from this.', upgrades: ['Tesla', 'Prism']},
+  {type: Incinerator, name: 'Incinerator', cost: 190, buildable: true, icon: 5, tint: '#401008', desc: "Sets passing creeps on fire.  Good against healers because it's hard to heal when you're on fire ", upgrades: ['Inferno', 'Firestorm'], combat: {range: 230, rate: 30, power: 7, behavior: 'burn', splash: 95}},
+  {type: Thumper, name: 'Nova', cost: 260, buildable: true, icon: 4, desc: 'Damages everything nearby. Handy if there\'s a lot of creeps coming at once.', upgrades: ['Cryo', 'Quake']},
+  {type: Ranger, name: 'Ranger', cost: 420, icon: 0, tint: '#184060', desc: 'Targets creeps from afar, strikes straight through armor and shields.', combat: {range: 420, rate: 30, power: 15, damageKind: 'piercing'}},
+  {type: Repeater, name: 'Repeater', cost: 480, icon: 0, tint: '#403008', desc: 'If you want quick fire, this is the tower for you.', combat: {range: 270, rate: 65, power: 10}},
+  {type: Mortar, name: 'Mortar', cost: 630, icon: 1, tint: '#402008', desc: 'Lobs explosive shells into a crowd so nobody feels left out.', combat: {range: 330, rate: 16, power: 28, behavior: 'splash', splash: 120}},
+  {type: Star, name: 'Orbital', cost: 900, icon: 3, tint: '#381840', desc: 'Sends big, slow shots a long way. Gets awkward when creeps come too close.', upgrades: ['Railgun', 'Executioner']},
+  {type: Inferno, name: 'Inferno', cost: 570, icon: 5, tint: '#502008', desc: 'Really sets creeps on fire. Hot hot hot!', combat: {range: 245, rate: 35, power: 12, behavior: 'burn', splash: 100, burnPower:0.45, burnDuration:240}},
+  {type: Firestorm, name: 'Firestorm', cost: 660, icon: 5, tint: '#482018', desc: 'Sets whole groups on fire at once. A warm welcome for everyone.', combat: {range: 320, rate: 22, power: 18, behavior: 'burn', firingMode: 'point', splash: 165, burnPower:0.22, burnDuration:210}},
+  {type: Tesla, name: 'Tesla', cost: 720, icon: 2, tint: '#103840', desc: 'Lightning jumps from creep to creep. Sharing is caring, apparently.', combat: {range: 310, rate: 30, power: 16, behavior: 'chain'}},
+  {type: Prism, name: 'Prism', cost: 720, icon: 2, tint: '#381040', desc: 'Keeps hitting the same creep harder. Might have ADHD hyperfocus.', combat: {range: 360, rate: 70, power: 4, behavior: 'focus', damageKind: 'energy'}},
+  {type: Railgun, name: 'Railgun', cost: 1000, icon: 3, tint: '#204038', desc: 'Nothing beats the classics, Wham! straight through armor and shields.', combat: {range: 640, rate: 12, power: 85, damageKind: 'piercing'}},
+  {type: Executioner, name: 'Executioner', cost: 900, icon: 3, tint: '#401820', desc: "Hits wounded creeps twice as hard. That'll show 'em", combat: {range: 540, rate: 24, power: 36, behavior: 'execute', damageKind: 'energy'}},
+  {type: Cryo, name: 'Cryo', cost: 540, icon: 4, tint: '#103848', desc: 'Chills and slows nearby creeps. Gives everyone else time to shoot them.', combat: {range: 225, rate: 18, power: 5, behavior: 'slow'}},
+  {type: Quake, name: 'Quake', cost: 660, icon: 4, tint: '#403018', desc: 'Slows nearby creeps and makes them take more damage. Much like a team building exercise', combat: {range: 200, rate: 14, power: 24, behavior: 'quake'}}
 ];
 for (const info of towerInfo) {
   info.minRange = info.combat?.minimumRange || info.type.minimumRange || 0;
