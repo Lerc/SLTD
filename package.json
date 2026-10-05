@@ -1,11 +1,9 @@
 {
   "name": "sltd-tower-defense",
   "version": "1.0.0",
-  "description": "A Tower Defense game",
+  "description": "A phone-friendly tower defense game with branching upgrades and headless simulation",
   "scripts": {
-    "serve": "npx http-server srv -p 8000 -o",
-    "lint": "npx eslint srv/**/*.js",
-    "format": "npx prettier --write 'srv/**/*.{js,html,css}'",
+    "serve": "python3 -m http.server 8000 --directory srv",
     "test": "node tests/node/scoring.test.js && node tests/node/wave-timing.test.js && node tests/node/combat.test.js && node tests/node/energy-shields.test.js && node tests/node/flyer-boost.test.js && node tests/node/levels.test.js && node tests/node/turret-orientation.test.js && node tests/node/directional-fire.test.js && node tests/node/embers.test.js && node tests/node/projectile-lifecycle.test.js && node tests/node/placement-maps.test.js && node tests/node/overlapping-waves.test.js && node tests/node/progression.test.js"
   },
   "keywords": [

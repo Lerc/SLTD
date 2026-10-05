@@ -10,6 +10,8 @@ python3 -m http.server 8000 --directory srv
 
 Open **http://localhost:8000**. Choose a map, then tap **Deploy defenses**. Foundry is the original route. Switchback winds from the bottom-right entrance to the bottom-left exit. Crosswind crosses itself, passing through the junction twice.
 
+`main` contains the current game. `legacy` preserves the previous main at `db8a05d`, before Branching Defenses became main.
+
 Eight more levels follow the 11 × 16 PNG patterns in `BaseMedia/Maps`: Knotwork, Zigzag, Coil, Longbow, Serpentine, Cascade, Sawtooth and Interlace (maps 1–8 respectively). Drag the map list up or down to browse, or use a mouse wheel. Tap a map to select it; the Deploy button stays visible below the list. Green marks the entrance and orange marks the exit in the previews. Crossings carry creeps straight through on each pass.
 
 - Tap a foundation, then an empty tile to preview its range. Tap the **Tap to build** square again to confirm. An invalid tile cancels.
@@ -62,9 +64,15 @@ Translucent cyan bubbles surround shielded creeps. Blue bars show remaining shie
 
 Health, shield and Flyer energy bars sit above their bodies and effects. See the refreshed [creep bar review](evaluations/creep-bars/creep-table.png), [native pixel comparison](evaluations/creep-bars/native-table.png), and [full/half/low/empty bank states](evaluations/creep-bars/bar-states.png). [Evaluation notes](evaluations/creep-bars/README.md) include the low-health and combat-effect comparisons and rerender command.
 
-Spikey, Mender, Splitter, Shieldbug, Skimmer, Capacitor and Bulwark have distinct transparent source sprites in [srv/images/creeps](srv/images/creeps), alongside the shield bubble PNG. The sprites use flat black interiors and pale outlines to match the original creeps. The loader prepares small drawing surfaces, attenuating only the bubble for the glow pipeline while preserving the original PNGs. See the [appearance comparison](evaluations/creep-appearance-v3/creep-table.png) and [source sprite sheet](evaluations/creep-appearance-v3/source-table.png), [independent critique](evaluations/creep-appearance-v2/critique.md) and [generation prompts](evaluations/creep-appearance-v3/generation-prompts.json).
+Spikey, Mender, Splitter, Shieldbug, Skimmer, Capacitor and Bulwark have distinct transparent sprites in [srv/images/creeps](srv/images/creeps), alongside the shield bubble PNG. The processed bodies are 96 × 96 with black interiors and pale outlines toned to match the original creeps. The bubble is resized separately to 256 × 256; only the bubble receives runtime attenuation for the glow pipeline. The [appearance comparison](evaluations/creep-appearance-v3/creep-table.png), [source sprite sheet](evaluations/creep-appearance-v3/source-table.png), [independent critique](evaluations/creep-appearance-v2/critique.md) and [generation prompts](evaluations/creep-appearance-v3/generation-prompts.json) record earlier art revisions.
 
 The first 12 waves introduce threats in a fixed order. Later cycles add veteran mixed formations and increasing health. Kill bounties stay fixed; wave-clear rewards fund further building.
+
+## Asset processing
+
+Full-size working sources live in `BaseMedia/towers` and `BaseMedia/creeps`; the game loads the processed PNGs from `srv/images`. Tower atlases are 320 × 160, with separate body and turret cells and an added black turret outline. The current workflows are [TowerMod.json](tools/TowerMod.json) and [Creeps.json](tools/Creeps.json), with exported Node scripts beside them. Asset processing requires Node.js 20.9+ and the development dependencies installed with `npm ci`.
+
+See [asset regeneration](tools/assets.md) for commands, the shield bubble's separate resizing step, and cache-version updates. The older brightness-matching tool is retained for historical comparisons and writes its images into the evaluation directory.
 
 ## Render a single creep
 
@@ -83,7 +91,7 @@ npm test
 node srv/nodemain.js -e 'buy_tower Tower 3 2; level_up_tower 0; send_wave; advance 1000; list_counts'
 ```
 
-The Node suite checks combat, shield recharge and debuff immunity, turret orientation, placement, ordered map routes, overlapping waves, automatic wave timing and combined clear bonuses, tower levels, legal upgrades, refunds, save/load and seeded progression. Browser interaction tests run through the browser-bridge CLI:
+The Node suite checks combat, shield recharge and debuff immunity, turret orientation, placement, ordered map routes, overlapping waves, automatic wave timing and combined clear bonuses, tower levels, legal upgrades, refunds, save/load (including shots and burns from sold towers), and seeded progression. [Node CI](.github/workflows/test.yml) runs these checks and the example evaluation on pushes to main and pull requests targeting main, using Node.js 24. Browser interaction tests run through the browser-bridge CLI:
 
 ```sh
 /path/to/browser-bridge/wsb run tests/browser/levels.test.js --app sltd --timeout 90 --wait

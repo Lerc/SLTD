@@ -189,7 +189,7 @@ The dual-mode architecture was achieved through refactoring:
 
 - **`gameControl.js`** - Browser control surface for automated testing
   - Runs shared commands against the live page, plus `screenshot`
-  - Synthetic mouse input and cell→client coordinate mapping
+  - Synthetic pointer input and cell→client coordinate mapping
   - Driven over browser-bridge; see `tools/sltd-browser.sh`
   - **Location**: srv/gameControl.js:1
 
@@ -232,10 +232,8 @@ python3 -m http.server 8000
 ```
 Then visit: http://localhost:8000
 
-**Option 2: Node.js**
+**Option 2: npm shortcut (also uses Python 3)**
 ```bash
-npx http-server srv -p 8000
-# Or using package.json script:
 npm run serve
 ```
 
@@ -375,82 +373,14 @@ node srv/nodemain.js -e "load_json start.json; buy_tower Tower 5 5; advance 300;
 
 ## Evaluation Workflow
 
-### Purpose
-Run automated test scenarios to validate gameplay mechanics, tower effectiveness, and game balance.
+Run `bash evaluations/example_scenario/run.sh` from the repository root for a
+seeded opening-defense check. The runner generates its missing starting state
+and fails when purchases or combat assertions fail. State JSON and output logs
+are generated files ignored by Git.
 
-### Directory Structure
-```
-evaluations/
-├── README.md                  # Evaluation documentation
-├── example_scenario/
-│   ├── initial_state.json     # Starting game state
-│   ├── run.sh                 # Evaluation script
-│   ├── evaluation.log         # Execution log (generated)
-│   └── final_state.json       # End result (generated)
-└── [your_scenario]/
-    └── ...
-```
-
-### Creating an Evaluation
-
-1. **Create scenario directory:**
-   ```bash
-   mkdir -p evaluations/my_test
-   cd evaluations/my_test
-   ```
-
-2. **Generate initial state:**
-   ```bash
-   # From scratch (run 200 ticks to get game started)
-   node ../../srv/nodemain.js 200 > initial_state.json
-
-   # Or copy and modify existing
-   cp ../example_scenario/initial_state.json .
-   ```
-
-3. **Create run script** (`run.sh`):
-   ```bash
-   #!/bin/bash
-   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-   cd "$SCRIPT_DIR"
-
-   node ../../srv/nodemain.js -e "
-     load_json initial_state.json;
-     buy_tower Tower 5 5;
-     buy_tower Stubby 6 5;
-     advance 1000;
-     list_counts;
-     save_json final_state.json
-   " > evaluation.log 2>&1
-
-   echo "Evaluation complete"
-   cat final_state.json | jq '{lives, money, wave: .waveCounter}'
-   ```
-
-4. **Run evaluation:**
-   ```bash
-   chmod +x run.sh
-   bash run.sh
-   ```
-
-### Automated Assertions
-
-Use `jq` to validate results:
-```bash
-# Check lives threshold
-LIVES=$(cat final_state.json | jq -r '.lives')
-if [ "$LIVES" -ge 15 ]; then
-  echo "PASS: Lives = $LIVES"
-else
-  echo "FAIL: Lives dropped to $LIVES"
-  exit 1
-fi
-
-# Compare initial vs final money
-INITIAL_MONEY=$(cat initial_state.json | jq -r '.money')
-FINAL_MONEY=$(cat final_state.json | jq -r '.money')
-echo "Money: $INITIAL_MONEY → $FINAL_MONEY"
-```
+When adding a scenario, changing assertions, or reproducing an art review, read
+`evaluations/README.md` and the relevant evaluation directory's notes. The Node
+suite in `package.json` is the maintained gameplay regression check.
 
 ---
 
@@ -536,6 +466,9 @@ and `waves.js` and `placement.js` precede `showRunner.js`. Browser
 
 ### Git Workflow
 
+`main` contains the current game; `legacy` preserves the previous published main
+before Branching Defenses. Create feature branches from current `main`.
+
 **Branch naming convention:**
 - Feature branches should start with `claude/`
 - Use descriptive names: `claude/add-freeze-tower`
@@ -609,9 +542,8 @@ and `waves.js` and `placement.js` precede `showRunner.js`. Browser
 - showRunner.js must remain environment-agnostic
 - Use feature detection: `if (typeof ctx !== 'undefined')`
 
-❌ **Don't use npm packages for core functionality**
-- This is a zero-dependency project
-- Only use npm for dev tools (http-server, eslint, prettier)
+**Keep gameplay free of runtime npm dependencies.** Sharp is a development
+dependency for the exported image-processing workflows.
 
 ❌ **Don't break the file load order**
 - Dependencies must load before dependents
@@ -667,13 +599,16 @@ and `waves.js` and `placement.js` precede `showRunner.js`. Browser
 
 ### Package Scripts
 
-```json
-{
-  "serve": "npx http-server srv -p 8000 -o",  // Start dev server
-  "lint": "npx eslint srv/**/*.js",            // Lint code
-  "format": "npx prettier --write 'srv/**/*.{js,html,css}'"  // Format code
-}
-```
+Read `package.json` for the available commands. `npm run serve` uses Python 3;
+`npm test` runs the headless regression suite. Linting and automatic formatting
+have no configured repository workflow. `.github/workflows/test.yml` runs the
+Node suite and example evaluation on main pushes and pull requests to main.
+
+### Image Processing
+
+When updating source sprites, regenerating game PNGs, or changing an image
+workflow, read `tools/assets.md`. It identifies the working sources, exported
+workflows, separate shield-bubble resizing, and browser cache updates.
 
 ---
 

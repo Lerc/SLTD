@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Match specialist source PNG luma to the three original towers.
+"""Reproduce the historical specialist tower brightness comparison.
 
-Run from any directory. Requires Pillow, NumPy and Matplotlib. Originals are
-archived once; every run starts from those originals, so adjustments do not stack.
+Run from any directory. Requires Pillow, NumPy and Matplotlib. Adjusted images
+are written under evaluations/tower-art/brightness/regenerated, alongside the
+comparison reports. Current game assets are generated with tools/TowerMod.mjs.
 """
 import json
 import os
 from pathlib import Path
-import shutil
 
 import numpy as np
 from PIL import Image
@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 IMAGES = ROOT / 'srv/images'
 REPORT = ROOT / 'evaluations/tower-art/brightness'
 ORIGINALS = REPORT / 'originals'
+OUTPUT = REPORT / 'regenerated'
 COEFFICIENTS = np.array([2126, 7152, 722], dtype=np.int64)
 
 
@@ -116,16 +117,17 @@ def plot(report):
 
 
 def main():
-    ORIGINALS.mkdir(parents=True, exist_ok=True)
+    OUTPUT.mkdir(parents=True, exist_ok=True)
     references = {name: stats(read(IMAGES / (name + '.png')))
                   for name in ('Tower1', 'Gun1', 'Tower2', 'Gun2', 'Tower3', 'Gun3')}
     targets = [reference_distribution('Tower'), reference_distribution('Gun')]
     report = {'metric': 'Rec.709-weighted sRGB luma, 0–255; alpha-weighted foreground',
               'references': references, 'towers': {}, 'summary': {}}
-    for path in sorted((IMAGES / 'towers').glob('*.png')):
-        original = ORIGINALS / path.name
-        if not original.exists():
-            shutil.copy2(path, original)
+    originals = sorted(ORIGINALS.glob('*.png'))
+    if not originals:
+        raise FileNotFoundError(f'Historical originals are missing from {ORIGINALS}')
+    for original in originals:
+        path = OUTPUT / original.name
         rgba = read(original)
         assert rgba.shape[1] == 2 * rgba.shape[0], 'Expected two square atlas cells'
         half = rgba.shape[1] // 2

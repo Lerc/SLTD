@@ -1,5 +1,6 @@
 #!/bin/bash
 # Example evaluation script for SLTD headless mode
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GAME_DIR="$SCRIPT_DIR/../.."
@@ -7,30 +8,18 @@ GAME_DIR="$SCRIPT_DIR/../.."
 cd "$SCRIPT_DIR"
 
 echo "Running example scenario evaluation..."
-echo "======================================="
-echo ""
+
+# Starting states are generated and ignored by Git.
+if [ ! -f initial_state.json ]; then
+  node "$GAME_DIR/srv/nodemain.js" 0 > initial_state.json
+fi
 
 # Run evaluation
-node "$GAME_DIR/srv/nodemain.js" -e "
-  load_json initial_state.json;
-  buy_tower Tower 5 5;
-  buy_tower Tower 6 5;
-  advance 500;
-  list_counts;
-  show_tower 0;
-  show_tower 1;
-  save_json final_state.json
-" > evaluation.log 2>&1
-
-# Check if evaluation succeeded
-if [ $? -eq 0 ]; then
-  echo "✓ Evaluation completed successfully"
-  echo ""
-  echo "Final state summary:"
-  cat final_state.json | jq '{lives, money, wave: .waveCounter, creeps: (.creeps | length), towers: (.towers | length)}'
-  echo ""
-  echo "See evaluation.log for detailed trace"
+if node "$SCRIPT_DIR/run.js" > evaluation.log 2>&1; then
+  cat evaluation.log
+  echo "Evaluation passed; see evaluation.log and final_state.json."
 else
-  echo "✗ Evaluation failed - check evaluation.log"
+  cat evaluation.log >&2
+  echo "Evaluation failed; see evaluation.log." >&2
   exit 1
 fi

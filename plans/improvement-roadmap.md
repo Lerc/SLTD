@@ -3,9 +3,16 @@
 ## Document Overview
 This document outlines planned improvements for the SLTD (Some kind of Tower Defense) game, focusing on code organization, bug fixes, and feature enhancements.
 
-**Status**: Planning Phase
-**Version**: 0.91
-**Last Updated**: 2025-11-21
+**Status**: Historical proposal, retained for reference
+**Version at time of writing**: 0.91
+**Written**: 2025-11-21
+
+This document describes the project and proposed work as they stood in 2025.
+Its architecture, examples, and task statuses are not a current development
+plan. For present gameplay and tooling, start with [README.md](../README.md);
+for the implemented design, see [branching defenses](branching-defenses.md)
+and [tower levels](tower-levels.md). The previous main branch is preserved as
+`legacy`; active development uses `main`.
 
 ---
 

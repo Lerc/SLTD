@@ -1,14 +1,15 @@
 # SLTD Evaluations
 
-This directory contains evaluation scenarios for testing gameplay in headless mode.
+This directory contains headless gameplay scenarios and historical art reviews.
+Use `npm test` for the maintained regression suite; use individual scenarios
+for repeatable gameplay or appearance investigations.
 
 ## Structure
 
-Each evaluation scenario should be in its own subdirectory with:
-- `initial_state.json` - Starting game state
-- `run.sh` - Evaluation script that executes commands
-- `evaluation.log` - Output log from the evaluation
-- `final_state.json` - End state after evaluation completes
+Headless scenarios use a `run.sh` entry point and can include a Node runner with
+assertions. Starting states, output logs and final states are generated files
+ignored by Git. Art-review directories instead contain their own rendering
+scripts, images, prompts and notes.
 
 ## Running Evaluations
 
@@ -17,8 +18,8 @@ Each evaluation scenario should be in its own subdirectory with:
 cd evaluations/example_scenario
 bash run.sh
 
-# Or run directly
-node ../../srv/nodemain.js -e "load_json initial_state.json; advance 500; save_json final_state.json"
+# Or, from the repository root:
+bash evaluations/example_scenario/run.sh
 ```
 
 ## Creating New Scenarios
@@ -31,8 +32,8 @@ node ../../srv/nodemain.js -e "load_json initial_state.json; advance 500; save_j
 
 2. Generate or create initial state:
    ```bash
-   # Option A: Generate from scratch
-   node ../../srv/nodemain.js 200 > initial_state.json
+   # Option A: Generate a fresh game before any ticks
+   node ../../srv/nodemain.js 0 > initial_state.json
 
    # Option B: Copy and modify existing state
    cp ../example_scenario/initial_state.json .
@@ -42,7 +43,8 @@ node ../../srv/nodemain.js -e "load_json initial_state.json; advance 500; save_j
 3. Create run script:
    ```bash
    cp ../example_scenario/run.sh .
-   # Edit run.sh to customize commands
+   cp ../example_scenario/run.js .
+   # Update run.js purchases, simulation length, and assertions
    ```
 
 4. Run and validate:
@@ -53,11 +55,20 @@ node ../../srv/nodemain.js -e "load_json initial_state.json; advance 500; save_j
 ## Example Scenarios
 
 ### example_scenario
-Basic tower placement and advancement test:
-- Loads initial state at tick 100
-- Places two towers
-- Advances 500 ticks
-- Validates final state
+The runner creates a fresh `initial_state.json` if one is absent, preserving
+an existing starting state for repeatable runs. Its seeded Node scenario places
+Sentries at Foundry cells (3,2) and (5,4), launches a wave, and advances 500 ticks.
+Assertions require both purchases to succeed, lives to remain unchanged, score
+to increase, and money to stay nonnegative. An assertion failure makes the
+script exit unsuccessfully; successful runs write `final_state.json` and print
+a summary. The runner requires Node.js and Bash; jq is only needed for the
+optional queries below.
+
+To reset the scenario to a fresh starting state, run from the repository root:
+
+```bash
+node srv/nodemain.js 0 > evaluations/example_scenario/initial_state.json
+```
 
 ## Available Commands
 
@@ -69,7 +80,11 @@ node srv/nodemain.js --commands
 Key commands for evaluations:
 - `load_json <file>` - Load game state
 - `save_json <file>` - Save game state
-- `buy_tower <type> <x> <y>` - Place tower (types: Tower, Stubby, Star, Boom, BigBoom)
+- `tower_types` - List the catalog and command class names
+- `buy_tower <type> <x> <y>` - Place a buildable foundation; see `towerInfo` in `srv/arsenal.js`
+- `level_up_tower <idx>` - Buy a tower level
+- `upgrade_tower <idx> <type>` - Buy an available specialization branch
+- `send_wave` - Launch a wave when sending is allowed
 - `advance [ticks]` - Run simulation
 - `list_counts` - Show game state summary
 - `show_creep [idx]` - Inspect creep details

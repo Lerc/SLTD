@@ -1,5 +1,11 @@
 # Creep art revision
 
+This review records the art before the current tone adjustment and resizing.
+Full-size working sources are retained in `BaseMedia/creeps`; the shipped
+96 × 96 bodies are produced by `tools/Creeps.json` / `tools/Creeps.mjs`. The
+shield bubble is resized separately to 256 × 256. See
+[asset regeneration](../../tools/assets.md) for the current process.
+
 Replaced the seven newer creep bodies with transparent PNGs using opaque black
 interiors and pale, flat outlines, guided by Creep2.png, Creep3.png and Creep4.png.
 The earlier distinct silhouettes remain: spiked mine, healing clover, paired

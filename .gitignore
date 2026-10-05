@@ -6,6 +6,8 @@ srv/*_state*.json
 
 # Regenerable tower workflow output; game assets live in srv/images/towers
 /BaseMedia/towers/output/
+/BaseMedia/creeps/output/
+/evaluations/tower-art/brightness/regenerated/
 
 # Evaluation generated files
 evaluations/**/evaluation.log
@@ -15,6 +17,9 @@ evaluations/**/initial_state.json
 
 # Node modules
 node_modules/
+
+# Python tool bytecode
+__pycache__/
 
 # Editor files
 .vscode/
