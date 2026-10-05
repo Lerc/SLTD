@@ -423,7 +423,8 @@ function guideRenderPortrait(preview, picture) {
     guidePortraitSource.width = frameCanvas.width;
     guidePortraitSource.height = frameCanvas.height;
   }
-  const paint = guidePortraitSource.getContext('2d'), previous = ctx;
+  // Readback optimization avoids Firefox's accelerated-canvas portrait fringes.
+  const paint = guidePortraitSource.getContext('2d', {willReadFrequently: true}), previous = ctx;
   paint.clearRect(0, 0, guidePortraitSource.width, guidePortraitSource.height);
   // draw() omits the entity scale normally applied by drawMain(). Keep that
   // scale here while centering the specimen independently of its world position.

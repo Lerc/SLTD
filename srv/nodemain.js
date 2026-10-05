@@ -169,6 +169,22 @@ function saveState() {
   else if (globalThis.gameMode === globalThis.waitForFullScreen) gameModeName = 'waitForFullScreen';
   else if (globalThis.gameMode === globalThis.gameOver) gameModeName = 'gameOver';
 
+  // Sold towers still own travelling shots and burning damage. Keep their
+  // shared identity without restoring them to the buildable tower list.
+  const detachedSources = [...new Set([
+    ...globalThis.bullets.map(b => b.source),
+    ...globalThis.creeps.map(c => c.burnSource)
+  ].filter(source => source && !globalThis.towers.includes(source)))];
+  const towerState = t => ({
+    type: t.constructor.name,
+    cellX: t.cellPosition.x, cellY: t.cellPosition.y,
+    x: t.x, y: t.y, angle: t.angle, cooldown: t.cooldown,
+    rate: t.rate, range: t.range, minimumRange: t.minimumRange,
+    targetIndex: globalThis.creeps.indexOf(t.target),
+    outAngle: t.outAngle, focus: t.focus, focusTargetIndex: globalThis.creeps.indexOf(t.focusTarget),
+    level: t.level, invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
+  });
+
   return {
     version: globalThis.versionString,
     timestamp: new Date().toISOString(),
@@ -214,26 +230,13 @@ function saveState() {
       slowTicks: c.slowTicks, slowFactor: c.slowFactor, burnTicks: c.burnTicks, burnPower: c.burnPower,
       shield: c.shield, shieldRechargeTicks: c.shieldRechargeTicks, vulnerableTicks: c.vulnerableTicks,
       boostCharge: c.boostCharge, boostTicks: c.boostTicks,
-      burnSourceIndex: globalThis.towers.indexOf(c.burnSource)
+      burnSourceIndex: globalThis.towers.indexOf(c.burnSource),
+      burnSourceDetachedIndex: detachedSources.indexOf(c.burnSource)
     })),
 
     // Towers
-    towers: globalThis.towers.map((t, idx) => ({
-      type: t.constructor.name,
-      cellX: t.cellPosition.x,
-      cellY: t.cellPosition.y,
-      x: t.x,
-      y: t.y,
-      angle: t.angle,
-      cooldown: t.cooldown,
-      rate: t.rate,
-      range: t.range,
-      minimumRange: t.minimumRange,
-      targetIndex: globalThis.creeps.indexOf(t.target),
-      // Star-specific
-      outAngle: t.outAngle, focus: t.focus, focusTargetIndex: globalThis.creeps.indexOf(t.focusTarget),
-      level: t.level, invested: t.invested, targetMode: t.targetMode, kills: t.kills, damageDealt: t.damageDealt
-    })),
+    towers: globalThis.towers.map(towerState),
+    detachedSources: detachedSources.map(towerState),
 
     // Bullets
     bullets: globalThis.bullets.map(b => ({
@@ -244,6 +247,7 @@ function saveState() {
       damage: b.damage,
       range: b.range,
       sourceIndex: globalThis.towers.indexOf(b.source),
+      sourceDetachedIndex: detachedSources.indexOf(b.source),
       targetIndex: globalThis.creeps.indexOf(b.target),
       // Spiral-specific
       angle: b.angle,
@@ -351,12 +355,11 @@ function loadState(stateData) {
     globalThis.creeps.push(creep);
   }
 
-  // Restore towers
-  for (const towerData of stateData.towers || []) {
+  function restoreTower(towerData) {
     const TowerClass = globalThis[towerData.type];
     if (!TowerClass) {
       console.warn(`Unknown tower type: ${towerData.type}`);
-      continue;
+      return null;
     }
 
     const tower = new TowerClass(towerData.cellX, towerData.cellY);
@@ -367,8 +370,16 @@ function loadState(stateData) {
     tower.angle = towerData.angle;
     tower.cooldown = towerData.cooldown;
     if (towerData.outAngle !== undefined) tower.outAngle = towerData.outAngle;
+    tower.x = towerData.x ?? tower.x;
+    tower.y = towerData.y ?? tower.y;
+    return tower;
+  }
 
-    globalThis.towers.push(tower);
+  // Detached sources are reconstructed for combat references only.
+  const detachedSources = (stateData.detachedSources || []).map(restoreTower);
+  for (const towerData of stateData.towers || []) {
+    const tower = restoreTower(towerData);
+    if (tower) globalThis.towers.push(tower);
   }
 
   // Restore tower targets (after all creeps and towers are loaded)
@@ -383,7 +394,9 @@ function loadState(stateData) {
   }
 
   for (let i = 0; i < globalThis.creeps.length; i++) {
-    globalThis.creeps[i].burnSource = globalThis.towers[stateData.creeps[i].burnSourceIndex] || null;
+    const creepData = stateData.creeps[i];
+    globalThis.creeps[i].burnSource = globalThis.towers[creepData.burnSourceIndex] ||
+      detachedSources[creepData.burnSourceDetachedIndex] || null;
   }
 
   // Restore bullets
@@ -394,7 +407,7 @@ function loadState(stateData) {
       continue;
     }
 
-    const source = globalThis.towers[bulletData.sourceIndex];
+    const source = globalThis.towers[bulletData.sourceIndex] || detachedSources[bulletData.sourceDetachedIndex];
     const target = globalThis.creeps[bulletData.targetIndex];
 
     if (!source) {

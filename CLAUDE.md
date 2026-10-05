@@ -24,7 +24,7 @@ index.html → [Dependencies] → showRunner.js (game logic) → main.js (browse
 ```
 - Full Canvas 2D rendering
 - WebGL glow/bloom post-processing effects
-- Mouse/touch input handling
+- Pointer input for mouse, touch, and pen
 - Asset loading (images, sounds)
 - requestAnimationFrame game loop
 
@@ -47,17 +47,19 @@ Understanding which files use browser-specific APIs is crucial for maintaining d
 ### Pure Logic Files (Node.js Compatible)
 - **littleAStar.js** - A* pathfinding algorithm using PriorityQueue (completely universal)
 - **Extras.js** - Math utilities (uses `globalThis.performance?.now()` with fallback to `Date.now()`)
+- **levels.js**, **waves.js**, **maps.js**, **placement.js**, **commands.js** - Shared gameplay and command logic; see the module responsibilities below
 
 ### Browser-Dependent Files
 
 #### Heavy Browser Dependencies
 - **main.js** - `window.onload`, `requestAnimationFrame`, Canvas event listeners, CanvasRenderingContext2D
-- **input.js** - `document.addEventListener`, mouse/touch/keyboard events
+- **input.js** - `document.addEventListener`, pointer and keyboard events
 - **Assets.js** - `Image`, `XMLHttpRequest`, `AudioContext`
 - **CanvasGlow.js**, **WebGLBoilerPlate.js**, **renderlist.js** - WebGL2 APIs
 
 #### Moderate Browser Dependencies
-- **gadgets.js**, **ui.js**, **world.js**, **entities.js** - Use `ctx` for drawing (optional, only called in browser mode)
+- **gadgets.js**, **world.js**, **entities.js**, **arsenal.js** - Share gameplay logic with Node; drawing methods run only in the browser
+- **ui.js**, **fieldGuide.js** - Browser UI and guide rendering
 
 ### Key Design Decision
 
@@ -105,9 +107,16 @@ The dual-mode architecture was achieved through refactoring:
   - **Location**: srv/entities.js:1
 
 - **`world.js`** - Game world and level management
-  - Map data and pathfinding grid
-  - Wave spawning logic
+  - Level map and pathfinding grid
+  - Wave generation from the plans in `waves.js`
   - **Location**: srv/world.js:1
+
+- **`arsenal.js`** - Specialized tower behavior and the `towerInfo` catalog
+  - Names, descriptions, prices, buildability, upgrade branches, and combat stats
+- **`levels.js`** - Tower level growth, stat application, and level-up costs
+- **`waves.js`** - Wave plans, spawning, countdowns, overlap, and clear payouts
+- **`maps.js`** - Map catalog and route construction
+- **`placement.js`** - Shared tap/drag placement state and validation
 
 - **`gadgets.js`** - Game gadgets/abilities (UI components)
   - Tower selection UI
@@ -135,12 +144,12 @@ The dual-mode architecture was achieved through refactoring:
 - **`main.js`** - Browser entry point and rendering loop
   - window.onload initialization
   - Canvas/WebGL setup
-  - Event handlers (mouse/touch)
+  - Pointer input routing
   - requestAnimationFrame loop
   - **Location**: srv/main.js:1
 
 - **`input.js`** - User input handling
-  - Keyboard, mouse, touch events
+  - Keyboard and Pointer Events (mouse, touch, pen)
   - Input state management
   - **Location**: srv/input.js:1
 
@@ -148,6 +157,9 @@ The dual-mode architecture was achieved through refactoring:
   - HUD rendering
   - UI state management
   - **Location**: srv/ui.js:1
+
+- **`fieldGuide.js`** - Tactical guide pages and animated entity portraits
+  - Portrait staging uses `willReadFrequently` to avoid Firefox accelerated-canvas fringes
 
 - **`Assets.js`** - Asset loading and management
   - Image loading
@@ -315,9 +327,9 @@ wsb run --code 'wslog(await gameControl.run("buy_tower Tower 3 0; advance 300; l
    so scripted stepping would desync from what a screenshot shows.
    `gameControl.takeTickCredit()` is drained in `main.js`'s `update()`.
 
-3. **Tower selection needs real `MouseEvent`s.** It gates on
-   `Input.keyWentDown(133)`, which only the document-level `mousedown` listener
-   sets — calling `pressStart()`/`pressEnd()` directly does nothing.
+3. **Use Pointer Events to exercise the input routing.** Dispatch `pointerdown`
+   and `pointerup` on the output canvas with the same `pointerId`, or use
+   `gameControl.tapCanvas()`, `tapCell()`, and `tapTower()`.
    Coordinates chain: cell → world (`mapToWorld`) → canvas (`+ mapTop`) →
    client (`× globalScaleFactor`, scaled to the element box). `tapCell()` handles this.
 
@@ -334,13 +346,11 @@ user to bring the tab to the foreground. Reads that do not advance time
 (`wsb eval` on game state) work fine either way.
 
 ### Tower Types
-- `Tower` ($100) - Basic tower, low damage, medium range
-- `Stubby` ($300) - Very short range, high damage
-- `Zappy` ($350) - Rapid fire, low damage
-- `Star` ($1000) - Long range, high damage, slow
-- `Thumper` ($500) - Area damage around tower
 
-The authoritative list is `towerInfo` in `entities.js`; `tower_types` prints it.
+The authoritative catalog is `towerInfo` in `srv/arsenal.js`; `tower_types` prints
+the class names and prices used by commands. Entries with `buildable: true` can be
+placed directly; other types are reached through upgrade branches. Tower level
+growth and level-up costs are defined in `srv/levels.js`.
 
 ### State Persistence
 
@@ -461,18 +471,14 @@ Defined in `showRunner.js`:
 - `ctx` - Canvas 2D context (browser only)
 
 ### File Dependencies
-Files must be loaded in this order (see index.html):
-1. Extras.js (utilities)
-2. littleAStar.js (pathfinding)
-3. entities.js (game objects)
-4. world.js (map)
-5. input.js (browser only)
-6. ui.js (browser only)
-7. gadgets.js (UI components)
-8. showRunner.js (game logic)
-9. commands.js (shared command layer)
-10. main.js (browser entry) OR nodemain.js (headless entry)
-11. gameControl.js (browser only; must follow main.js)
+
+When adding or moving a module, check the script tags in `srv/index.html` and
+the loading block at the top of `srv/nodemain.js`. These are the authoritative
+load orders. Shared logic must be loaded in both entry points before its users;
+in particular, `entities.js` precedes `arsenal.js`, which precedes `levels.js`,
+and `waves.js` and `placement.js` precede `showRunner.js`. Browser
+`gameControl.js` follows `main.js`. Node loads `showRunner.js` with
+`vm.runInThisContext` so its game state shares the global scope.
 
 ---
 
@@ -481,7 +487,11 @@ Files must be loaded in this order (see index.html):
 ### Adding New Features
 
 1. **Identify the right file:**
-   - New tower type? → `entities.js`
+   - New tower specialization or catalog entry? → `arsenal.js`
+   - New entity or projectile behavior? → `entities.js`
+   - Tower level growth? → `levels.js`
+   - Wave pacing or rewards? → `waves.js`
+   - New map? → `maps.js`
    - New game mechanic? → `showRunner.js`
    - New rendering effect? → `CanvasGlow.js` or rendering files
    - New UI element? → `gadgets.js` or `ui.js`
@@ -562,9 +572,9 @@ Files must be loaded in this order (see index.html):
 4. Test in both browser and headless modes
 
 ### Task: Add a new tower type
-1. Read `entities.js` to understand existing tower structure
-2. Add new tower definition following existing patterns
-3. Update tower costs/stats in `showRunner.js` if needed
+1. Read `arsenal.js` for the catalog and specialization patterns, and `entities.js` for the base tower and projectile behavior
+2. Add the class and its `towerInfo` entry, including buildability and upgrade branches
+3. Check level growth in `levels.js` and browser assets in `Assets.js`
 4. Test in browser for visual confirmation
 5. Test in headless mode: `node srv/nodemain.js -e "buy_tower NewTower 5 5; advance 200"`
 
@@ -680,7 +690,7 @@ Files must be loaded in this order (see index.html):
 ### File Locations (Line References)
 When referencing code, use format: `filename:line_number`
 
-Example: "Creep spawning logic is in world.js:45"
+Example: "Wave spawning logic is in waves.js"; look up the current line when linking it.
 
 ### Essential Commands
 
@@ -712,10 +722,11 @@ cd evaluations/example_scenario && bash run.sh
 
 ## Summary for AI Assistants
 
-**SLTD (Simple Little Tower Defense) - Version 0.91**
+**SLTD (Simple Little Tower Defense)** — the current game version is `versionString` in `srv/showRunner.js`.
 
 Dual-mode tower defense game:
-- Vanilla JavaScript (no frameworks, zero dependencies)
+- Vanilla JavaScript (no frameworks or runtime npm dependencies)
+- Sharp is a development dependency for image processing tools
 - Canvas 2D + WebGL effects
 - Browser AND headless execution
 - REPL interface + evaluation framework

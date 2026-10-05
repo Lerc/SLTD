@@ -1,0 +1,305 @@
+{
+  "version": 1,
+  "name": "Creeps",
+  "nodes": [
+    {
+      "id": "n1",
+      "kind": "image",
+      "title": "Batch image",
+      "x": -225,
+      "y": 100,
+      "config": {
+        "value": 1,
+        "variable": "image_n1",
+        "arrayType": "Uint8Array"
+      },
+      "params": {}
+    },
+    {
+      "id": "n2",
+      "kind": "display",
+      "title": "Output",
+      "x": 1246.5701953278892,
+      "y": 223.85421050356405,
+      "config": {
+        "value": 1,
+        "variable": "display_n2",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        },
+        "filename": {
+          "mode": "value",
+          "value": "{name}"
+        }
+      }
+    },
+    {
+      "id": "n23",
+      "kind": "blur",
+      "title": "Gaussian blur",
+      "x": 60,
+      "y": 309,
+      "config": {
+        "value": 1,
+        "variable": "blur_n23",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "sigma": {
+          "mode": "value",
+          "value": "12"
+        }
+      }
+    },
+    {
+      "id": "n24",
+      "kind": "composite",
+      "title": "Composite",
+      "x": 429,
+      "y": 239,
+      "config": {
+        "value": 1,
+        "variable": "composite_n24",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "a": {
+          "mode": "wire",
+          "value": "#000000"
+        },
+        "b": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mask": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mode": {
+          "mode": "value",
+          "value": "add"
+        }
+      }
+    },
+    {
+      "id": "n25",
+      "kind": "view",
+      "title": "View",
+      "x": 859.0117575439967,
+      "y": 223.90900852362535,
+      "config": {
+        "value": 1,
+        "variable": "view_n25",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n26",
+      "kind": "view",
+      "title": "View copy",
+      "x": 482.18797920840717,
+      "y": 615.9112744093554,
+      "config": {
+        "value": 1,
+        "variable": "view_n25_n26",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n29",
+      "kind": "tone",
+      "title": "Color adjustment",
+      "x": 173.55555555555554,
+      "y": 53.55555555555557,
+      "config": {
+        "value": 1,
+        "variable": "tone_n29",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "brightness": {
+          "mode": "value",
+          "value": "0.5"
+        },
+        "contrast": {
+          "mode": "value",
+          "value": 1.05
+        },
+        "saturation": {
+          "mode": "value",
+          "value": 0.85
+        }
+      }
+    },
+    {
+      "id": "n30",
+      "kind": "blur",
+      "title": "Gaussian blur copy",
+      "x": 34.44444444444444,
+      "y": 520.1111111111111,
+      "config": {
+        "value": 1,
+        "variable": "blur_n23_n30",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "sigma": {
+          "mode": "value",
+          "value": "12"
+        }
+      }
+    },
+    {
+      "id": "n31",
+      "kind": "composite",
+      "title": "Composite",
+      "x": 143.33333333333337,
+      "y": 721.3333333333334,
+      "config": {
+        "value": 1,
+        "variable": "composite_n31",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "a": {
+          "mode": "wire",
+          "value": "#000000"
+        },
+        "b": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mask": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mode": {
+          "mode": "value",
+          "value": "add"
+        }
+      }
+    },
+    {
+      "id": "n32",
+      "kind": "resize",
+      "title": "Resize",
+      "x": 769.01567611646,
+      "y": 610.3314951062978,
+      "config": {
+        "value": 1,
+        "variable": "resize_n32",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "width": {
+          "mode": "value",
+          "value": "96"
+        },
+        "height": {
+          "mode": "value",
+          "value": "96"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "output": "image",
+      "to": "n23",
+      "input": "image"
+    },
+    {
+      "from": "n1",
+      "output": "image",
+      "to": "n29",
+      "input": "image"
+    },
+    {
+      "from": "n29",
+      "output": "image",
+      "to": "n24",
+      "input": "a"
+    },
+    {
+      "from": "n23",
+      "output": "image",
+      "to": "n30",
+      "input": "image"
+    },
+    {
+      "from": "n23",
+      "output": "image",
+      "to": "n31",
+      "input": "a"
+    },
+    {
+      "from": "n30",
+      "output": "image",
+      "to": "n31",
+      "input": "b"
+    },
+    {
+      "from": "n31",
+      "output": "image",
+      "to": "n26",
+      "input": "result"
+    },
+    {
+      "from": "n26",
+      "output": "result",
+      "to": "n24",
+      "input": "b"
+    },
+    {
+      "from": "n24",
+      "output": "image",
+      "to": "n32",
+      "input": "image"
+    },
+    {
+      "from": "n32",
+      "output": "image",
+      "to": "n25",
+      "input": "result"
+    },
+    {
+      "from": "n25",
+      "output": "result",
+      "to": "n2",
+      "input": "result"
+    }
+  ]
+}

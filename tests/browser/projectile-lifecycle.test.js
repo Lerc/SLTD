@@ -1,5 +1,5 @@
 // Run with browser-bridge on a freshly reloaded page.
-const check = (condition, message) => { if (!condition) throw new Error(message); };
+const check = (condition, message) => { if (!condition) { wslog('FAIL: '+message); throw new Error(message); } };
 startGame('foundry'); paused = true;
 const canvas = document.createElement('canvas'); canvas.width = canvas.height = 800;
 const context = canvas.getContext('2d');
@@ -27,7 +27,7 @@ for (const [Type, TowerType] of [[Pea, Tower], [Laser, Zappy], [Rock, Stubby]]) 
   check(alpha.length === 2 && alpha[1] < alpha[0], Type.name + ' visibly fades');
 }
 
-// Last-target transformation must animate in the real game loop, with no creeps.
+// Compatibility with older saves that have no active wave records.
 startGame('foundry'); paused = true; betweenWaves = false;
 const tower = new Star(3, 6); applyTowerLevel(tower, 3); towers.push(tower);
 const target = new Basic(); target.position = vadd(tower.position, v2(350, 0));
@@ -48,4 +48,23 @@ mainGame_core();
 check(!betweenWaves && particleSystems.length > 0, 'Finishing effects also keep running');
 for (let tick = 0; tick < 200 && !betweenWaves; tick++) mainGame_core();
 check(betweenWaves && particleSystems.length === 0, 'Returns to preparation once effects finish');
-wslog({result:'PASS', fading:['Pea','Laser','Rock'], orbitalFragments:15, activityDrained:true});
+
+// Normal wave completion starts the payout while remaining activity animates.
+startGame('foundry');
+check(sendWave(), 'Launch an actual wave'); paused=true;
+const liveTower=new Star(3,6); applyTowerLevel(liveTower,3); towers.push(liveTower);
+const lastTarget=new Basic(); lastTarget.position=vadd(liveTower.position,v2(350,0));
+const lastShot=new Spiral(liveTower,lastTarget); lastTarget.dead=true;
+creeps.length=hopper.length=backlog.length=0; bullets.push(lastShot);
+combatEffect(liveTower.position,'#204038');
+mainGame_core();
+check(waveClearPayout?.age===0 && bullets.length===15 && particleSystems.length>0,'Payout starts with fragments and effects still animating');
+const awarded=money;
+for(let tick=0;tick<waveBonusPauseTicks-1;tick++) mainGame_core();
+check(waveCounter===1 && bullets.length===0 && particleSystems.length===0,'Activity drains during the four-second presentation');
+check(money===awarded && waveClearPayout.age===waveBonusPauseTicks-1,'Reward is awarded once');
+paused=false;
+mainGame_core();
+paused=true;
+check(waveCounter===2 && waveClearPayout===null,'Next wave launches after the presentation');
+wslog({result:'PASS', fading:['Pea','Laser','Rock'], orbitalFragments:15, activityDrained:true,liveWavePayout:true});

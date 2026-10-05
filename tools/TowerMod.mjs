@@ -632,8 +632,8 @@ const graph = {
       "id": "n1",
       "kind": "image",
       "title": "Batch image",
-      "x": -1014.0214612928887,
-      "y": -836.2310144819492,
+      "x": -1104.7169953572247,
+      "y": -909.5593186190717,
       "config": {
         "value": 1,
         "variable": "image_n1",
@@ -645,8 +645,8 @@ const graph = {
       "id": "n8",
       "kind": "composite",
       "title": "Composite",
-      "x": 80.18634900543097,
-      "y": -635.379724997078,
+      "x": 263.60815102229697,
+      "y": -499.5117062891869,
       "config": {
         "value": 1,
         "variable": "composite_n8",
@@ -675,8 +675,8 @@ const graph = {
       "id": "n9",
       "kind": "display",
       "title": "Display output copy",
-      "x": 749.5792739155984,
-      "y": -569.1922762979009,
+      "x": 1449.3709500157665,
+      "y": -766.2583711172728,
       "config": {
         "value": 1,
         "variable": "display_n2_n9",
@@ -829,8 +829,8 @@ const graph = {
       "id": "n6",
       "kind": "splitChannels",
       "title": "Split channels",
-      "x": -2159.366921250419,
-      "y": -179.3914147058161,
+      "x": -245.23436873545086,
+      "y": -211.73473030717082,
       "config": {
         "value": 1,
         "variable": "splitChannels_n6",
@@ -847,8 +847,8 @@ const graph = {
       "id": "n7",
       "kind": "view",
       "title": "View",
-      "x": -1378.0016934487014,
-      "y": 52.86727382458827,
+      "x": 488.27906437125694,
+      "y": 66.00878946119431,
       "config": {
         "value": 1,
         "variable": "view_n7",
@@ -865,8 +865,8 @@ const graph = {
       "id": "n11",
       "kind": "kernel",
       "title": "Kernel filter",
-      "x": -1781.8070648202922,
-      "y": 150.5824438730603,
+      "x": 141.93761174913533,
+      "y": -31.492193203675697,
       "config": {
         "value": 1,
         "variable": "kernel_n11",
@@ -899,8 +899,8 @@ const graph = {
       "id": "n12",
       "kind": "composite",
       "title": "Composite",
-      "x": -995.0293510255186,
-      "y": -149.1967732074368,
+      "x": 816.1928114488438,
+      "y": -87.45053918307327,
       "config": {
         "value": 1,
         "variable": "composite_n12",
@@ -929,8 +929,8 @@ const graph = {
       "id": "n13",
       "kind": "view",
       "title": "View",
-      "x": -706.3585475838121,
-      "y": -162.73354269782416,
+      "x": 1092.4532553435408,
+      "y": -100.32900786057925,
       "config": {
         "value": 1,
         "variable": "view_n13",
@@ -945,13 +945,101 @@ const graph = {
     },
     {
       "id": "n16",
-      "kind": "composite",
-      "title": "Composite",
-      "x": 97.85675943591184,
-      "y": -187.0409780296547,
+      "kind": "view",
+      "title": "View",
+      "x": -622.262975066926,
+      "y": -281.66354865930606,
       "config": {
         "value": 1,
-        "variable": "composite_n16",
+        "variable": "view_n16",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "result": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n17",
+      "kind": "resize",
+      "title": "Resize",
+      "x": -791.937839417706,
+      "y": -940.5630656961769,
+      "config": {
+        "value": 1,
+        "variable": "resize_n17",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "width": {
+          "mode": "value",
+          "value": "640"
+        },
+        "height": {
+          "mode": "value",
+          "value": "320"
+        }
+      }
+    },
+    {
+      "id": "n18",
+      "kind": "resize",
+      "title": "Resize",
+      "x": 1358.9736661511413,
+      "y": -368.6499350472916,
+      "config": {
+        "value": 1,
+        "variable": "resize_n18",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        },
+        "width": {
+          "mode": "value",
+          "value": "image.width/2"
+        },
+        "height": {
+          "mode": "value",
+          "value": "image.height/2"
+        }
+      }
+    },
+    {
+      "id": "n19",
+      "kind": "splitChannels",
+      "title": "Split channels copy",
+      "x": -476.5318942860542,
+      "y": 40.35564378299492,
+      "config": {
+        "value": 1,
+        "variable": "splitChannels_n6_n19",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": null
+        }
+      }
+    },
+    {
+      "id": "n20",
+      "kind": "composite",
+      "title": "Composite copy",
+      "x": 990.8704889539227,
+      "y": -539.8298486561478,
+      "config": {
+        "value": 1,
+        "variable": "composite_n8_n20",
         "arrayType": "Uint8Array"
       },
       "params": {
@@ -969,19 +1057,45 @@ const graph = {
         },
         "mode": {
           "mode": "value",
-          "value": "multiply"
+          "value": "normal"
         }
       }
     },
     {
-      "id": "n17",
-      "kind": "makeColor",
-      "title": "Color from values",
-      "x": -210.2348718510663,
-      "y": -263.0574892660689,
+      "id": "n21",
+      "kind": "setAlpha",
+      "title": "Alpha channel",
+      "x": 1649.6955172374885,
+      "y": 31.927177616029468,
       "config": {
         "value": 1,
-        "variable": "makeColor_n17",
+        "variable": "setAlpha_n21",
+        "arrayType": "Uint8Array"
+      },
+      "params": {
+        "image": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "alpha": {
+          "mode": "wire",
+          "value": "#ffffff"
+        },
+        "mode": {
+          "mode": "value",
+          "value": "replace"
+        }
+      }
+    },
+    {
+      "id": "n22",
+      "kind": "makeColor",
+      "title": "Color from values",
+      "x": 617.1130054731138,
+      "y": -793.3483704414232,
+      "config": {
+        "value": 1,
+        "variable": "makeColor_n22",
         "arrayType": "Uint8Array"
       },
       "params": {
@@ -1005,124 +1119,10 @@ const graph = {
           "mode": "value",
           "value": 1
         }
-      },
-      "compact": true
-    },
-    {
-      "id": "n18",
-      "kind": "view",
-      "title": "View",
-      "x": 444.9027219615404,
-      "y": -213.35902517062914,
-      "config": {
-        "value": 1,
-        "variable": "view_n18",
-        "arrayType": "Uint8Array"
-      },
-      "params": {
-        "result": {
-          "mode": "wire",
-          "value": null
-        }
-      }
-    },
-    {
-      "id": "n19",
-      "kind": "invert",
-      "title": "Invert",
-      "x": -211.6983412552264,
-      "y": -114.04554873838283,
-      "config": {
-        "value": 1,
-        "variable": "invert_n19",
-        "arrayType": "Uint8Array"
-      },
-      "params": {
-        "image": {
-          "mode": "wire",
-          "value": null
-        }
-      }
-    },
-    {
-      "id": "n20",
-      "kind": "setAlpha",
-      "title": "Alpha channel",
-      "x": -224.8220200405203,
-      "y": 82.68356267723007,
-      "config": {
-        "value": 1,
-        "variable": "setAlpha_n20",
-        "arrayType": "Uint8Array"
-      },
-      "params": {
-        "image": {
-          "mode": "wire",
-          "value": "#ffffff"
-        },
-        "alpha": {
-          "mode": "wire",
-          "value": "#ffffff"
-        },
-        "mode": {
-          "mode": "value",
-          "value": "replace"
-        }
-      }
-    },
-    {
-      "id": "n21",
-      "kind": "threshold",
-      "title": "Threshold",
-      "x": -692.0620516814389,
-      "y": 144.6347422239677,
-      "config": {
-        "value": 1,
-        "variable": "threshold_n21",
-        "arrayType": "Uint8Array"
-      },
-      "params": {
-        "image": {
-          "mode": "wire",
-          "value": null
-        },
-        "low": {
-          "mode": "value",
-          "value": 128
-        },
-        "high": {
-          "mode": "value",
-          "value": 255
-        }
-      },
-      "compact": true
-    },
-    {
-      "id": "n22",
-      "kind": "view",
-      "title": "View",
-      "x": 370.3659964101584,
-      "y": -628.9135758967419,
-      "config": {
-        "value": 1,
-        "variable": "view_n22",
-        "arrayType": "Uint8Array"
-      },
-      "params": {
-        "result": {
-          "mode": "wire",
-          "value": null
-        }
       }
     }
   ],
   "edges": [
-    {
-      "from": "n1",
-      "output": "image",
-      "to": "n14",
-      "input": "image"
-    },
     {
       "from": "n14",
       "output": "image",
@@ -1134,12 +1134,6 @@ const graph = {
       "output": "image",
       "to": "n8",
       "input": "a"
-    },
-    {
-      "from": "n1",
-      "output": "image",
-      "to": "n10",
-      "input": "image"
     },
     {
       "from": "n10",
@@ -1172,12 +1166,6 @@ const graph = {
       "input": "result"
     },
     {
-      "from": "n6",
-      "output": "alpha",
-      "to": "n12",
-      "input": "a"
-    },
-    {
       "from": "n12",
       "output": "image",
       "to": "n13",
@@ -1190,34 +1178,52 @@ const graph = {
       "input": "b"
     },
     {
-      "from": "n16",
+      "from": "n10",
       "output": "image",
-      "to": "n18",
+      "to": "n16",
       "input": "result"
     },
     {
-      "from": "n20",
+      "from": "n1",
       "output": "image",
+      "to": "n17",
+      "input": "image"
+    },
+    {
+      "from": "n17",
+      "output": "image",
+      "to": "n10",
+      "input": "image"
+    },
+    {
+      "from": "n17",
+      "output": "image",
+      "to": "n14",
+      "input": "image"
+    },
+    {
+      "from": "n18",
+      "output": "image",
+      "to": "n9",
+      "input": "result"
+    },
+    {
+      "from": "n16",
+      "output": "result",
       "to": "n19",
       "input": "image"
     },
     {
-      "from": "n19",
+      "from": "n8",
       "output": "image",
-      "to": "n16",
-      "input": "mask"
+      "to": "n20",
+      "input": "a"
     },
     {
-      "from": "n17",
-      "output": "color",
-      "to": "n16",
-      "input": "b"
-    },
-    {
-      "from": "n18",
-      "output": "result",
-      "to": "n9",
-      "input": "result"
+      "from": "n20",
+      "output": "image",
+      "to": "n18",
+      "input": "image"
     },
     {
       "from": "n13",
@@ -1229,25 +1235,25 @@ const graph = {
       "from": "n21",
       "output": "image",
       "to": "n20",
-      "input": "image"
+      "input": "mask"
     },
     {
-      "from": "n21",
-      "output": "image",
-      "to": "n20",
+      "from": "n13",
+      "output": "result",
+      "to": "n21",
       "input": "alpha"
     },
     {
-      "from": "n8",
-      "output": "image",
-      "to": "n22",
-      "input": "result"
+      "from": "n6",
+      "output": "alpha",
+      "to": "n12",
+      "input": "a"
     },
     {
       "from": "n22",
-      "output": "result",
-      "to": "n16",
-      "input": "a"
+      "output": "color",
+      "to": "n20",
+      "input": "b"
     }
   ]
 };

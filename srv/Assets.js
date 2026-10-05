@@ -24,7 +24,8 @@ var imageList = [
   "Gun5.png",
   "TowerIcons.png|5",
   
-  ].map(imageDetailsFromString);
+  ].map(name => imageDetailsFromString(name.startsWith('creeps/')
+    ? name + '?v=2026-10-05-processed-creeps-1' : name));
 
 var soundList = [
 ];
@@ -49,7 +50,7 @@ var towerSpriteLayout = {
   Cryo: {pivot: [0.5, 0.5], radial: true},
   Quake: {pivot: [0.5, 0.5], radial: true}
 };
-imageList.push(...Object.keys(towerSpriteLayout).map(name => imageDetailsFromString('towers/' + name + '.png?v=brightness-1')));
+imageList.push(...Object.keys(towerSpriteLayout).map(name => imageDetailsFromString('towers/' + name + '.png?v=2026-10-05-processed-towers-1')));
 
 var audioContext = new AudioContext();
 
@@ -59,7 +60,7 @@ function loadImage(url) {
   var result = new Image();
   result.onload = () => {
     if (url.includes('/creeps/')) {
-      // Preserve full-resolution PNGs and cache compact drawing surfaces.
+      // Cache drawing surfaces; the PNGs are already sized for gameplay.
       Assets[name.replace(/\.[^/.]+$/, '')] = prepareCreepSprite(result, name === 'ShieldBubble.png');
     }
     if (url.includes('/towers/')) prepareTowerSprites(result, name.replace(/\.[^/.]+$/, ''));
@@ -67,7 +68,7 @@ function loadImage(url) {
   };
   result.src = url;
 
-  let name = url.slice(url.lastIndexOf("/") + 1);
+  let name = url.slice(url.lastIndexOf("/") + 1).split('?')[0];
 
   Assets[name.replace(/\.[^/.]+$/, "")] = result;
   return result;

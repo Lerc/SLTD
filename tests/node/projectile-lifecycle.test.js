@@ -14,6 +14,79 @@ function finish(shot, limit = 500) {
   assert.ok(shot.dead, 'Projectile eventually finishes');
 }
 
+test('selling a firing Sentry preserves its shot and combat result through a JSON reload', () => {
+  assert.ok(game.placeTower('Tower', 3, 2).success);
+  assert.ok(sendWave());
+  for (let tick = 0; tick < 300 && !bullets.length; tick++) game.tick();
+  assert.equal(bullets.length, 1);
+  assert.ok(sellTower(towers[0]));
+  const state = JSON.parse(JSON.stringify(game.saveState()));
+  game.tick(120);
+  const expected = {damage: creeps.map(c => c.damage), money, lives, score};
+  game.loadState(state);
+  assert.equal(towers.length, 0, 'Reload never places a sold tower back on the map');
+  assert.equal(bullets.length, 1, 'The in-flight shot survives');
+  game.tick(120);
+  assert.deepEqual({damage: creeps.map(c => c.damage), money, lives, score}, expected);
+});
+
+test('all projectile types retain their sold source and next movement', () => {
+  for (const [TowerType, Shot] of [[Tower, Pea], [Stubby, Rock], [Zappy, Laser], [Star, Spiral], [Star, OrbitalFragment], [Incinerator, Flame], [Thumper, Woosh]]) {
+    game.reset();
+    const {tower, target} = scene(TowerType);
+    applyTowerLevel(tower, 3);
+    const shot = new Shot(tower, target); bullets.push(shot);
+    shot.move();
+    assert.ok(sellTower(tower));
+    towers.push(new Tower(5, 4));
+    const state = JSON.parse(JSON.stringify(game.saveState()));
+    shot.move();
+    const expected = {position: shot.position, motion: shot.motion, age: shot.age, damage: shot.damage};
+    game.loadState(state);
+    assert.equal(bullets.length, 1, Shot.name);
+    const restored = bullets[0];
+    assert.ok(restored instanceof Shot);
+    assert.ok(restored.source instanceof TowerType);
+    assert.equal(restored.source.level, 3);
+    assert.deepEqual(restored.source.position, tower.position);
+    assert.ok(!towers.includes(restored.source), 'Sold sources stay detached');
+    restored.move();
+    assert.deepEqual({position: restored.position, motion: restored.motion, age: restored.age, damage: restored.damage}, expected, Shot.name);
+  }
+});
+
+test('flames and ongoing burns share one detached source across repeated reloads', () => {
+  const {tower, target} = scene(Incinerator);
+  target.applyBurn(180, 0.25, tower);
+  bullets.push(new Flame(tower));
+  assert.ok(sellTower(tower));
+  game.loadState(JSON.parse(JSON.stringify(game.saveState())));
+  assert.equal(bullets.length, 1);
+  assert.equal(bullets[0].source, creeps[0].burnSource);
+  const source = bullets[0].source;
+  creeps[0].takeDamage(2, 'fire', source);
+  assert.ok(Number.isFinite(source.damageDealt) && source.damageDealt > 0);
+  bullets.length = 0;
+  game.loadState(JSON.parse(JSON.stringify(game.saveState())));
+  assert.equal(towers.length, 0);
+  assert.equal(creeps[0].burnSource.damageDealt, source.damageDealt, 'Burn credit survives after the last shot expires');
+});
+
+test('older saves still restore shots and burn credit from placed towers', () => {
+  const {tower, target} = scene(Incinerator);
+  target.applyBurn(180, 0.25, tower);
+  bullets.push(new Flame(tower));
+  const state = JSON.parse(JSON.stringify(game.saveState()));
+  delete state.detachedSources;
+  for (const bullet of state.bullets) delete bullet.sourceDetachedIndex;
+  for (const creep of state.creeps) delete creep.burnSourceDetachedIndex;
+  game.loadState(state);
+  assert.equal(towers.length, 1);
+  assert.equal(bullets.length, 1);
+  assert.equal(bullets[0].source, towers[0]);
+  assert.equal(creeps[0].burnSource, towers[0]);
+});
+
 test('Sentry shots finish at the lost target position, then visibly dissipate', () => {
   const {tower, target} = scene();
   const shot = new Pea(tower, target); shot.move();
@@ -148,7 +221,7 @@ test('save/load preserves a fragment\'s randomized homing phase and next movemen
   assert.deepEqual(restored.motion, shot.motion);
 });
 
-test('the last Orbital burst and all remaining effects finish before preparation', () => {
+test('older saves without active wave records drain Orbital bursts before preparation', () => {
   const {tower, target} = scene(Star);
   bullets.push(new Spiral(tower, target)); target.dead = true;
   creeps.length = 0; betweenWaves = false;
@@ -170,13 +243,49 @@ test('preparation updates projectiles from older saves, and pause still stops th
   game.tick(40); assert.equal(bullets.length, 0);
 });
 
-test('active visual effects also delay wave preparation and then expire', () => {
+test('older saves without active wave records drain visual effects before preparation', () => {
   betweenWaves = false;
   let remaining = 3;
   particleSystems.push({move() { remaining--; }, isActive() { return remaining > 0; }});
   game.tick(); assert.equal(betweenWaves, false);
   game.tick(3); assert.equal(betweenWaves, true);
   assert.equal(particleSystems.length, 0);
+});
+
+test('a launched wave pays out while its last Orbital burst finishes, then launches once', () => {
+  assert.ok(sendWave());
+  const {tower, target} = scene(Star);
+  bullets.push(new Spiral(tower, target)); target.dead = true;
+  creeps.length = hopper.length = backlog.length = 0;
+  const balance = money, base = waveClearBase, timeBonus = Math.ceil((buildTicks - 1) / 60);
+  game.tick();
+  assert.equal(bullets.length, 9);
+  assert.equal(waveClearPayout.age, 0, 'Clear presentation starts with fragments still alive');
+  assert.equal(money, balance + base + timeBonus);
+  const awarded = money;
+  game.tick(waveBonusPauseTicks - 1);
+  assert.equal(bullets.length, 0, 'Fragments continue moving and finish during the presentation');
+  assert.equal(waveCounter, 1);
+  assert.equal(waveClearPayout.age, waveBonusPauseTicks - 1);
+  assert.equal(money, awarded);
+  game.tick();
+  assert.equal(waveCounter, 2);
+  assert.equal(waveClearPayout, null);
+  game.tick(); assert.equal(waveCounter, 2);
+});
+
+test('a launched wave pays once while visual effects finish during the clear presentation', () => {
+  assert.ok(sendWave());
+  creeps.length = hopper.length = backlog.length = 0;
+  let remaining = 3;
+  particleSystems.push({move() { remaining--; }, isActive() { return remaining > 0; }});
+  game.tick();
+  assert.ok(waveClearPayout && particleSystems.length === 1);
+  const awarded = money;
+  game.tick(2);
+  assert.equal(particleSystems.length, 0);
+  assert.equal(waveClearPayout.age, 2);
+  assert.equal(money, awarded);
 });
 
 test('save/load preserves targetless flight, dissipation, and radial launch state', () => {
