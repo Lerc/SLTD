@@ -196,11 +196,13 @@ function initGlow(outputCanvas, canvas2d) {
     
     // Create shader programs using your boilerplate
     const vShader = vertexShader(vertexShaderSource);
+    // Matches the quadBuffer layout below.
+    const quadAttribs = ['aPosition', 'aTexCoord'];
     
-    brightPassProgram = generateShaderProgram(vShader, fragmentShader(brightPassFragmentSource));
-    downsampleProgram = generateShaderProgram(vShader, fragmentShader(downsampleFragmentSource));
-    upsampleProgram = generateShaderProgram(vShader, fragmentShader(upsampleFragmentSource));
-    compositeProgram = generateShaderProgram(vShader, fragmentShader(compositeFragmentSource));
+    brightPassProgram = generateShaderProgram(vShader, fragmentShader(brightPassFragmentSource), quadAttribs);
+    downsampleProgram = generateShaderProgram(vShader, fragmentShader(downsampleFragmentSource), quadAttribs);
+    upsampleProgram = generateShaderProgram(vShader, fragmentShader(upsampleFragmentSource), quadAttribs);
+    compositeProgram = generateShaderProgram(vShader, fragmentShader(compositeFragmentSource), quadAttribs);
     
     // Create fullscreen quad using your bufferFromArray
     quadBuffer = bufferFromArray([

@@ -105,7 +105,9 @@ function getInterleaveFunction(interleaveData) {
   }
 }
 
-function generateShaderProgram(vertexShader,fragmentShader) {
+// attribOrder names the attributes in their interleaved buffer order. Active
+// attribute indices need not follow declaration order, and drivers differ.
+function generateShaderProgram(vertexShader,fragmentShader,attribOrder) {
   // Create the shader program
 
   let shaderProgram = gl.createProgram();
@@ -142,13 +144,18 @@ function generateShaderProgram(vertexShader,fragmentShader) {
     let attribLocation = gl.getAttribLocation(shaderProgram,attrib.name);
     let set = getAttribFunction(gl,attribLocation,attrib.type);
     let size=attribSize(attrib);
-    interleaveData.push({size,set})
+    interleaveData.push({name:attrib.name,size,set})
     let functionName = attrib.name+"Pointer";
     shaderProgram[functionName]=set;
     gl.enableVertexAttribArray(attribLocation);
     console.log("attrib", attrib);
   }
 
+  if (attribOrder) {
+    const missing = interleaveData.filter(a=>!attribOrder.includes(a.name));
+    if (missing.length) console.error("attributes missing from attribOrder", missing.map(a=>a.name));
+    interleaveData.sort((a,b)=>attribOrder.indexOf(a.name)-attribOrder.indexOf(b.name));
+  }
   shaderProgram.setInterleaved=getInterleaveFunction(interleaveData);
   shaderProgram.setInterleaved();
   //vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
