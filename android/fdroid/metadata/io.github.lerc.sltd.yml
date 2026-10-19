@@ -14,7 +14,7 @@ Builds:
   - versionName: 1.0.0
     versionCode: 1
     commit: android-v1.0.0
-    subdir: android
+    subdir: android/app
     gradle:
       - yes
 

@@ -1,0 +1,45 @@
+name: F-Droid build
+
+on:
+  push:
+    branches: [main]
+    tags: ['android-v*']
+    paths: ['android/**', 'fastlane/**', 'srv/**', '.github/workflows/fdroid-build.yml']
+  pull_request:
+    branches: [main]
+    paths: ['android/**', 'fastlane/**', 'srv/**', '.github/workflows/fdroid-build.yml']
+  # F-Droid's scanner signatures and build rules change without a push here.
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # checkupdates reads the release tags from history.
+          fetch-depth: 0
+      - name: Prepare JDK 17 and Android SDK
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      # Unpinned on purpose: conformance means passing F-Droid's current rules.
+      - name: Install fdroidserver and gradlew-fdroid
+        run: |
+          python3 -m venv "$RUNNER_TEMP/fdroid"
+          "$RUNNER_TEMP/fdroid/bin/pip" install --quiet fdroidserver \
+            'git+https://gitlab.com/fdroid/gradlew-fdroid.git'
+      - name: Scan, build as F-Droid, and check the APK
+        env:
+          FDROID: ${{ runner.temp }}/fdroid/bin/fdroid
+          GRADLEW_FDROID: ${{ runner.temp }}/fdroid/bin/gradlew-fdroid
+          CHECK_UPDATES: ${{ startsWith(github.ref, 'refs/tags/android-v') && '--check-updates' || '' }}
+        run: android/tools/fdroid-build.sh $CHECK_UPDATES

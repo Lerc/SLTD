@@ -604,7 +604,9 @@ Read `package.json` for the available commands. `npm run serve` uses Python 3;
 have no configured repository workflow. `.github/workflows/test.yml` runs the
 Node suite and example evaluation on main pushes and pull requests to main.
 `.github/workflows/fdroid-metadata.yml` lints the F-Droid recipe and store
-listing and runs the wrapper host test when `android/` or `srv/` changes.
+listing and runs the wrapper host test, and `.github/workflows/fdroid-build.yml`
+scans, builds the app as F-Droid does, and checks the APK, when `android/`,
+`fastlane/` or `srv/` changes. The F-Droid store listing lives in root `fastlane/`.
 
 ### Image Processing
 

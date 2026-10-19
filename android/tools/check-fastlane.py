@@ -11,7 +11,8 @@ import re
 import sys
 
 android = pathlib.Path(__file__).resolve().parent.parent
-listing = android / 'fastlane/metadata/android'
+# F-Droid reads the listing only from the root of the source checkout.
+listing = android.parent / 'fastlane/metadata/android'
 limits = {'title.txt': 50, 'short_description.txt': 80, 'full_description.txt': 4000}
 changelog_limit = 500
 
@@ -23,17 +24,17 @@ for locale in locales:
     for name, limit in limits.items():
         path = locale / name
         if not path.exists():
-            problems.append(f'{path.relative_to(android)} is missing')
+            problems.append(f'{path.relative_to(android.parent)} is missing')
             continue
         text = path.read_text(encoding='utf-8').strip()
         if not text:
-            problems.append(f'{path.relative_to(android)} is empty')
+            problems.append(f'{path.relative_to(android.parent)} is empty')
         elif len(text) > limit:
-            problems.append(f'{path.relative_to(android)} has {len(text)} characters; the limit is {limit}')
+            problems.append(f'{path.relative_to(android.parent)} has {len(text)} characters; the limit is {limit}')
     for path in sorted((locale / 'changelogs').glob('*.txt')):
         length = len(path.read_text(encoding='utf-8').strip())
         if length > changelog_limit:
-            problems.append(f'{path.relative_to(android)} has {length} characters; the limit is {changelog_limit}')
+            problems.append(f'{path.relative_to(android.parent)} has {length} characters; the limit is {changelog_limit}')
 
 gradle = (android / 'app/build.gradle').read_text(encoding='utf-8')
 version_code = re.search(r'versionCode\s+(\d+)', gradle).group(1)

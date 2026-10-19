@@ -3,10 +3,10 @@ name: F-Droid metadata
 on:
   push:
     branches: [main]
-    paths: ['android/**', 'srv/**', '.github/workflows/fdroid-metadata.yml']
+    paths: ['android/**', 'fastlane/**', 'srv/**', '.github/workflows/fdroid-metadata.yml']
   pull_request:
     branches: [main]
-    paths: ['android/**', 'srv/**', '.github/workflows/fdroid-metadata.yml']
+    paths: ['android/**', 'fastlane/**', 'srv/**', '.github/workflows/fdroid-metadata.yml']
   workflow_dispatch:
 
 permissions:
