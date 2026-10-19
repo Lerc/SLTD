@@ -46,7 +46,6 @@ public final class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
         }
-        hideSystemBars();
         root.setOnApplyWindowInsetsListener((view, windowInsets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
                 Insets safe = windowInsets.getInsets(
@@ -106,6 +105,8 @@ public final class MainActivity extends Activity {
         root.addView(webView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         setContentView(root);
+        // The insets controller needs the decor view that setContentView creates.
+        hideSystemBars();
         root.requestApplyInsets();
         if (Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(

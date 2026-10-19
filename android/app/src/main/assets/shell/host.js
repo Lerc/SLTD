@@ -31,6 +31,8 @@
     if (button.id === 'exit') location.href = 'https://appassets.androidplatform.net/exit';
     else baseActivate(button);
   };
+  // The menu may already be drawn with the original buttons; force a redraw.
+  uiDrawSignature = '';
 
   window.sltdHost = {
     pause() {

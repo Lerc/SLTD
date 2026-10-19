@@ -80,6 +80,20 @@ process death, or leaving the app via the exit prompt; uninstalling or clearing
 app storage removes scores. Debug builds enable WebView inspection; release
 builds disable it.
 
+## Launcher icon
+
+The icon is the Incinerator with its turret at 10 o'clock, exactly as the
+Tactical Archive portrait draws it: `guideRenderPortrait` renders it through the
+live glow shader at gameplay pixel scale. `tools/make-icon.mjs` serves `../srv`
+locally, renders that portrait in headless Chrome (software WebGL), and writes the
+adaptive foreground and legacy PNGs into `app/src/main/res/mipmap-*`. From the
+repository root, with `npm ci` done and Chrome installed (`CHROME` overrides the
+binary):
+
+```sh
+node android/tools/make-icon.mjs
+```
+
 ## Checks
 
 ```sh
