@@ -15,6 +15,9 @@ evaluations/**/*_state.json
 evaluations/**/final_state.json
 evaluations/**/initial_state.json
 
+# Device screenshots viewed during development
+/evaluations/BrowserViews/
+
 # Node modules
 node_modules/
 
