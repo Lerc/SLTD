@@ -1,4 +1,4 @@
-# SLTD · Branching Defenses
+# SLTD · Simple Little Tower Defense
 
 A phone-friendly tower defense game using vanilla JavaScript, Canvas and WebGL. No build step or runtime dependencies.
 
@@ -10,7 +10,7 @@ python3 -m http.server 8000 --directory srv
 
 Open **http://localhost:8000**. Choose a map, then tap **Deploy defenses**. Foundry is the original route. Switchback winds from the bottom-right entrance to the bottom-left exit. Crosswind crosses itself, passing through the junction twice.
 
-`main` contains the current game. `legacy` preserves the previous main at `db8a05d`, before Branching Defenses became main.
+`main` contains the current game. `legacy` preserves the previous main at `db8a05d`, before Simple Little Tower Defense became main.
 
 Eight more levels follow the 11 × 16 PNG patterns in `BaseMedia/Maps`: Knotwork, Zigzag, Coil, Longbow, Serpentine, Cascade, Sawtooth and Interlace (maps 1–8 respectively). Drag the map list up or down to browse, or use a mouse wheel. Tap a map to select it; the Deploy button stays visible below the list. Green marks the entrance and orange marks the exit in the previews. Crossings carry creeps straight through on each pass.
 

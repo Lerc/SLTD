@@ -1,7 +1,7 @@
 "use strict"
 
 // Game configuration
-var versionString="1.0 — Branching defenses";
+var versionString="1.0 — Simple Little Tower Defense";
 var globalScaleFactor = 0.5;
 var showNote=true;
 var note = "";

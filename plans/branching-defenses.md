@@ -1,4 +1,4 @@
-# Branching defenses
+# Simple Little Tower Defense
 
 ## Design
 

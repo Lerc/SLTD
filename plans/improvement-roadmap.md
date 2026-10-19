@@ -10,7 +10,7 @@ This document outlines planned improvements for the SLTD (Some kind of Tower Def
 This document describes the project and proposed work as they stood in 2025.
 Its architecture, examples, and task statuses are not a current development
 plan. For present gameplay and tooling, start with [README.md](../README.md);
-for the implemented design, see [branching defenses](branching-defenses.md)
+for the implemented design, see [Simple Little Tower Defense](branching-defenses.md)
 and [tower levels](tower-levels.md). The previous main branch is preserved as
 `legacy`; active development uses `main`.
 

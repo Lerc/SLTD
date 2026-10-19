@@ -467,7 +467,7 @@ and `waves.js` and `placement.js` precede `showRunner.js`. Browser
 ### Git Workflow
 
 `main` contains the current game; `legacy` preserves the previous published main
-before Branching Defenses. Create feature branches from current `main`.
+before Simple Little Tower Defense. Create feature branches from current `main`.
 
 **Branch naming convention:**
 - Feature branches should start with `claude/`
