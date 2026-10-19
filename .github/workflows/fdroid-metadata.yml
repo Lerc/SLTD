@@ -1,0 +1,36 @@
+name: F-Droid metadata
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', 'srv/**', '.github/workflows/fdroid-metadata.yml']
+  pull_request:
+    branches: [main]
+    paths: ['android/**', 'srv/**', '.github/workflows/fdroid-metadata.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      # Unpinned on purpose: conformance means passing F-Droid's current rules.
+      - name: Install fdroidserver
+        run: |
+          python3 -m venv "$RUNNER_TEMP/fdroid"
+          "$RUNNER_TEMP/fdroid/bin/pip" install --quiet fdroidserver
+      - name: Lint F-Droid recipe
+        run: FDROID="$RUNNER_TEMP/fdroid/bin/fdroid" android/tools/fdroid-lint.sh
+      - name: Check store listing limits
+        run: python3 android/tools/check-fastlane.py
+      - name: Check wrapper host adapter against the game UI
+        run: node android/tests/host.test.cjs

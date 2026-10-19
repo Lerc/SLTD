@@ -101,7 +101,17 @@ node android/tools/make-icon.mjs
 node tests/host.test.cjs
 python3 tools/verify-apk.py app/build/outputs/apk/debug/app-debug.apk
 python3 tools/verify-apk.py app/build/outputs/apk/release/app-release-unsigned.apk
+tools/fdroid-lint.sh        # needs `pip install fdroidserver`
+python3 tools/check-fastlane.py
 ```
+
+`fdroid-lint.sh` runs `fdroid lint` on the recipe against fdroiddata's current
+category list, then fails unless `fdroid rewritemeta` leaves it unchanged, as
+fdroiddata's CI requires. `check-fastlane.py` enforces F-Droid's listing limits
+(title 50, short description 80, full description 4000, changelogs 500
+characters) and requires a changelog for the current `versionCode`. The
+`F-Droid metadata` GitHub workflow runs these two and the Node host check when
+`android/` or `srv/` changes.
 
 Unit tests cover origin restrictions, path traversal, cache query handling, and
 MIME types. The Node check loads the actual shared game and UI handlers to check

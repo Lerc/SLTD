@@ -1,5 +1,5 @@
 Categories:
-  - Games
+  - Strategy Game
 License: MIT
 AuthorName: Neil Graham
 SourceCode: https://github.com/Lerc/SLTD
@@ -20,6 +20,6 @@ Builds:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^android-v[0-9]+\.[0-9]+\.[0-9]+$
-UpdateCheckData: 'android/app/build.gradle|versionCode\s+(\d+)|.|versionName\s+''([^'']+)'''
+UpdateCheckData: android/app/build.gradle|versionCode\s+(\d+)|.|versionName\s+'([^']+)'
 CurrentVersion: 1.0.0
 CurrentVersionCode: 1
