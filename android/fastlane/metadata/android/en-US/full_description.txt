@@ -1,0 +1,7 @@
+Build branching defenses against waves of armored, shielded and regenerating enemies. Choose from eleven maps, specialize your towers, and balance early wave bonuses against the risk of overlapping attacks.
+
+SLTD features touch controls, a tactical archive, pause and double speed, and per-map best scores stored on your device. The game uses Canvas and WebGL for its glowing battlefield.
+
+All game files are included in the app. Play offline without an account, advertisements, tracking, or network permissions.
+
+A current Android System WebView with WebGL support is required. Best scores persist across app updates; a run in progress is kept while the app stays in memory, but is not restored after the app is closed or the operating system kills it.

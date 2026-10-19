@@ -1,0 +1,85 @@
+import org.gradle.api.file.FileSystemOperations
+import org.gradle.api.tasks.PathSensitivity
+import javax.inject.Inject
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.github.lerc.sltd'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        applicationId 'io.github.lerc.sltd'
+        minSdk 23
+        targetSdk 35
+        // Keep these literal values readable by F-Droid's update checker.
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            // F-Droid builds and signs this APK itself.
+            minifyEnabled false
+        }
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+// Each variant gets its own generated assets. Sync removes stale files when
+// files are deleted or renamed in srv, and never modifies the source tree.
+abstract class SyncWebAssets extends DefaultTask {
+    @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract DirectoryProperty getWebSource()
+
+    @InputFile
+    @PathSensitive(PathSensitivity.NONE)
+    abstract RegularFileProperty getLicenseFile()
+
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDirectory()
+
+    @Inject
+    abstract FileSystemOperations getFileSystemOperations()
+
+    @TaskAction
+    void syncAssets() {
+        fileSystemOperations.sync {
+            from(webSource) { into 'web' }
+            from(licenseFile) { into 'legal' }
+            into outputDirectory
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        def syncTask = tasks.register("sync${variant.name.capitalize()}WebAssets", SyncWebAssets) {
+            webSource.set(rootProject.layout.projectDirectory.dir('../srv'))
+            licenseFile.set(rootProject.layout.projectDirectory.file('../LICENSE'))
+            outputDirectory.set(layout.buildDirectory.dir("generated/webAssets/${variant.name}"))
+        }
+        variant.sources.assets.addGeneratedSourceDirectory(syncTask) { it.outputDirectory }
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
