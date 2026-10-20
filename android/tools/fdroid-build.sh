@@ -30,9 +30,13 @@ VERSION_NAME="$(sed -n "s/^\s*versionName\s\+'\([^']\+\)'.*/\1/p" <<< "$GRADLE_F
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/metadata"
+# F-Droid clones a repository whose default branch exists. A CI tag checkout
+# has none, so serve a copy with HEAD on main holding the commit and all tags.
+git init -q --bare -b main "$WORK/source"
+git -C "$WORK/source" fetch -q "$ROOT" "+$SHA:refs/heads/main" '+refs/tags/*:refs/tags/*'
 # fdroid build rejects an APK whose version differs from the build entry, and
 # HEAD may be ahead of the last release, so the entry takes HEAD's version too.
-sed -e "s|^Repo: .*|Repo: $ROOT|" -e "s|^    commit: .*|    commit: $SHA|" \
+sed -e "s|^Repo: .*|Repo: $WORK/source|" -e "s|^    commit: .*|    commit: $SHA|" \
   -e "s|^  - versionName: .*|  - versionName: $VERSION_NAME|" \
   -e "s|^    versionCode: .*|    versionCode: $VERSION_CODE|" \
   "$HERE/../fdroid/metadata/$APP.yml" > "$WORK/metadata/$APP.yml"
