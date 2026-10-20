@@ -1,10 +1,13 @@
-// Builds the launcher icon PNGs from the game's own rendering of the Incinerator.
+// Builds the launcher icon PNGs and the 512 px F-Droid store icon from the
+// game's own rendering of the Incinerator.
 // Usage, from the repository root: node android/tools/make-icon.mjs
 // Needs Chrome (set CHROME to override the binary) and the root dev dependencies.
 //
 // The tower is drawn exactly as the Tactical Archive draws its portraits:
 // guideRenderPortrait() renders the specimen through the live glow shader at
 // gameplay pixel scale, keeping alpha so the halo survives on the icon plate.
+// The store icon needs about twice that scale, so it is drawn at 2x with one
+// more blur level, which doubles the bloom radius to keep the same look.
 import sharp from 'sharp';
 import {spawn} from 'node:child_process';
 import {createServer} from 'node:http';
@@ -16,6 +19,7 @@ import {fileURLToPath} from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const srv = join(here, '../../srv');
 const res = join(here, '../app/src/main/res');
+const listing = join(here, '../../fastlane/metadata/android/en-US/images');
 const heading = '-Math.PI/3'; // 0 faces up, clockwise positive: 10 o'clock
 const background = '#091116';
 
@@ -37,7 +41,7 @@ const chrome = spawn(process.env.CHROME || 'google-chrome', ['--headless=new', '
   '--window-size=540,924', '--no-first-run', 'about:blank'], {stdio: ['ignore', 'ignore', 'pipe']});
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-let portrait;
+let portrait, large;
 try {
   const endpoint = await new Promise((resolve, reject) => {
     let log = '';
@@ -85,6 +89,32 @@ try {
     return picture.toDataURL('image/png');
   })()`);
   portrait = Buffer.from(data.split(',')[1], 'base64');
+  // guideRenderPortrait() at double scale on a staging canvas of the shader's
+  // size; 540 px is the widest square the output canvas can return.
+  const largeData = await evaluate(`(() => {
+    const preview = guideSpecimen(towerInfo.find(t => t.type === Incinerator));
+    preview.angle = ${heading};
+    const source = document.createElement('canvas');
+    source.width = frameCanvas.width;
+    source.height = frameCanvas.height;
+    const paint = source.getContext('2d', {willReadFrequently: true}), previous = ctx;
+    paint.translate(270, 270);
+    paint.scale(2 * 2.25 * preview.scale, 2 * 2.25 * preview.scale);
+    try {
+      ctx = paint;
+      preview.draw();
+      updateGlowSettings({blurLevel: 3});
+      glowFrame(source, true);
+      const picture = document.createElement('canvas');
+      picture.width = picture.height = 540;
+      picture.getContext('2d').drawImage(outputCanvas, 0, 0, 540, 540, 0, 0, 540, 540);
+      return picture.toDataURL('image/png');
+    } finally {
+      ctx = previous;
+      updateGlowSettings({blurLevel: 2});
+    }
+  })()`);
+  large = Buffer.from(largeData.split(',')[1], 'base64');
   socket.close();
 } finally {
   const exited = new Promise(resolve => chrome.exitCode === null ? chrome.once('exit', resolve) : resolve());
@@ -96,16 +126,21 @@ try {
 
 // The specimen sits at the portrait's centre. Measure the tower's solid reach
 // from there, so the halo may fade past the safe zone but the tower never does.
-const {data, info} = await sharp(portrait).raw().toBuffer({resolveWithObject: true});
-const centre = info.width / 2;
-let reach = 0;
-for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
-  if (data[(y * info.width + x) * 4 + 3] >= 128) reach = Math.max(reach, Math.hypot(x + 0.5 - centre, y + 0.5 - centre));
+async function measure(image) {
+  const {data, info} = await sharp(image).raw().toBuffer({resolveWithObject: true});
+  const centre = info.width / 2;
+  let reach = 0;
+  for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
+    if (data[(y * info.width + x) * 4 + 3] >= 128) reach = Math.max(reach, Math.hypot(x + 0.5 - centre, y + 0.5 - centre));
+  }
+  return {image, width: info.width, reach};
 }
+const small = await measure(portrait);
+const big = await measure(large);
 
-async function plate(size, radius, reachDp, d, rounded) {
-  const scaled = Math.round(info.width * reachDp * d / reach);
-  const tower = await sharp(portrait).resize(scaled, scaled, {kernel: 'lanczos3'}).toBuffer();
+async function plate(size, radius, reachDp, d, rounded, source = small) {
+  const scaled = Math.round(source.width * reachDp * d / source.reach);
+  const tower = await sharp(source.image).resize(scaled, scaled, {kernel: 'lanczos3'}).toBuffer();
   const crop = Math.max(0, Math.floor((scaled - size) / 2));
   const fitted = scaled > size
     ? await sharp(tower).extract({left: crop, top: crop, width: size, height: size}).toBuffer()
@@ -125,4 +160,7 @@ for (const [name, d] of Object.entries(densities)) {
   await (await plate(Math.round(108 * d), 0, 33, d, false)).toFile(join(dir, 'ic_launcher_foreground.png'));
   await (await plate(Math.round(48 * d), 8 * d, 22, d, true)).toFile(join(dir, 'ic_launcher.png'));
 }
-console.log(`Rendered the Incinerator portrait (reach ${reach.toFixed(1)} px) into ${res}`);
+// Store icon: the legacy plate at 512 px. F-Droid does not read adaptive icons.
+mkdirSync(listing, {recursive: true});
+await (await plate(512, 512 * 8 / 48, 22, 512 / 48, true, big)).toFile(join(listing, 'icon.png'));
+console.log(`Rendered the Incinerator portrait (reach ${small.reach.toFixed(1)} px, ${big.reach.toFixed(1)} px at 2x) into ${res} and ${listing}`);

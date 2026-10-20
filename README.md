@@ -1,6 +1,6 @@
-# SLTD · Simple Little Tower Defense
+# SLTD · Simple Little Tower Defence
 
-A tower defense game for phones and browsers, written in plain JavaScript with
+A tower defence game for phones and browsers, written in plain JavaScript with
 Canvas and WebGL. It has no build step and no runtime dependencies.
 
 ## Web version

@@ -469,10 +469,10 @@ function drawUI(now = performance.now()) {
       uiWrap(c, 'Wave ' + waveCounter + ' · ' + wavePlan(waveCounter).hint, 180, 525, 720, 36, 48);
     } else {
       let title= ['SLTD',180,510,110,uiColors.mint];
-      let subtitle = ['Just a Simple Little Tower Defense', 180, 660, 720, 43, 62];
+      let subtitle = ['Just a Simple Little Tower Defence', 180, 660, 720, 43, 62];
       let message = ['You probably know how this works, Try the tactical archive if you want to know about the towers and creeps',180,810,720,37,56];
       if (modal !== 'welcome') {
-        title = ['Defense breached', 180, 510, 67, uiColors.mint];
+        title = ['Defence breached', 180, 510, 67, uiColors.mint];
         subtitle = ['Reached wave ' + waveCounter + ' · Score ' + score.toLocaleString() + '.', 180, 660, 720, 43, 62];
         message = ["You haven't played for too long yet, so you can totally have another go ", 180, 810, 720, 37, 56];
       }

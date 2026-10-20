@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict"
 
-// Node.js headless entry point for SLTD tower defense game
+// Node.js headless entry point for SLTD tower defence game
 
 // Minimal browser API stubs
 globalThis.window = global;

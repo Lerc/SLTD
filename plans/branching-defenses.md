@@ -1,4 +1,4 @@
-# Simple Little Tower Defense
+# Simple Little Tower Defence
 
 ## Design
 

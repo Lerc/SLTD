@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SLTD · Simple Little Tower Defense</string>
+    <string name="app_name">SLTD · Simple Little Tower Defence</string>
     <string name="exit_title">Leave game?</string>
     <string name="exit_message">Your current run will end. Your best scores are kept.</string>
     <string name="exit_action">Leave</string>

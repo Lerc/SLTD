@@ -87,8 +87,11 @@ The icon is the Incinerator with its turret at 10 o'clock, exactly as the
 Tactical Archive portrait draws it: `guideRenderPortrait` renders it through the
 live glow shader at gameplay pixel scale. `tools/make-icon.mjs` serves `../srv`
 locally, renders that portrait in headless Chrome (software WebGL), and writes the
-adaptive foreground and legacy PNGs into `app/src/main/res/mipmap-*`. From the
-repository root, with `npm ci` done and Chrome installed (`CHROME` overrides the
+adaptive foreground and legacy PNGs into `app/src/main/res/mipmap-*`. It also
+writes the 512 px store icon to `fastlane/metadata/android/en-US/images/icon.png`,
+because F-Droid does not read adaptive icons. That one is drawn at twice the scale
+with one more blur level, which doubles the bloom radius and keeps the look sharp
+at that size. From the repository root, with `npm ci` done and Chrome installed (`CHROME` overrides the
 binary):
 
 ```sh
@@ -111,7 +114,11 @@ tools/fdroid-build.sh       # also needs gradlew-fdroid and ANDROID_HOME
 category list, then fails unless `fdroid rewritemeta` leaves it unchanged, as
 fdroiddata's CI requires. `check-fastlane.py` enforces F-Droid's listing limits
 (title 50, short description 80, full description 4000, changelogs 500
-characters) and requires a changelog for the current `versionCode`. The
+characters) and the style rules `fdroid lint` applies to a summary and
+description, which it never sees because F-Droid takes them from the listing: no
+closing punctuation or "for Android" in the short description, and no trailing
+spaces or malformed bullets in the full description. It also requires a
+changelog for the current `versionCode`. The
 `F-Droid metadata` GitHub workflow runs these two and the Node host check when
 `android/`, `fastlane/` or `srv/` changes.
 

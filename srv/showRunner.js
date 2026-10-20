@@ -1,7 +1,7 @@
 "use strict"
 
 // Game configuration
-var versionString="1.0 — Simple Little Tower Defense";
+var versionString="1.0 — Simple Little Tower Defence";
 var globalScaleFactor = 0.5;
 var showNote=true;
 var note = "";

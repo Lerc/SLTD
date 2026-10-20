@@ -1,7 +1,7 @@
-# SLTD Tower Defense - Improvement Roadmap
+# SLTD Tower Defence - Improvement Roadmap
 
 ## Document Overview
-This document outlines planned improvements for the SLTD (Some kind of Tower Defense) game, focusing on code organization, bug fixes, and feature enhancements.
+This document outlines planned improvements for the SLTD (Some kind of Tower Defence) game, focusing on code organization, bug fixes, and feature enhancements.
 
 **Status**: Historical proposal, retained for reference
 **Version at time of writing**: 0.91
@@ -10,7 +10,7 @@ This document outlines planned improvements for the SLTD (Some kind of Tower Def
 This document describes the project and proposed work as they stood in 2025.
 Its architecture, examples, and task statuses are not a current development
 plan. For present gameplay and tooling, start with [DEVELOPMENT.md](../DEVELOPMENT.md);
-for the implemented design, see [Simple Little Tower Defense](branching-defenses.md)
+for the implemented design, see [Simple Little Tower Defence](branching-defenses.md)
 and [tower levels](tower-levels.md). The previous main branch is preserved as
 `legacy`; active development uses `main`.
 
@@ -966,7 +966,7 @@ class SpatialGrid {
 
 ## Conclusion
 
-This roadmap provides a clear path from the current codebase to a well-organized, feature-rich tower defense game. The modular approach allows incremental improvements without major disruption.
+This roadmap provides a clear path from the current codebase to a well-organized, feature-rich tower defence game. The modular approach allows incremental improvements without major disruption.
 
 **Priority focus:**
 1. Fix remaining bugs as they're discovered

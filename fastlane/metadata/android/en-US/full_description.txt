@@ -1,6 +1,3 @@
 Simple Little Tower Defence does what it says on the tin.
 
-It's a tower defence, it has different tower types and upgrades.  It has creeps with various properties.   You know the drill.    
-
-
-
+It's a tower defence, it has different tower types and upgrades.  It has creeps with various properties.   You know the drill.

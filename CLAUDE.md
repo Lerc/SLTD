@@ -1,7 +1,7 @@
-# SLTD - Tower Defense Game
+# SLTD - Tower Defence Game
 
 ## Project Overview
-A mobile-oriented tower defense game built with vanilla JavaScript, Canvas 2D, and WebGL for visual effects (glow/bloom). The game runs in **dual-mode architecture**: full browser mode with rendering, and headless mode for testing and automation.
+A mobile-oriented tower defence game built with vanilla JavaScript, Canvas 2D, and WebGL for visual effects (glow/bloom). The game runs in **dual-mode architecture**: full browser mode with rendering, and headless mode for testing and automation.
 
 ## Tech Stack
 - **Language**: Vanilla JavaScript (ES5/ES6)
@@ -468,7 +468,7 @@ and `waves.js` and `placement.js` precede `showRunner.js`. Browser
 ### Git Workflow
 
 `main` contains the current game; `legacy` preserves the previous published main
-before Simple Little Tower Defense. Create feature branches from current `main`.
+before Simple Little Tower Defence. Create feature branches from current `main`.
 
 **Branch naming convention:**
 - Feature branches should start with `claude/`
@@ -663,9 +663,9 @@ cd evaluations/example_scenario && bash run.sh
 
 ## Summary for AI Assistants
 
-**SLTD (Simple Little Tower Defense)** — the current game version is `versionString` in `srv/showRunner.js`.
+**SLTD (Simple Little Tower Defence)** — the current game version is `versionString` in `srv/showRunner.js`.
 
-Dual-mode tower defense game:
+Dual-mode tower defence game:
 - Vanilla JavaScript (no frameworks or runtime npm dependencies)
 - Sharp is a development dependency for image processing tools
 - Canvas 2D + WebGL effects

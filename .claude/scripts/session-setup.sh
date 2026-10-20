@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🎮 Setting up SLTD Tower Defense game environment..."
+echo "🎮 Setting up SLTD Tower Defence game environment..."
 
 # Detect environment
 if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
