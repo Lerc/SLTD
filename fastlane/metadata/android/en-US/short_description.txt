@@ -1,1 +1,1 @@
-Offline tower defense with branching upgrades, shields and overlapping waves
+Just a Simple Little Tower Defence game.

@@ -1,1 +1,1 @@
-Initial offline WebView edition of SLTD · Simple Little Tower Defense. Includes the current web game, persistent best scores, system Back handling, and automatic pause when backgrounded.
+Initial edition of SLTD · Simple Little Tower Defense.
