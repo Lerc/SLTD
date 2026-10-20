@@ -209,7 +209,8 @@ The dual-mode architecture was achieved through refactoring:
 ### Configuration & Documentation
 - **`package.json`** - NPM scripts and metadata
 - **`CLAUDE.md`** - This file - comprehensive AI assistant guide
-- **`README.md`** - Project overview
+- **`README.md`** - Visitor summary: what the game is, serving `srv/`, building Android
+- **`DEVELOPMENT.md`** - Gameplay rules, asset processing, checks and headless play
 - **`.claude/settings.json`** - Claude Code configuration
 - **`.claude/scripts/session-setup.sh`** - Session startup hook
 
@@ -619,7 +620,8 @@ workflows, separate shield-bubble resizing, and browser cache updates.
 ## Documentation References
 
 - **CLAUDE.md** (this file) - Comprehensive AI assistant guide
-- **README.md** - Project summary
+- **README.md** - Visitor summary
+- **DEVELOPMENT.md** - Gameplay and development notes
 - **evaluations/README.md** - Evaluation framework documentation
 
 ---
