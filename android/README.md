@@ -27,13 +27,11 @@ to install. You can also use `adb install -r app/build/outputs/apk/debug/app-deb
 ./gradlew --no-daemon :app:assembleRelease
 ```
 
-The F-Droid input is `app/build/outputs/apk/release/app-release-unsigned.apk`.
-F-Droid builds it from source and supplies its own signature. For independent
-distribution you must sign a release APK with your own persistent key using
-`zipalign` and `apksigner`. Keep that key outside source control. The debug APK
-is suitable for manual testing; it is not the F-Droid release artifact. Installing
-an APK signed with a different key requires removing the old installation,
-which erases its local scores.
+This builds `app/build/outputs/apk/release/app-release-unsigned.apk`. Do not sign
+and publish it: released APKs come from the `F-Droid build` workflow (see
+[Releases](#f-droid-releases-and-automatic-updates)). The debug APK is for manual
+testing. Installing an APK signed with a different key requires removing the old
+installation, which erases its local scores.
 
 The first build may download Gradle and Maven build dependencies. The build
 explicitly disables automatic SDK package installation. If tools are missing,
@@ -129,10 +127,17 @@ runs `fdroid scanner` on the source, `fdroid build`, then checks the APK with
 `verify-apk.py`, the APK scanner, and `aapt2` to confirm no permissions are
 requested. `--check-updates` also requires `fdroid checkupdates` to find that
 versionCode among the `android-v*` tags, so use it only on a tagged release.
+`--verify-release` keeps the recipe's `Binaries` entry, which other runs drop:
+`fdroid build` then downloads the signed release APK, requires it to match its own
+build apart from the signature, and checks the signer against
+`AllowedAPKSigningKeys`. Set `BINARIES` to another URL to check a signed APK
+before uploading it. `OUT_DIR` receives a copy of the unsigned APK.
 Install the tools with `pip install fdroidserver
 git+https://gitlab.com/fdroid/gradlew-fdroid.git`; F-Droid replaces the checked-in
 Gradle wrapper with `gradlew-fdroid`. The `F-Droid build` workflow runs it on the
-same changes, weekly, on demand, and with `--check-updates` for `android-v*` tags.
+same changes, weekly, and on demand. For an `android-v*` tag it adds
+`--check-updates` and uploads the unsigned APK as the `SLTD-<tag>-unsigned`
+artifact; publishing a GitHub release for such a tag runs `--verify-release`.
 
 Unit tests cover origin restrictions, path traversal, cache query handling, and
 MIME types. The Node check loads the actual shared game and UI handlers to check
@@ -167,9 +172,26 @@ To release:
 3. Commit both the wrapper and the exact `srv` files to release. Create and push a
    stable tag named `android-v<versionName>` (initially `android-v1.0.0`). These
    steps publish a release and are not performed by the build.
-4. For initial inclusion, copy the recipe to fdroiddata's
+4. When the tag's `F-Droid build` run passes, download its
+   `SLTD-android-v<versionName>-unsigned` artifact and sign the APK inside:
+
+   ```sh
+   android/tools/sign-release.sh SLTD-<versionName>-unsigned.apk
+   ```
+
+   It writes `SLTD-<versionName>.apk` and prints the signer's SHA-256, which must
+   match the recipe's `AllowedAPKSigningKeys`. The keystore defaults to
+   `sltd-release.jks` in the directory above the repository (`KEYSTORE` and
+   `KEY_ALIAS` override). Never commit it, and keep backups of it and its
+   password: without them no update can install over existing copies.
+5. Create a GitHub release for the tag, attach `SLTD-<versionName>.apk` with
+   exactly that name, and publish it. Its `F-Droid build` run then checks the
+   APK as F-Droid will. F-Droid builds the tag itself and publishes this signed
+   APK only if the contents match, so users can move between GitHub and F-Droid.
+6. For initial inclusion, copy the recipe to fdroiddata's
    `metadata/io.github.lerc.sltd.yml` and submit it through F-Droid's inclusion
-   process. Its initial tag must exist publicly before F-Droid can build it.
+   process. Its initial tag and release must exist publicly before F-Droid can
+   build it.
 
 `UpdateCheckMode` selects only stable `android-vX.Y.Z` tags. `UpdateCheckData`
 reads the version literals in `android/app/build.gradle`, so a web-only release
@@ -182,8 +204,15 @@ The source and wrapper use the repository's MIT license. Existing artwork is
 distributed under the repository license; verify that all shipped assets have
 the necessary redistribution rights before submission. No proprietary runtime
 SDKs, bundled native libraries, or precompiled application binaries are needed.
-The standard Gradle wrapper JAR is build tooling. No reproducible-binary claim
-is made; configure F-Droid's upstream-binary verification separately if desired.
+The standard Gradle wrapper JAR is build tooling.
+
+Builds are reproducible: the same commit gives a byte-identical APK regardless of
+checkout path, and `fdroid build` matches a plain `assembleRelease`. The JDK
+matters, though. `classes.dex` differs between JDK 17 and 21, and F-Droid's build
+server uses JDK 17, which is why the APK to sign comes from the workflow (JDK 17)
+rather than a local build. `sign-release.sh` signs with `--alignment-preserved`:
+apksigner otherwise re-pads stored entries, and F-Droid's signature copier then
+fails to verify an APK whose contents are identical.
 
 References:
 

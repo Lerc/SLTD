@@ -608,6 +608,11 @@ Node suite and example evaluation on main pushes and pull requests to main.
 listing and runs the wrapper host test, and `.github/workflows/fdroid-build.yml`
 scans, builds the app as F-Droid does, and checks the APK, when `android/`,
 `fastlane/` or `srv/` changes. The F-Droid store listing lives in root `fastlane/`.
+Android releases are reproducible builds signed by the developer: the tag's
+workflow run uploads the unsigned APK, `android/tools/sign-release.sh` signs it,
+and publishing the GitHub release verifies it as F-Droid will. The release
+process is in `android/README.md`; never sign a local build, as only the JDK 17
+build matches F-Droid's.
 
 ### Image Processing
 

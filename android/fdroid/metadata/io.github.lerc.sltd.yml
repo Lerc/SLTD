@@ -9,6 +9,7 @@ AutoName: SLTD · Simple Little Tower Defence
 
 RepoType: git
 Repo: https://github.com/Lerc/SLTD.git
+Binaries: https://github.com/Lerc/SLTD/releases/download/android-v%v/SLTD-%v.apk
 
 Builds:
   - versionName: 1.0.0
@@ -17,6 +18,8 @@ Builds:
     subdir: android/app
     gradle:
       - yes
+
+AllowedAPKSigningKeys: 18619414a915cdfa4740b47ad4ecc8cad45383d979c5798e138e7f901745ff31
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^android-v[0-9]+\.[0-9]+\.[0-9]+$
